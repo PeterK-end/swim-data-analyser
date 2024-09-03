@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Parsed Data</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <h1>Parsed Data</h1>
+    <form action="{{ url_for('main.edit_data') }}" method="post">
+        {% for block_name, data_list in parsed_data.items() %}
+            <h2>{{ block_name }}</h2>
+            <div>
+                {% for data in data_list %}
+                    <pre>{{ data | tojson(indent=2) }}</pre>
+                {% endfor %}
+            </div>
+        {% endfor %}
+        <!-- Add fields for editing if necessary -->
+        <button type="submit">Save Changes</button>
+    </form>
+</body>
+</html>
