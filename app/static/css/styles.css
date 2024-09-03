@@ -1,0 +1,91 @@
+/* Ensure the body has no margin and is centered horizontally */
+body {
+    font-family: Arial, sans-serif; /* Using Arial for readability */
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+h1, h2, p {
+    text-align: center;  /* Centers the text horizontally */
+    margin: 0 auto;      /* Center elements with automatic margin */
+    max-width: 800px;    /* Optional: limits the width of the content */
+    padding-top: 20px;   /* Adds some space at the top */
+}
+
+/* Container for the plot and button */
+.plot-container {
+    position: relative; /* Positioning context for the button */
+    max-width: 800px; /* Maximum width of the container */
+    width: 100%; /* Full width of the viewport */
+    margin: 20px; /* Margin around the container */
+    padding: 20px; /* Padding inside the container */
+    background-color: rgba(255, 255, 255, 0.9); /* Slightly transparent white background */
+    border-radius: 8px; /* Rounded corners */
+}
+
+/* Style the button */
+.plot-container #mergeBtn {
+    position: absolute; /* Absolute positioning within the container */
+    top: 20px; /* Distance from the top of the container */
+    left: 40px; /* Distance from the left of the container */
+    background-color: #007bff; /* Primary button color */
+    color: #ffffff; /* Text color */
+    border: none; /* Remove default border */
+    border-radius: 4px; /* Rounded corners for the button */
+    padding: 10px 20px; /* Padding inside the button */
+    font-size: 16px; /* Font size */
+    cursor: pointer; /* Pointer cursor on hover */
+}
+
+.plot-container #mergeBtn:hover {
+    background-color: #0056b3; /* Darker color on hover */
+}
+
+/* Style for the plot */
+#plot {
+    width: 100%; /* Full width of the container */
+    height: 400px; /* Fixed height for the plot */
+    background-color: rgba(240, 240, 240, 1); /* Background color for the plot area */
+}
+
+/* Flash message container */
+.flash-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 15px 30px;
+    border-radius: 5px;
+    text-align: center;
+    z-index: 1000; /* Ensure it's above other elements */
+    display: none; /* Initially hidden */
+}
+
+/* Upload container styles */
+.upload-container {
+    border: 2px solid #007bff; /* Border color */
+    padding: 20px;
+    border-radius: 5px;
+    margin-top: 20px;
+    text-align: center; /* Center the text */
+    background-color: #f8f9fa; /* Light background for visibility */
+}
+
+.upload-container label {
+    display: block;
+    margin-bottom: 10px; /* Space between label and input */
+    font-weight: bold;
+}
+
+.upload-container input[type="file"] {
+    border: 2px solid #007bff; /* Border color */
+    border-radius: 5px;
+    padding: 10px;
+    background-color: #ffffff; /* White background for the file input */
+}
