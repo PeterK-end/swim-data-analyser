@@ -1,8 +1,8 @@
+from app.parsers.fit_parser import parse_fit_file
 from flask import Blueprint, render_template, jsonify, request, redirect, url_for, flash
 from werkzeug.utils import secure_filename
 import fitdecode
 import os
-import json
 
 main = Blueprint('main', __name__)
 
@@ -18,44 +18,9 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# Sample data
-data = [
-    {"label": "A", "value": 10},
-    {"label": "B", "value": 15},
-    {"label": "C", "value": 20}
-]
-
-def parse_fit_file(file_path):
-
-    data_blocks = {}
-
-    with fitdecode.FitReader(file_path) as fit:
-        for frame in fit:
-            if isinstance(frame, fitdecode.records.FitDataMessage):
-                block_name = frame.name
-
-                # Extract the fields
-                data = {field.name: field.value for field in
-                        frame.fields if 'unknown_' not in field.name}
-
-                # Append to the corresponding block list
-                if block_name not in data_blocks:
-                    data_blocks[block_name] = []
-
-                data_blocks[block_name].append(data)
-
-    # !!! not ready, testing
-    return data_blocks['length']
-
-def get_user_upload_folder():
-    user_id = session.get('user_id', 'guest')
-    user_folder = os.path.join(UPLOAD_FOLDER, user_id)
-    os.makedirs(user_folder, exist_ok=True)
-    return user_folder
-
 @main.route('/')
 def index():
- return render_template('index.html', data=data)
+ return render_template('index.html')
 
 @main.route('/merge', methods=['POST'])
 def merge():
@@ -79,9 +44,7 @@ def upload_file():
         return jsonify({"error": "No selected file"}), 400
 
     if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        user_folder = get_user_upload_folder()
-        file_path = os.path.join(user_folder, filename)
+        file_path = secure_filename(file.filename)
         file.save(file_path)
         try:
             parsed_content = parse_fit_file(file_path)
@@ -98,19 +61,3 @@ def upload_file():
     else:
         return jsonify({"error": "Only .fit files are allowed for upload."}), 400
 
-# For Testing purposes only !!!
-
-@main.route('/view_parsed_data')
-def view_parsed_data():
-    parsed_data = session.get('parsed_data')
-    if parsed_data is None:
-        flash('No data to display.', 'error')
-        return redirect(url_for('main.index'))
-    return render_template('view_parsed_data.html', parsed_data=parsed_data)
-
-@main.route('/edit_data', methods=['POST'])
-def edit_data():
-    # Handle data editing here
-    edited_data = request.form.get('edited_data')
-    # Process the edited data
-    return redirect(url_for('main.view_parsed_data'))

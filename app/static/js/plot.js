@@ -1,4 +1,4 @@
-// assets/js/plot.js
+// static/js/plot.js
 
 let selectedLabels = [];
 
