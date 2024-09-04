@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, jsonify, request, redirect, url_fo
 from werkzeug.utils import secure_filename
 import fitdecode
 import os
+import json
 
 main = Blueprint('main', __name__)
 
@@ -44,7 +45,7 @@ def parse_fit_file(file_path):
                 data_blocks[block_name].append(data)
 
     # !!! not ready, testing
-    return data_blocks['sport'][0]
+    return data_blocks['length']
 
 def get_user_upload_folder():
     user_id = session.get('user_id', 'guest')
@@ -71,28 +72,31 @@ def merge():
 @main.route('/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
-        flash('No file part')
-        return redirect(url_for('main.index'))
+        return jsonify({"error": "No file part"}), 400
+
     file = request.files['file']
     if file.filename == '':
-        flash('No selected file')
-        return redirect(url_for('main.index'))
+        return jsonify({"error": "No selected file"}), 400
 
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
         user_folder = get_user_upload_folder()
         file_path = os.path.join(user_folder, filename)
-        # TODO: agree upon useful file handling -> data base?
         file.save(file_path)
-        parsed_content = parse_fit_file(file_path)
-        session['parsed_data'] = parsed_content
-        flash('File successfully uploaded')
-        return redirect(url_for('main.view_parsed_data'))
-#        return redirect(url_for('main.parse_fit', filename=file.filename))
-
+        try:
+            parsed_content = parse_fit_file(file_path)
+            # Assuming parsed_content is a dict, extract data for plotting
+            # Convert to list of dicts with 'length' and 'heart_rate'
+            data_for_plot = [
+                {'duration': d.get('total_elapsed_time', 0), 'length': i}
+                for i, d in enumerate(parsed_content)  # Adjust according to actual structure
+            ]
+            print(f"Watch out, data dump: {data_for_plot}")
+            return jsonify(data_for_plot)
+        except Exception as e:
+            return jsonify({"error": "Failed to parse file"}), 500
     else:
-        flash('Only .fit files are allowed for upload.')
-        return redirect(url_for('main.index'))
+        return jsonify({"error": "Only .fit files are allowed for upload."}), 400
 
 # For Testing purposes only !!!
 

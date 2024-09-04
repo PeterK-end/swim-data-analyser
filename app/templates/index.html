@@ -13,11 +13,11 @@
 
     <!-- File upload section -->
     <div class="upload-container">
-        <label for="fileUpload">Upload your FIT file:</label>
-        <form action="{{ url_for('main.upload_file') }}" method="POST" enctype="multipart/form-data">
-            <input type="file" id="fileUpload" name="file">
-            <input type="submit" value="Upload">
-        </form>
+      <label for="fileUpload">Upload your FIT file:</label>
+      <form id="uploadForm" enctype="multipart/form-data">
+	<input type="file" id="fileInput" name="file">
+        <button type="submit">Upload</button>
+      </form>
     </div>
 
     <!-- Flash messages section -->
@@ -40,7 +40,7 @@
     <script>
       const data = {{ data | tojson }};
     </script>
+    <script src="/static/js/upload.js"></script>
     <script src="/static/js/plot.js"></script>
-    <script src="/static/js/flash_message.js"></script>
   </body>
 </html>

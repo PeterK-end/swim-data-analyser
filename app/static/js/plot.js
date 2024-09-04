@@ -4,49 +4,47 @@ let selectedLabels = [];
 
 function renderPlot(data) {
     const plotData = [{
-        x: data.map(d => d.label),
-        y: data.map(d => d.value),
+        x: data.map(d => d.length),
+        y: data.map(d => d.duration),
         type: 'bar',
         marker: {
             color: data.map(d =>
-                selectedLabels.includes(d.label) ? 'rgba(255, 99, 71, 0.6)' : 'rgba(55, 128, 191, 0.7)'
+                selectedLabels.includes(d.length) ? 'rgba(255, 99, 71, 0.6)' : 'rgba(55, 128, 191, 0.7)'
             )
         }
     }];
 
     const layout = {
         title: '',  // You can set a title here if needed
-        // plot_bgcolor: 'rgba(240, 240, 240, 1)',  // Light gray background for the plot area
-        // paper_bgcolor: 'rgba(255, 255, 255, 1)', // White background for the area around the plot
         margin: {
             l: 50,  // Left margin
             r: 50,  // Right margin
             t: 50,  // Top margin
             b: 50   // Bottom margin
-        }// ,
-        // xaxis: {
-        //     title: 'Labels',
-        //     titlefont: { size: 14 },
-        //     tickfont: { size: 12 }
-        // },
-        // yaxis: {
-        //     title: 'Values',
-        //     titlefont: { size: 14 },
-        //     tickfont: { size: 12 }
-        // }
+        },
+        xaxis: {
+            title: 'length',
+            titlefont: { size: 14 },
+            tickfont: { size: 12 }
+        },
+        yaxis: {
+            title: 'duration in s',
+            titlefont: { size: 14 },
+            tickfont: { size: 12 }
+        }
     };
 
     Plotly.newPlot('plot', plotData, layout, {displayModeBar: false});
 
     const plotElement = document.getElementById('plot');
     plotElement.on('plotly_click', function(event) {
-        const label = event.points[0].x;
+        const length = event.points[0].x;
 
         // Toggle selection
-        if (selectedLabels.includes(label)) {
-            selectedLabels = selectedLabels.filter(l => l !== label);
+        if (selectedLabels.includes(length)) {
+            selectedLabels = selectedLabels.filter(l => l !== length);
         } else {
-            selectedLabels.push(label);
+            selectedLabels.push(length);
         }
 
         // Re-render the plot to update the highlight

@@ -51,20 +51,28 @@ h1, h2, p {
     height: 400px; /* Fixed height for the plot */
     background-color: rgba(240, 240, 240, 1); /* Background color for the plot area */
 }
-
-/* Flash message container */
-.flash-container {
+/* Flash messages */
+.flash-message {
     position: fixed;
-    top: 50%;
+    top: 20px;
     left: 50%;
-    transform: translate(-50%, -50%);
-    background-color: rgba(0, 0, 0, 0.7);
+    transform: translateX(-50%);
+    padding: 10px 20px;
+    background-color: #444;
     color: white;
-    padding: 15px 30px;
     border-radius: 5px;
+    z-index: 1000;
+    opacity: 0.9;
+    font-size: 16px;
     text-align: center;
-    z-index: 1000; /* Ensure it's above other elements */
-    display: none; /* Initially hidden */
+}
+
+.flash-message.success {
+    background-color: #4CAF50; /* Green for success */
+}
+
+.flash-message.error {
+    background-color: #f44336; /* Red for error */
 }
 
 /* Upload container styles */
