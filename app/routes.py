@@ -24,13 +24,20 @@ def index():
 
 @main.route('/merge', methods=['POST'])
 def merge():
-    global data
     labels_to_merge = request.json['labels']
 
     # Simple merge logic
     new_value = sum(item['value'] for item in data if item['label'] in labels_to_merge)
     data = [item for item in data if item['label'] not in labels_to_merge]
     data.append({"label": "+".join(labels_to_merge), "value": new_value})
+
+    return jsonify(data)
+
+@main.route('/split', methods=['POST'])
+def split():
+    label_to_splot = request.json['labels']
+
+    # TODO: implement split logic
 
     return jsonify(data)
 

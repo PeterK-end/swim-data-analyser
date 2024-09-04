@@ -72,5 +72,25 @@ document.getElementById('mergeBtn').addEventListener('click', function() {
     });
 });
 
+document.getElementById('splitBtn').addEventListener('click', function() {
+    if (selectedLabels.length > 2) {
+        alert("Select a single length to be split.");
+        return;
+    }
+
+    fetch('/split', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ labels: selectedLabels })
+    })
+    .then(response => response.json())
+    .then(data => {
+        selectedLabels = [];
+        renderPlot(data); // Re-render the plot with updated data
+    });
+});
+
 // Initial plot rendering
 renderPlot(data);
