@@ -1,3 +1,12 @@
+/* Global variables. */
+:root,
+::backdrop {
+    --first-color: #dcb5ff;
+    --second-color: #d9f2ff;
+    --third-color: #a5bdfd;
+    --fourth-color: #77529e;
+}
+
 /* Ensure the body has no margin and is centered horizontally */
 body {
     font-family: Arial, sans-serif; /* Using Arial for readability */
@@ -9,47 +18,62 @@ body {
     text-align: center;
 }
 
-h1, h2, p {
-    text-align: center;  /* Centers the text horizontally */
+h1 {
+    text-align: left;  /* Centers the text horizontally */
+    margin: 0 auto;      /* Center elements with automatic margin */
+    max-width: 800px;    /* Optional: limits the width of the content */
+    padding-top: 3%;   /* Adds some space at the top */
+    color: var(--fourth-color);
+}
+
+h2, p {
+    text-align: left;  /* Centers the text horizontally */
     margin: 0 auto;      /* Center elements with automatic margin */
     max-width: 800px;    /* Optional: limits the width of the content */
     padding-top: 20px;   /* Adds some space at the top */
 }
-
-/* Container for the plot and button */
+/* Container for the plot and buttons */
 .plot-container {
-    position: relative; /* Positioning context for the button */
-    max-width: 800px; /* Maximum width of the container */
-    width: 100%; /* Full width of the viewport */
-    margin: 20px; /* Margin around the container */
-    padding: 20px; /* Padding inside the container */
-    background-color: rgba(255, 255, 255, 0.9); /* Slightly transparent white background */
+    display: flex; /* Enable flexbox layout */
+    flex-direction: column; /* Arrange children vertically */
+    align-items: flex-start; /* Align items to the start of the container */
     border-radius: 8px; /* Rounded corners */
+    margin: 20px; /* Margin around the container */
+    max-width: 800px; /* Maximum width of the container */
+    padding: 20px; /* Padding inside the container */
+    gap: 10px; /* Space between items inside the container */
+    width: 100%; /* Full width of the viewport */
 }
 
-/* Style the button */
-.plot-container #mergeBtn {
-    position: absolute; /* Absolute positioning within the container */
-    top: 20px; /* Distance from the top of the container */
-    left: 40px; /* Distance from the left of the container */
-    background-color: #007bff; /* Primary button color */
-    color: #ffffff; /* Text color */
+/* Plot takes up full width, with some margin below it */
+.plot-container #plot {
+    width: 100%; /* Ensure the plot takes up the full width */
+    height: 400px; /* Set a fixed height for the plot */
+    margin-bottom: 10px; /* Space below the plot */
+}
+
+/* Style the buttons */
+.plot-container .button-container {
+    display: flex; /* Flexbox layout for buttons */
+    justify-content: flex-start; /* Align buttons to the left */
+    gap: 10px; /* Space between buttons */
+    width: 100%; /* Ensure buttons container takes up full width */
+}
+
+.plot-container #mergeBtn,
+.plot-container #splitBtn {
+    background-color: var(--third-color); /* Primary button color */
     border: none; /* Remove default border */
     border-radius: 4px; /* Rounded corners for the button */
-    padding: 10px 20px; /* Padding inside the button */
-    font-size: 16px; /* Font size */
+    padding: 5px 20px; /* Padding inside the button */
+    font-size: 14px; /* Font size */
     cursor: pointer; /* Pointer cursor on hover */
+    flex-shrink: 0; /* Prevent buttons from shrinking */
 }
 
-.plot-container #mergeBtn:hover {
-    background-color: #0056b3; /* Darker color on hover */
-}
-
-/* Style for the plot */
-#plot {
-    width: 100%; /* Full width of the container */
-    height: 400px; /* Fixed height for the plot */
-    background-color: rgba(240, 240, 240, 1); /* Background color for the plot area */
+.plot-container #mergeBtn:hover,
+.plot-container #splitBtn:hover {
+    background-color: var(--second-color); /* Darker color on hover */
 }
 /* Flash messages */
 .flash-message {
@@ -77,7 +101,7 @@ h1, h2, p {
 
 /* Upload container styles */
 .upload-container {
-    border: 2px solid #007bff; /* Border color */
+    border: 2px solid var(--second-color); /* Border color */
     padding: 20px;
     border-radius: 5px;
     margin-top: 20px;
@@ -92,8 +116,7 @@ h1, h2, p {
 }
 
 .upload-container input[type="file"] {
-    border: 2px solid #007bff; /* Border color */
+    border: 2px solid var(--second-color); /* Border color */
     border-radius: 5px;
-    padding: 10px;
     background-color: #ffffff; /* White background for the file input */
 }
