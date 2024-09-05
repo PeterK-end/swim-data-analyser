@@ -7,6 +7,37 @@
     --fourth-color: #77529e;
 }
 
+/* Style for the top bar */
+.top-bar {
+    display: flex;
+    justify-content: flex-end; /* Push the content to the right */
+    align-items: center;
+    width: 100%;
+    padding: 10px;
+    /* background-color: #f8f9fa; /\* Light background color for the top bar *\/ */
+    /* border-bottom: 2px solid #ccc; /\* Optional border *\/ */
+}
+
+/* Style for the GitHub logo */
+.logo {
+    height: 30px; /* Adjust the size of the logo */
+    width: auto;  /* Maintain aspect ratio */
+    margin-right: 20px; /* Add some space on the right */
+    cursor: pointer; /* Pointer cursor on hover */
+}
+
+/* Optional hover effect for the logo */
+.logo:hover {
+    opacity: 0.8; /* Slight transparency on hover */
+}
+
+/* Resize icons for smaller screens */
+@media (max-width: 600px) {
+    .logo {
+        height: 25px; /* Resize icons for smaller screens */
+    }
+}
+
 /* Ensure the body has no margin and is centered horizontally */
 body {
     font-family: Arial, sans-serif; /* Using Arial for readability */
@@ -22,7 +53,7 @@ h1 {
     text-align: left;  /* Centers the text horizontally */
     margin: 0 auto;      /* Center elements with automatic margin */
     max-width: 800px;    /* Optional: limits the width of the content */
-    padding-top: 3%;   /* Adds some space at the top */
+    /* padding-top: 3%;   /\* Adds some space at the top *\/ */
     color: var(--fourth-color);
 }
 
@@ -32,6 +63,41 @@ h2, p {
     max-width: 800px;    /* Optional: limits the width of the content */
     padding-top: 20px;   /* Adds some space at the top */
 }
+
+/* Center the icons */
+.view-selector {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+/* Style for the view icons */
+.view-icon {
+    width: 50px;
+    height: auto;
+    margin: 0 20px;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+/* Highlighted state */
+.view-icon.highlighted {
+    opacity: 1;
+    border: 2px solid #000; /* Optional border to show active state */
+    border-radius: 5px;
+}
+
+/* Hover effect */
+.view-icon:hover {
+    opacity: 1;
+}
+
+/* Hide the content of inactive views */
+#editContent, #analyseContent {
+    margin-top: 20px;
+}
+
 /* Container for the plot and buttons */
 .plot-container {
     display: flex; /* Enable flexbox layout */

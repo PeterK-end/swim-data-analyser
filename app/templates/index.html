@@ -8,14 +8,21 @@
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   </head>
   <body>
+    <!-- Top bar -->
+    <header class="top-bar">
+      <a href="https://github.com/PeterK-end/swim-data-analyser" target="_blank">
+	<img src="/static/graphics/git-logo.svg" class="logo">
+      </a>
+    </header>
+
+    <!-- Project Description -->
     <h1>Swim Data Analyser</h1>
     <p>Here you can find some tools to edit and analyse workout data
-    produced by Smartwatches as the Garmin series. None of your data
-    will be stored on the server. Before uploading your workout you
-    can test all features on the demo file provided.</p>
+      produced by Smartwatches as the Garmin series. None of your data
+      will be stored on the server. Before uploading your workout you
+      can test all features on the demo file provided.</p>
 
     <!-- File upload section -->
-
     <div class="upload-container">
       <label for="fileUpload">Upload your FIT file:</label>
       <form id="uploadForm" enctype="multipart/form-data">
@@ -35,15 +42,34 @@
     {% endif %}
     {% endwith %}
 
-    <div class="plot-container">
-      <div class="button-container">
-        <button id="mergeBtn">Merge</button>
-        <button id="splitBtn">Split</button>
+    <!-- Icon Selection for Edit and Analyse views -->
+    <div class="view-selector">
+      <img src="/static/graphics/edit-icon.svg" alt="Edit View" id="editView" data-view="edit" class="view-icon highlighted">
+      <img src="/static/graphics/analyse-icon.svg" alt="Analyse View" id="analyseView" data-view="analyse" class="view-icon">
+    </div>
+
+    <!-- Content below to change based on view -->
+    <div id="viewContent">
+      <!-- Default content for edit view -->
+      <div id="editContent">
+	<p>This is the content for editing your data.</p>
+	<div class="plot-container">
+	  <div class="button-container">
+            <button id="mergeBtn">Merge</button>
+            <button id="splitBtn">Split</button>
+	  </div>
+	  <div id="plot"></div>
+	</div>
       </div>
-      <div id="plot"></div>
+
+      <!-- Hidden by default (Analyse content) -->
+      <div id="analyseContent" style="display: none;">
+	<p>This is the content for analysing your data.</p>
+      </div>
     </div>
 
     <script src="/static/js/upload.js"></script>
     <script src="/static/js/plot.js"></script>
+    <script src="/static/js/view-switcher.js"></script>
   </body>
 </html>
