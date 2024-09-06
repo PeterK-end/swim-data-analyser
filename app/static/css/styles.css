@@ -1,3 +1,5 @@
+@import url(./ia-mono.css);
+
 /* Global variables. */
 :root,
 ::backdrop {
@@ -40,7 +42,9 @@
 
 /* Ensure the body has no margin and is centered horizontally */
 body {
-    font-family: Arial, sans-serif; /* Using Arial for readability */
+    font-family: "iA Writer Quattro", -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 1rem;
+    font-weight: 400;
     margin: 0;
     padding: 0;
     display: flex;
@@ -64,38 +68,50 @@ h2, p {
     padding-top: 20px;   /* Adds some space at the top */
 }
 
-/* Center the icons */
+/* Style for the view selector container */
 .view-selector {
-    display: flex;
-    justify-content: center;
-    margin: 20px 0;
+  display: flex;
+  justify-content: center; /* Center align icons horizontally */
+  margin: 20px 0; /* Add some space above and below */
+}
+
+/* Each option (icon + text) */
+.view-option {
+  display: flex;
+  flex-direction: column; /* Stack icon and text vertically */
+  align-items: center; /* Center align the icon and text */
+  padding: 5px;
+  margin: 0 10px; /* Add some space between the options */
+  border: 2px solid transparent; /* Border for the highlighted state */
+  border-radius: 8px; /* Rounded corners */
+  cursor: pointer; /* Pointer cursor on hover */
+  transition: border-color 0.3s ease; /* Smooth transition for the border color */
+  width: 80px; /* Set a fixed width for both options */
+  height: 80px; /* Set a fixed height for both options */
+  box-sizing: border-box; /* Ensure padding and borders are included in the size */
+}
+
+/* Highlight the active view */
+.view-option.highlighted {
+  border-color: var(--third-color); /* Highlight color */
 }
 
 /* Style for the view icons */
 .view-icon {
-    width: 50px;
-    height: auto;
-    margin: 0 20px;
-    cursor: pointer;
-    opacity: 0.7;
-    transition: opacity 0.2s ease;
+  height: 30px; /* Size of the icons */
+  width: auto;  /* Maintain aspect ratio */
+  margin-bottom: 0px; /* Ensure a small space between icon and text */
+  padding: 10px;
 }
 
-/* Highlighted state */
-.view-icon.highlighted {
-    opacity: 1;
-    border: 2px solid #000; /* Optional border to show active state */
-    border-radius: 5px;
-}
-
-/* Hover effect */
-.view-icon:hover {
-    opacity: 1;
-}
-
-/* Hide the content of inactive views */
-#editContent, #analyseContent {
-    margin-top: 20px;
+/* Style for the view labels below the icons */
+.view-option p {
+  margin: 0;
+  padding-top: 2px;
+  font-size: 12px; /* Text size */
+  color: #333; /* Text color */
+  font-weight: bold;
+  text-align: center; /* Ensure text is centered */
 }
 
 /* Container for the plot and buttons */
