@@ -72,7 +72,7 @@ h2, p {
 .view-selector {
   display: flex;
   justify-content: center; /* Center align icons horizontally */
-  margin: 20px 0; /* Add some space above and below */
+  margin-top: 20px; /* Add some space above and below */
 }
 
 /* Each option (icon + text) */
@@ -107,7 +107,7 @@ h2, p {
 /* Style for the view labels below the icons */
 .view-option p {
   margin: 0;
-  padding-top: 2px;
+  padding: 0px;
   font-size: 12px; /* Text size */
   color: #333; /* Text color */
   font-weight: bold;
@@ -122,7 +122,6 @@ h2, p {
     border-radius: 8px; /* Rounded corners */
     margin: 20px; /* Margin around the container */
     max-width: 800px; /* Maximum width of the container */
-    padding: 20px; /* Padding inside the container */
     gap: 10px; /* Space between items inside the container */
     width: 100%; /* Full width of the viewport */
 }
