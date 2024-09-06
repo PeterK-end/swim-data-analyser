@@ -1,1 +1,40 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-bar-chart-2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- magnifying-glass-chart icon by Free Icons (https://free-icons.github.io/free-icons/) -->
+
+<svg
+   height="1em"
+   fill="currentColor"
+   viewBox="0 0 512 512"
+   version="1.1"
+   id="svg287"
+   sodipodi:docname="analyse-icon.svg"
+   inkscape:version="1.2.1 (9c6d41e410, 2022-07-14)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs291" />
+  <sodipodi:namedview
+     id="namedview289"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     showgrid="false"
+     inkscape:zoom="0.82858616"
+     inkscape:cx="321.02877"
+     inkscape:cy="288.44315"
+     inkscape:window-width="1346"
+     inkscape:window-height="716"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg287" />
+  <path
+     d="m 301.05996,31.690522 q -47.53578,0 -87.14893,23.767892 v 0 0 q -39.61316,22.777563 -63.38105,63.381046 -23.76789,41.59381 -23.76789,87.14893 0,45.55513 23.76789,87.14894 23.76789,40.60348 63.38105,63.38105 39.61315,23.76789 87.14893,23.76789 47.53578,0 87.14894,-23.76789 39.61315,-22.77757 63.38104,-63.38105 23.76789,-41.59381 23.76789,-87.14894 0,-45.55512 -23.76789,-87.14893 Q 427.82205,78.235977 388.2089,55.458414 348.59574,31.690522 301.05996,31.690522 Z m 0,380.286268 Q 222.82398,409.99613 167.36557,362.46035 L 26.738878,502.09671 v 0 q -10.893617,9.90329 -21.7872339,0 -9.9032882,-10.89362 0,-21.78723 L 144.58801,339.68279 v 0 Q 97.052224,284.22437 95.071567,205.98839 97.052224,118.83946 155.48162,60.410058 213.91103,1.9806576 301.05996,0 388.2089,1.9806576 446.6383,60.410058 q 58.4294,58.429402 60.41006,145.578332 -1.98066,87.14894 -60.41006,145.57834 -58.4294,58.4294 -145.57834,60.41006 z m 79.22631,-190.14313 v 63.38104 -63.38104 63.38104 q -0.99033,14.85493 -15.84526,15.84526 -14.85494,-0.99033 -15.84527,-15.84526 v -63.38104 0 q 0.99033,-14.85494 15.84527,-15.84527 14.85493,0.99033 15.84526,15.84527 z M 316.90522,126.76209 V 285.2147 126.76209 285.2147 q -0.99033,14.85493 -15.84526,15.84526 -14.85493,-0.99033 -15.84526,-15.84526 v -158.45261 0 q 0.99033,-14.85493 15.84526,-15.84526 14.85493,0.99033 15.84526,15.84526 z m -63.38104,63.38104 v 95.07157 -95.07157 95.07157 q -0.99033,14.85493 -15.84526,15.84526 -14.85494,-0.99033 -15.84526,-15.84526 v -95.07157 0 q 0.99032,-14.85493 15.84526,-15.84526 14.85493,0.99033 15.84526,15.84526 z"
+     id="path285" />
+</svg>

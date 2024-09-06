@@ -44,10 +44,15 @@
 
     <!-- Icon Selection for Edit and Analyse views -->
     <div class="view-selector">
-      <img src="/static/graphics/edit-icon.svg" alt="Edit View" id="editView" data-view="edit" class="view-icon highlighted">
-      <img src="/static/graphics/analyse-icon.svg" alt="Analyse View" id="analyseView" data-view="analyse" class="view-icon">
+      <div class="view-option" id="editView">
+	<img src="/static/graphics/edit-icon.svg" alt="Edit View" class="view-icon">
+	<p>Edit</p>
+      </div>
+      <div class="view-option" id="analyseView">
+	<img src="/static/graphics/analyse-icon.svg" alt="Analyse View" class="view-icon">
+	<p>Analyse</p>
+      </div>
     </div>
-
     <!-- Content below to change based on view -->
     <div id="viewContent">
       <!-- Default content for edit view -->
