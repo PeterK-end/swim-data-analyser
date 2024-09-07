@@ -37,3 +37,18 @@ function displayFlashMessage(message, category) {
         flashMessage.remove();
     }, 3000);  // Message disappears after 3 seconds
 }
+
+// Fetch default data and render it when the page loads
+function loadDefaultData() {
+    fetch('/get_default_data')
+        .then(response => response.json())
+        .then(data => {
+            // Render the plot with default data
+            renderPlot(data);
+        });
+}
+
+// Call loadDefaultData on page load if no file is uploaded
+document.addEventListener('DOMContentLoaded', function() {
+    loadDefaultData();
+});

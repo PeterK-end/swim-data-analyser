@@ -2,6 +2,24 @@
 
 let selectedLabels = [];
 
+// fetch default data if no data is provided yet
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if data is already available (for example, after file upload)
+    // Otherwise, load the default data from the backend
+
+    if (!data) {
+        // Fetch the default data if no file was uploaded
+        fetch('/get_default_data')
+            .then(response => response.json())
+            .then(data => {
+                renderPlot(data); // Render the plot with the default data
+            });
+    } else {
+        renderPlot(data); // If data is already available (e.g., after file upload)
+    }
+});
+
+
 function renderPlot(data) {
     const plotData = [{
         x: data.map(d => d.length),
