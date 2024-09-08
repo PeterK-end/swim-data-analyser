@@ -15,66 +15,69 @@
       </a>
     </header>
 
-    <!-- Project Description -->
-    <h1>Swim Data Analyser</h1>
-    <p>Here you can find some tools to edit and analyse workout data
-      produced by Smartwatches as the Garmin series. None of your data
-      will be stored on the server. Before uploading your workout you
-      can test all features on the demo file provided.</p>
+    <div id="main-content">
 
-    <!-- File upload section -->
-    <div class="upload-container">
-      <label for="fileUpload">Upload your FIT file:</label>
-      <form id="uploadForm" enctype="multipart/form-data">
-	<input type="file" id="fileInput" name="file">
-        <button type="submit">Upload</button>
-      </form>
-    </div>
+      <!-- Project Description -->
+      <h1>Swim Data Analyser</h1>
+      <p>Here you can find some tools to edit and analyse workout data
+	produced by Smartwatches as the Garmin series. None of your data
+	will be stored on the server. Before uploading your workout you
+	can test all features on the demo file provided.</p>
 
-    <!-- Flash messages section -->
-    {% with messages = get_flashed_messages() %}
-    {% if messages %}
-    <div class="flash-container" id="flash-message">
-      {% for message in messages %}
-      <p>{{ message }}</p>
-      {% endfor %}
-    </div>
-    {% endif %}
-    {% endwith %}
-
-    <!-- Icon Selection for Edit and Analyse views -->
-    <div class="view-selector">
-      <div class="view-option" id="editView">
-	<img src="/static/graphics/edit-icon.svg" alt="Edit View" class="view-icon">
-	<p>Edit</p>
+      <!-- File upload section -->
+      <div class="upload-container">
+	<label for="fileUpload">Upload your FIT file:</label>
+	<form id="uploadForm" enctype="multipart/form-data">
+	  <input type="file" id="fileInput" name="file">
+          <button type="submit">Upload</button>
+	</form>
       </div>
-      <div class="view-option" id="analyseView">
-	<img src="/static/graphics/analyse-icon.svg" alt="Analyse View" class="view-icon">
-	<p>Analyse</p>
+
+      <!-- Flash messages section -->
+      {% with messages = get_flashed_messages() %}
+      {% if messages %}
+      <div class="flash-container" id="flash-message">
+	{% for message in messages %}
+	<p>{{ message }}</p>
+	{% endfor %}
       </div>
-    </div>
-    <!-- Content below to change based on view -->
-    <div id="viewContent">
-      <!-- Default content for edit view -->
-      <div id="editContent">
-	<p>This is the content for editing your data.</p>
-	<div class="plot-container">
-	  <div class="button-container">
-            <button id="mergeBtn">Merge</button>
-            <button id="splitBtn">Split</button>
+      {% endif %}
+      {% endwith %}
+
+      <!-- Icon Selection for Edit and Analyse views -->
+      <div class="view-selector">
+	<div class="view-option" id="editView">
+	  <img src="/static/graphics/edit-icon.svg" alt="Edit View" class="view-icon">
+	  <p>Edit</p>
+	</div>
+	<div class="view-option" id="analyseView">
+	  <img src="/static/graphics/analyse-icon.svg" alt="Analyse View" class="view-icon">
+	  <p>Analyse</p>
+	</div>
+      </div>
+      <!-- Content below to change based on view -->
+      <div id="viewContent">
+	<!-- Default content for edit view -->
+	<div id="editContent">
+	  <p>This is the content for editing your data.</p>
+	  <div class="plot-container">
+	    <div class="button-container">
+              <button id="mergeBtn">Merge</button>
+              <button id="splitBtn">Split</button>
+	    </div>
+	    <div id="plot"></div>
 	  </div>
-	  <div id="plot"></div>
+	</div>
+
+	<!-- Hidden by default (Analyse content) -->
+	<div id="analyseContent" style="display: none;">
+	  <p>This is the content for analysing your data.</p>
 	</div>
       </div>
 
-      <!-- Hidden by default (Analyse content) -->
-      <div id="analyseContent" style="display: none;">
-	<p>This is the content for analysing your data.</p>
-      </div>
-    </div>
-
-    <script src="/static/js/upload.js"></script>
-    <script src="/static/js/plot.js"></script>
-    <script src="/static/js/view-switcher.js"></script>
+      <script src="/static/js/upload.js"></script>
+      <script src="/static/js/plot.js"></script>
+      <script src="/static/js/view-switcher.js"></script>
+    </div> <!-- End of main-content -->
   </body>
 </html>

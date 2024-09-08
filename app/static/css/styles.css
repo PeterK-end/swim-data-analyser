@@ -51,13 +51,19 @@ body {
     flex-direction: column;
     align-items: center;
     text-align: center;
+    width: 100vw;
+}
+
+/* Wrapper for the main content to limit its width to 80% of the viewport */
+#main-content {
+    width: 80vw; /* 80% of the viewport width */
+    max-width: 800px; /* Optional: you can set a max-width for larger screens */
+    margin: 0 auto; /* Center the content */
 }
 
 h1 {
-    text-align: left;  /* Centers the text horizontally */
+    text-align: center;  /* Centers the text horizontally */
     margin: 0 auto;      /* Center elements with automatic margin */
-    max-width: 800px;    /* Optional: limits the width of the content */
-    /* padding-top: 3%;   /\* Adds some space at the top *\/ */
     color: var(--fourth-color);
 }
 
@@ -73,6 +79,7 @@ h2, p {
   display: flex;
   justify-content: center; /* Center align icons horizontally */
   margin-top: 20px; /* Add some space above and below */
+  widht: 100%;
 }
 
 /* Each option (icon + text) */
@@ -183,11 +190,13 @@ h2, p {
 /* Upload container styles */
 .upload-container {
     border: 2px solid var(--second-color); /* Border color */
-    padding: 20px;
+    padding: 10px 20px 20px 20px;
     border-radius: 5px;
-    margin-top: 20px;
-    text-align: center; /* Center the text */
     background-color: #f8f9fa; /* Light background for visibility */
+    width: 40%; /* Set width to 40% of the viewport, adjust as needed */
+    max-width: 500px; /* Optional: limit the maximum width */
+    margin: 20px auto; /* Center horizontally */
+    position: relative; /* Required for centering vertically */
 }
 
 .upload-container label {
