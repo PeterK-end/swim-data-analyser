@@ -56,8 +56,8 @@ body {
 
 /* Wrapper for the main content to limit its width to 80% of the viewport */
 #main-content {
-    width: 80vw; /* 80% of the viewport width */
-    max-width: 800px; /* Optional: you can set a max-width for larger screens */
+    width: 95vw; /* 80% of the viewport width */
+    max-width: 900px; /* Optional: you can set a max-width for larger screens */
     margin: 0 auto; /* Center the content */
 }
 
@@ -120,6 +120,25 @@ h2, p {
   font-weight: bold;
   text-align: center; /* Ensure text is centered */
 }
+
+/* Border around the Edit content */
+#editContent {
+    border: 2px solid var(--third-color); /* Thin border for the edit view */
+    padding: 10px; /* Add padding inside the content box */
+    margin: 10px;
+    border-radius: 8px; /* Optional: rounded corners */
+    background-color: #fff; /* Ensure a white background inside the box */
+}
+
+/* Border around the Analyse content */
+#analyseContent {
+    border: 2px solid var(--third-color); /* Same thin border for analyse view */
+    padding: 10px; /* Add padding inside the content box */
+    margin: 10px;
+    border-radius: 8px; /* Rounded corners */
+    background-color: #fff; /* White background inside the box */
+}
+
 
 /* Container for the plot and buttons */
 .plot-container {
