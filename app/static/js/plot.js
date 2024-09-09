@@ -33,11 +33,11 @@ function renderPlot(data) {
     }];
 
     const layout = {
-        title: '',  // You can set a title here if needed
+        //title: '',  // You can set a title here if needed
         margin: {
             l: 50,  // Left margin
             r: 50,  // Right margin
-            t: 50,  // Top margin
+            t: 0,  // Top margin
             b: 50   // Bottom margin
         },
         xaxis: {
@@ -110,5 +110,64 @@ document.getElementById('splitBtn').addEventListener('click', function() {
     });
 });
 
-// Initial plot rendering
-renderPlot(data);
+document.getElementById('poolSizeBtn').addEventListener('click', function() {
+
+    fetch('/changePoolSize', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ labels: selectedLabels })
+    })
+    .then(response => response.json())
+    .then(data => {
+        selectedLabels = [];
+        renderPlot(data); // Re-render the plot with updated data
+    });
+});
+
+document.getElementById('changeStrokeBtn').addEventListener('click', function() {
+
+    fetch('/changeStroke', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ labels: selectedLabels })
+    })
+    .then(response => response.json())
+    .then(data => {
+        selectedLabels = [];
+        renderPlot(data); // Re-render the plot with updated data
+    });
+});
+document.getElementById('deleteBtn').addEventListener('click', function() {
+
+    fetch('/deleteLength', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ labels: selectedLabels })
+    })
+    .then(response => response.json())
+    .then(data => {
+        selectedLabels = [];
+        renderPlot(data); // Re-render the plot with updated data
+    });
+});
+document.getElementById('undoBtn').addEventListener('click', function() {
+
+    fetch('/undoChanges', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ labels: selectedLabels })
+    })
+    .then(response => response.json())
+    .then(data => {
+        selectedLabels = [];
+        renderPlot(data); // Re-render the plot with updated data
+    });
+});

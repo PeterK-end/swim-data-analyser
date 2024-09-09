@@ -125,7 +125,7 @@ h2, p {
 #editContent {
     border: 2px solid var(--third-color); /* Thin border for the edit view */
     padding: 10px; /* Add padding inside the content box */
-    margin: 10px;
+    margin-top: 20px;
     border-radius: 8px; /* Optional: rounded corners */
     background-color: #fff; /* Ensure a white background inside the box */
 }
@@ -167,8 +167,12 @@ h2, p {
     width: 100%; /* Ensure buttons container takes up full width */
 }
 
+.plot-container #poolSizeBtn,
+.plot-container #splitBtn,
 .plot-container #mergeBtn,
-.plot-container #splitBtn {
+.plot-container #changeStrokeBtn,
+.plot-container #deleteBtn,
+.plot-container #undoBtn {
     background-color: var(--third-color); /* Primary button color */
     border: none; /* Remove default border */
     border-radius: 4px; /* Rounded corners for the button */

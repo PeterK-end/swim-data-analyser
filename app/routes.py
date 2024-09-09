@@ -25,6 +25,8 @@ def get_default_data():
 
     default_file = os.path.join(UPLOAD_PATH, 'default_workout.fit')
     parsed_data = parse_fit_file(default_file)
+    session['original_data'] = parsed_data  # Store original data
+    session['modified_data'] = parsed_data  # Store modifiable copy of data
 
     return jsonify(parsed_data)
 
@@ -39,9 +41,11 @@ def upload_file():
 
     if file and allowed_file(file.filename):
         file_path = secure_filename(file.filename)
-        file.save(file_path)
         try:
             parsed_data = parse_fit_file(file_path)
+            # Store the parsed data in the session
+            session['original_data'] = parsed_data  # Store original data
+            session['modified_data'] = parsed_data  # Store modifiable copy of data
             return jsonify(parsed_data)
         except Exception as e:
             return jsonify({"error": "Failed to parse file"}), 500
@@ -64,6 +68,38 @@ def merge():
 def split():
     label_to_splot = request.json['labels']
 
-    # TODO: implement split logic
+    # TODO: implement logic
+
+    return jsonify(data)
+
+@main.route('/changePoolSize', methods=['POST'])
+def changePoolSize():
+    label_to_splot = request.json['labels']
+
+    # TODO: implement logic
+
+    return jsonify(data)
+
+@main.route('/changeStroke', methods=['POST'])
+def changeStroke():
+    label_to_splot = request.json['labels']
+
+    # TODO: implement logic
+
+    return jsonify(data)
+
+@main.route('/deleteLength', methods=['POST'])
+def deleteLength():
+    label_to_splot = request.json['labels']
+
+    # TODO: implement logic
+
+    return jsonify(data)
+
+@main.route('/undoChanges', methods=['POST'])
+def undoChanges():
+    label_to_splot = request.json['labels']
+
+    # TODO: implement logic
 
     return jsonify(data)
