@@ -1,6 +1,7 @@
 from app.parsers.fit_parser import parse_fit_file
 from flask import Blueprint, render_template, jsonify, request, redirect, url_for, flash, send_from_directory
 from werkzeug.utils import secure_filename
+import flask_session
 import fitdecode
 import os
 from os.path import join, dirname, realpath
