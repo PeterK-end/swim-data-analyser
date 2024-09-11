@@ -233,3 +233,9 @@ h2, p {
     border-radius: 5px;
     background-color: #ffffff; /* White background for the file input */
 }
+
+footer {
+    margin: 20px;  /* Adds space outside the footer */
+    padding: 10px; /* Adds space inside the footer */
+    text-align: center;  /* Center-aligns the content */
+}
