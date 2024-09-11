@@ -1,4 +1,11 @@
 import fitdecode
+from datetime import time, datetime
+
+def convert_to_serializable(value):
+    """Helper function to convert non-serializable types to serializable ones"""
+    if isinstance(value, (datetime, time)):
+        return value.isoformat()  # Convert datetime and time to ISO format strings
+    return value
 
 def parse_fit_file(file_path):
     data_blocks = {}
@@ -8,20 +15,13 @@ def parse_fit_file(file_path):
             if isinstance(frame, fitdecode.records.FitDataMessage):
                 block_name = frame.name
 
-                # Extract the fields
-                data = {field.name: field.value for field in frame.fields if 'unknown_' not in field.name}
+                # Extract the fields and ensure serializability
+                data = {field.name: convert_to_serializable(field.value) for field in frame.fields if 'unknown_' not in field.name}
 
-                # Append to the corresponding block list
+                # Dynamically add blocks
                 if block_name not in data_blocks:
                     data_blocks[block_name] = []
 
                 data_blocks[block_name].append(data)
 
-
-    parsed_content = data_blocks['length']
-    data_for_plot = [
-        {'duration': d.get('total_elapsed_time', 0), 'length': i}
-                for i, d in enumerate(parsed_content)  # Adjust according to actual structure
-    ]
-    # Return the parsed data, adjust as necessary
-    return data_for_plot
+    return data_blocks
