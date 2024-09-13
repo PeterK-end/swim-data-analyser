@@ -99,15 +99,21 @@ document.getElementById('mergeBtn').addEventListener('click', function() {
         },
         body: JSON.stringify({ labels: selectedLabels })
     })
-    .then(response => response.json())
-    .then(data => {
-        selectedLabels = [];
-        renderPlot(data); // Re-render the plot with updated data
-    });
+        .then(response => response.json())
+        .then(data => {
+            selectedLabels = [];
+            if (data.length) {
+                const lengthData = data.length;
+                renderPlot(lengthData); // Render the plot with the 'length' data block
+            } else {
+                console.error("No 'length' data found in the response");
+            }
+        });
 });
 
 document.getElementById('splitBtn').addEventListener('click', function() {
-    if (selectedLabels.length > 2) {
+
+    if (selectedLabels.length > 1) {
         alert("Select a single length to be split.");
         return;
     }
@@ -119,45 +125,86 @@ document.getElementById('splitBtn').addEventListener('click', function() {
         },
         body: JSON.stringify({ labels: selectedLabels })
     })
-    .then(response => response.json())
-    .then(data => {
-        selectedLabels = [];
-        renderPlot(data); // Re-render the plot with updated data
-    });
+        .then(response => response.json())
+        .then(data => {
+            selectedLabels = [];
+            if (data.length) {
+                const lengthData = data.length;
+                renderPlot(lengthData); // Render the plot with the 'length' data block
+            } else {
+                console.error("No 'length' data found in the response");
+            }
+        });
+
 });
 
-document.getElementById('poolSizeBtn').addEventListener('click', function() {
+// document.getElementById('poolSizeBtn').addEventListener('click', function() {
 
-    fetch('/changePoolSize', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ labels: selectedLabels })
-    })
-    .then(response => response.json())
-    .then(data => {
-        selectedLabels = [];
-        renderPlot(data); // Re-render the plot with updated data
-    });
-});
+//     fetch('/changePoolSize', {
+//         method: 'POST',
+//         headers: {
+//             'Content-Type': 'application/json'
+//         },
+//         body: JSON.stringify({ labels: selectedLabels })
+//     })
+//         .then(response => response.json())
+//         .then(data => {
+//             selectedLabels = [];
+//             if (data.length) {
+//                 const lengthData = data.length;
+//                 renderPlot(lengthData); // Render the plot with the 'length' data block
+//             } else {
+//                 console.error("No 'length' data found in the response");
+//             }
+//         });
+
+// });
 
 document.getElementById('changeStrokeBtn').addEventListener('click', function() {
+    // Show the modal
+    document.getElementById('strokeModal').style.display = 'block';
+});
 
+// Confirm button inside the modal
+document.getElementById('confirmStroke').addEventListener('click', function() {
+    // Get selected stroke
+    const selectedStroke = document.getElementById('strokeSelect').value;
+
+    // Hide the modal
+    document.getElementById('strokeModal').style.display = 'none';
+
+    // Send the selected labels and stroke to the server
     fetch('/changeStroke', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ labels: selectedLabels })
+        body: JSON.stringify({ labels: selectedLabels, stroke: selectedStroke })
     })
     .then(response => response.json())
     .then(data => {
         selectedLabels = [];
-        renderPlot(data); // Re-render the plot with updated data
+        if (data.length) {
+            const lengthData = data.length;
+            renderPlot(lengthData); // Render the plot with the 'length' data block
+        } else {
+            console.error("No 'length' data found in the response");
+        }
     });
 });
+
+// Cancel button inside the modal
+document.getElementById('cancelStroke').addEventListener('click', function() {
+    // Hide the modal without doing anything
+    document.getElementById('strokeModal').style.display = 'none';
+});
+
 document.getElementById('deleteBtn').addEventListener('click', function() {
+
+    if (selectedLabels.length < 1) {
+        alert("Select at least on length to delete.");
+        return;
+    }
 
     fetch('/deleteLength', {
         method: 'POST',
@@ -166,12 +213,19 @@ document.getElementById('deleteBtn').addEventListener('click', function() {
         },
         body: JSON.stringify({ labels: selectedLabels })
     })
-    .then(response => response.json())
-    .then(data => {
-        selectedLabels = [];
-        renderPlot(data); // Re-render the plot with updated data
-    });
+        .then(response => response.json())
+        .then(data => {
+            selectedLabels = [];
+            if (data.length) {
+                const lengthData = data.length;
+                renderPlot(lengthData); // Render the plot with the 'length' data block
+            } else {
+                console.error("No 'length' data found in the response");
+            }
+        });
+
 });
+
 document.getElementById('undoBtn').addEventListener('click', function() {
 
     fetch('/undoChanges', {
@@ -181,9 +235,15 @@ document.getElementById('undoBtn').addEventListener('click', function() {
         },
         body: JSON.stringify({ labels: selectedLabels })
     })
-    .then(response => response.json())
-    .then(data => {
-        selectedLabels = [];
-        renderPlot(data); // Re-render the plot with updated data
-    });
+        .then(response => response.json())
+        .then(data => {
+            selectedLabels = [];
+            if (data.length) {
+                const lengthData = data.length;
+                renderPlot(lengthData); // Render the plot with the 'length' data block
+            } else {
+                console.error("No 'length' data found in the response");
+            }
+        });
+
 });

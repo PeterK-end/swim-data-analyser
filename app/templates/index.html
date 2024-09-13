@@ -70,6 +70,24 @@
 	      <button id="deleteBtn">Delete</button>
 	      <button id="undoBtn">Undo All</button>
 	    </div>
+              <!-- Modal Structure -->
+              <div id="strokeModal" class="modal" style="display: none;">
+                <div class="modal-content">
+                  <h4>Select Swim Stroke</h4>
+                  <select id="strokeSelect">
+                    <option value="freestyle">Freestyle</option>
+                    <option value="breaststroke">Breaststroke</option>
+                    <option value="backstroke">Backstroke</option>
+                    <option value="butterfly">Butterfly</option>
+                  </select>
+                </div>
+                <div class="modal-footer">
+                  <button id="confirmStroke" class="btn">Confirm</button>
+                  <button id="cancelStroke" class="btn">Cancel</button>
+                </div>
+              </div>
+            </div>
+
 	    <div id="plot"></div>
 	    <p>Some notes about the editor</p>
 	  </div>
