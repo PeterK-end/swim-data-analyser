@@ -1,10 +1,11 @@
 from app.parsers.fit_parser import parse_fit_file
 from flask import Blueprint, render_template, jsonify, request, redirect, url_for, flash, send_from_directory
-from werkzeug.utils import secure_filename
-import flask_session
-import fitdecode
-import os
 from os.path import join, dirname, realpath
+from werkzeug.utils import secure_filename
+import copy
+import fitdecode
+import flask_session
+import os
 
 main= Blueprint('main', __name__)
 
@@ -25,10 +26,10 @@ def get_default_data():
 
     default_file = os.path.join(UPLOAD_PATH, 'default_workout.fit')
     parsed_data = parse_fit_file(default_file)
-    session['original_data'] = parsed_data  # Store original data
-    session['modified_data'] = parsed_data.copy()  # Store modifiable copy of data
+    session['original_data'] = copy.deepcopy(parsed_data)  # Store original data
+    session['modified_data'] = copy.deepcopy(parsed_data) # Store modifiable copy of data
 
-    return jsonify(parsed_data)
+    return jsonify(session['modified_data'])
 
 @main.route('/upload', methods=['POST'])
 def upload_file():
@@ -44,9 +45,9 @@ def upload_file():
         try:
             parsed_data = parse_fit_file(file_path)
             # Store the parsed data in the session
-            session['original_data'] = parsed_data  # Store original data
-            session['modified_data'] = parsed_data  # Store modifiable copy of data
-            return jsonify(parsed_data)
+            session['original_data'] = copy.deepcopy(parsed_data)  # Store original data
+            session['modified_data'] = copy.deepcopy(parsed_data)  # Store modifiable copy of data
+            return jsonify(session['modified_data'])
         except Exception as e:
             return jsonify({"error": "Failed to parse file"}), 500
     else:
@@ -102,7 +103,7 @@ def split():
     if entry['event'] == 'length' and entry['length_type'] == 'active'
     ]
 
-    entry = length_data[label_to_split][1].copy()
+    entry = length_data[label_to_split][1]
 
     split_entry = {
         'timestamp': entry['timestamp'],
@@ -121,7 +122,7 @@ def split():
         'length_type': entry['length_type']
     }
 
-    length_data[label_to_split] = (label_to_split, split_entry)
+    length_data[label_to_split] = (label_to_split, split_entry.copy())
     length_data.insert(label_to_split+1, (label_to_split, split_entry.copy()))
 
     session['modified_data']['length'] = [entry for _, entry in length_data]
@@ -175,6 +176,6 @@ def deleteLength():
 @main.route('/undoChanges', methods=['POST'])
 def undoChanges():
 
-    session['modified_data'] = session['original_data'].copy()
+    session['modified_data'] = copy.deepcopy(session['original_data'])
 
     return jsonify(session['modified_data'])
