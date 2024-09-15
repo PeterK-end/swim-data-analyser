@@ -139,7 +139,6 @@ h2, p {
     background-color: #fff; /* White background inside the box */
 }
 
-
 /* Container for the plot and buttons */
 .plot-container {
     display: flex; /* Enable flexbox layout */
@@ -167,25 +166,40 @@ h2, p {
     width: 100%; /* Ensure buttons container takes up full width */
 }
 
-.plot-container #poolSizeBtn,
-.plot-container #splitBtn,
-.plot-container #mergeBtn,
-.plot-container #changeStrokeBtn,
-.plot-container #deleteBtn,
-.plot-container #undoBtn {
+/* Base styles for all buttons */
+.icon-btn {
     background-color: var(--third-color); /* Primary button color */
     border: none; /* Remove default border */
     border-radius: 4px; /* Rounded corners for the button */
-    padding: 5px 20px; /* Padding inside the button */
-    font-size: 14px; /* Font size */
+    width: 40px; /* Set a fixed width for the button */
+    height: 40px; /* Set a fixed height for the button */
+    display: flex; /* Flexbox layout to center the icon */
+    align-items: center; /* Center icon vertically */
+    justify-content: center; /* Center icon horizontally */
     cursor: pointer; /* Pointer cursor on hover */
     flex-shrink: 0; /* Prevent buttons from shrinking */
+    position: relative; /* Position relative for icon positioning */
+    box-sizing: border-box; /* Include padding and border in element’s total width and height */
+    overflow: hidden; /* Hide any overflow content */
+    padding: 0; /* Remove default padding */
 }
 
-.plot-container #mergeBtn:hover,
-.plot-container #splitBtn:hover {
-    background-color: var(--second-color); /* Darker color on hover */
+/* Style for inline SVG icons */
+.icon-btn svg {
+    width: 24px; /* Width of the SVG icon */
+    height: 24px; /* Height of the SVG icon */
+    display: block; /* Ensures the SVG is treated as a block-level element */
+    margin: auto; /* Center SVG within the button */
 }
+
+.plot-container .icon-btn:hover {
+    background-color: var(--second-color); /* Change button background on hover */
+}
+
+.plot-container .icon-btn:hover svg {
+    fill: var(--third-color); /* Change icon color on hover */
+}
+
 /* Flash messages */
 .flash-message {
     position: fixed;
@@ -238,4 +252,37 @@ footer {
     margin: 20px;  /* Adds space outside the footer */
     padding: 10px; /* Adds space inside the footer */
     text-align: center;  /* Center-aligns the content */
+}
+
+.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%); /* Centers the modal */
+  background-color: white;
+  border: 2px solid var(--fourth-color);
+  border-radius: 5px;
+  padding: 20px;
+  z-index: 1000;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Optional: Adds shadow for better visibility */
+}
+
+/* Style for modal title */
+.modal h4 {
+    margin-top: 0px;
+    margin-bottom: 20px;
+}
+
+
+.modal-content {
+  margin-bottom: 20px;
+}
+
+.modal-footer {
+  text-align: center;
+}
+
+#strokeModal select {
+  width: 100%;
+  padding: 8px;
 }
