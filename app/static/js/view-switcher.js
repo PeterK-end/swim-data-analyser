@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', function () {
       analyseContent.style.display = 'block';
       analyseView.classList.add('highlighted');
       editView.classList.remove('highlighted');
+      renderPacePlot();
     }
   }
 

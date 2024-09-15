@@ -31,6 +31,10 @@ def get_default_data():
 
     return jsonify(session['modified_data'])
 
+@main.route('/getCurrentData', methods=['GET'])
+def getCurrentData():
+    return jsonify(session['modified_data'])
+
 @main.route('/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:

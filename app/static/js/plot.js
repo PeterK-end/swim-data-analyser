@@ -67,10 +67,10 @@ function renderEditPlot(data) {
     };
 
     // Render the plot
-    Plotly.newPlot('plot', plotData, layout, { displayModeBar: false });
+    Plotly.newPlot('editDataPlot', plotData, layout, { displayModeBar: false });
 
     // Handle clicking on a plot bar to toggle selection
-    const plotElement = document.getElementById('plot');
+    const plotElement = document.getElementById('editDataPlot');
     plotElement.on('plotly_click', function(event) {
         const lengthIndex = event.points[0].x - 1;  // Get the index from the x-axis label (0-based)
 
@@ -239,7 +239,6 @@ document.getElementById('undoBtn').addEventListener('click', function() {
         .then(response => response.json())
         .then(data => {
             selectedLabels = [];
-            console.log("Data received after undo:", data);  // Log the data here
             if (data.length) {
                 const lengthData = data.length;
                 renderEditPlot(lengthData); // Render the plot with the 'length' data block
@@ -249,3 +248,89 @@ document.getElementById('undoBtn').addEventListener('click', function() {
         });
 
 });
+
+document.getElementById('analyseView').addEventListener('click', function() {
+
+    fetch('/getCurrentData')
+        .then(response => response.json())
+        .then(data => {
+            if (data.length) {
+                const lengthData = data.length;
+                renderPacePlot(lengthData); // Render the plot with the 'length' data block
+            } else {
+                console.error("No 'length' data found in the response");
+            }
+        });
+
+});
+
+function renderPacePlot(data) {
+
+    // Filter data to include only entries where event is 'length' and length_type is 'active'
+    const lengthData = data.filter(d => d.event === 'length' && d.length_type === 'active');
+
+    if (lengthData.length === 0) {
+        console.error("No valid 'length' data found.");
+        return; // Stop execution if no valid length data
+    }
+
+    const paceData = {
+        x: lengthData.map((d, index) => index + 1),
+        y: lengthData.map(d => ((d.total_elapsed_time * 2)/60) || 0),  // pace in seconds per unit distance
+        name: 'Pace (min/100m)',
+        type: 'bar',
+        marker: { color: '#FF6347'} // Stronger color for the pace line
+    };
+
+    const strokeData = {
+        x: lengthData.map((d, index) => index + 1),  // X-axis as the length index (1, 2, 3, etc.)
+        y: lengthData.map(d => d.total_strokes || 0),
+        type: 'scatter',
+        name: 'Total Strokes',  // Label for the second line
+        line: {color: '#4682B4'}, // Stronger color for the total strokes line
+        yaxis: 'y2'  // Specify the second y-axis
+    };
+
+    const spmData = {
+        x: lengthData.map((d, index) => index + 1),  // X-axis as the length index (1, 2, 3, etc.)
+        y: lengthData.map(d => d.avg_swimming_cadence || 0),
+        name: 'Cadence (SPM)',
+        type: 'scatter',
+        line: {color: '#32CD32'}, // Stronger color for the cadence line
+        yaxis: 'y3'
+    };
+
+    const layout = {
+        margin: {
+            l: 50,  // Left margin
+            r: 50,  // Right margin
+            t: 0,   // Top margin
+            b: 50   // Bottom margin
+        },
+        xaxis: {title: 'Length Index'},
+        yaxis: {
+            title: 'Pace (min/100m)',
+            titlefont: { color: '#FF6347' },
+            tickfont: { color: '#FF6347' },
+            autorange: 'reversed'
+        },
+        yaxis2: {
+            title: 'Total Strokes',  // Second Y-axis for total strokes
+            titlefont: {color: '#4682B4'},
+            tickfont: {color: '#4682B4'},
+            overlaying: 'y',
+            side: 'right'
+        },
+        yaxis3: {
+            title: '',  // Y-axis for cadence
+            titlefont: {color: '#32CD32'},
+            tickfont: {color: '#32CD32'},
+            overlaying: 'y',  // Overlay the second y-axis on the same plot
+            showticklabels: false
+        },
+        showlegend: false
+    };
+
+    // Render the plot
+    Plotly.newPlot('pacePlot', [paceData, strokeData, spmData], layout, { displayModeBar: false });
+}

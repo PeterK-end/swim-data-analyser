@@ -1,8 +1,6 @@
 // Declare 'data' as a global variable
 let data = null;
 
-console.log('upload.js loaded');
-
 // Handle the form submission for file upload
 document.getElementById('uploadForm').addEventListener('submit', function(event) {
     event.preventDefault(); // Prevent the default form submission
@@ -35,7 +33,7 @@ document.getElementById('uploadForm').addEventListener('submit', function(event)
             // Assuming your new data structure has multiple blocks like 'length'
             if (data.length) {
                 const lengthData = data.length;
-                renderPlot(lengthData); // Render the plot with the 'length' data block
+                renderEditPlot(lengthData); // Render the plot with the 'length' data block
             } else {
                 console.error("No 'length' data found in the response");
             }
@@ -70,7 +68,7 @@ function loadDefaultData() {
             // Assuming your new data structure has multiple blocks like 'length'
             if (data.length) {
                 const lengthData = data.length;
-                renderPlot(lengthData); // Render the plot with the 'length' data block
+                renderEditPlot(lengthData); // Render the plot with the 'length' data block
             } else {
                 console.error("No 'length' data found in the response");
             }
@@ -90,6 +88,6 @@ document.addEventListener('DOMContentLoaded', function() {
         loadDefaultData();
     } else {
         // Render the plot with the existing 'data'
-        renderPlot(data.length); // If data is already available (e.g., after file upload)
+        renderEditPlot(data.length); // If data is already available (e.g., after file upload)
     }
 });
