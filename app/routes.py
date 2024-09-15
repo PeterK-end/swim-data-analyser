@@ -175,6 +175,6 @@ def deleteLength():
 @main.route('/undoChanges', methods=['POST'])
 def undoChanges():
 
-    session['modified_data'] = session['original_data']
+    session['modified_data'] = session['original_data'].copy()
 
     return jsonify(session['modified_data'])
