@@ -2,7 +2,7 @@
 
 let selectedLabels = [];
 
-function renderPlot(data) {
+function renderEditPlot(data) {
     console.log("Plot data received:", data);
 
     // Filter data to include only entries where event is 'length' and length_type is 'active'
@@ -82,10 +82,11 @@ function renderPlot(data) {
         }
 
         // Re-render the plot to update the highlighting
-        renderPlot(data);
+        renderEditPlot(data);
     });
 }
 
+/*Edit Buttons Listener*/
 document.getElementById('mergeBtn').addEventListener('click', function() {
     if (selectedLabels.length < 2) {
         alert("Select at least two bars to merge.");
@@ -104,7 +105,7 @@ document.getElementById('mergeBtn').addEventListener('click', function() {
             selectedLabels = [];
             if (data.length) {
                 const lengthData = data.length;
-                renderPlot(lengthData); // Render the plot with the 'length' data block
+                renderEditPlot(lengthData); // Render the plot with the 'length' data block
             } else {
                 console.error("No 'length' data found in the response");
             }
@@ -130,7 +131,7 @@ document.getElementById('splitBtn').addEventListener('click', function() {
             selectedLabels = [];
             if (data.length) {
                 const lengthData = data.length;
-                renderPlot(lengthData); // Render the plot with the 'length' data block
+                renderEditPlot(lengthData); // Render the plot with the 'length' data block
             } else {
                 console.error("No 'length' data found in the response");
             }
@@ -152,7 +153,7 @@ document.getElementById('splitBtn').addEventListener('click', function() {
 //             selectedLabels = [];
 //             if (data.length) {
 //                 const lengthData = data.length;
-//                 renderPlot(lengthData); // Render the plot with the 'length' data block
+//                 renderEditPlot(lengthData); // Render the plot with the 'length' data block
 //             } else {
 //                 console.error("No 'length' data found in the response");
 //             }
@@ -186,7 +187,7 @@ document.getElementById('confirmStroke').addEventListener('click', function() {
         selectedLabels = [];
         if (data.length) {
             const lengthData = data.length;
-            renderPlot(lengthData); // Render the plot with the 'length' data block
+            renderEditPlot(lengthData); // Render the plot with the 'length' data block
         } else {
             console.error("No 'length' data found in the response");
         }
@@ -218,7 +219,7 @@ document.getElementById('deleteBtn').addEventListener('click', function() {
             selectedLabels = [];
             if (data.length) {
                 const lengthData = data.length;
-                renderPlot(lengthData); // Render the plot with the 'length' data block
+                renderEditPlot(lengthData); // Render the plot with the 'length' data block
             } else {
                 console.error("No 'length' data found in the response");
             }
@@ -238,9 +239,10 @@ document.getElementById('undoBtn').addEventListener('click', function() {
         .then(response => response.json())
         .then(data => {
             selectedLabels = [];
+            console.log("Data received after undo:", data);  // Log the data here
             if (data.length) {
                 const lengthData = data.length;
-                renderPlot(lengthData); // Render the plot with the 'length' data block
+                renderEditPlot(lengthData); // Render the plot with the 'length' data block
             } else {
                 console.error("No 'length' data found in the response");
             }
