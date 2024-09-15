@@ -121,6 +121,12 @@ h2, p {
   text-align: center; /* Ensure text is centered */
 }
 
+/*redefine witdh for viewContext box*/
+#viewContent p, h2 {
+    max-width: 100%; /* Example text alignment */
+    padding: 20px 20px 0px 20px;
+}
+
 /* Border around the Edit content */
 #editContent {
     border: 2px solid var(--third-color); /* Thin border for the edit view */
@@ -128,6 +134,7 @@ h2, p {
     margin-top: 20px;
     border-radius: 8px; /* Optional: rounded corners */
     background-color: #fff; /* Ensure a white background inside the box */
+    width: auto;
 }
 
 /* Border around the Analyse content */
@@ -137,22 +144,18 @@ h2, p {
     margin: 10px;
     border-radius: 8px; /* Rounded corners */
     background-color: #fff; /* White background inside the box */
+    width: auto;
 }
 
 /* Container for the plot and buttons */
 .plot-container {
-    display: flex; /* Enable flexbox layout */
-    flex-direction: column; /* Arrange children vertically */
-    align-items: flex-start; /* Align items to the start of the container */
     border-radius: 8px; /* Rounded corners */
     margin: 20px; /* Margin around the container */
-    max-width: 800px; /* Maximum width of the container */
-    gap: 10px; /* Space between items inside the container */
-    width: 100%; /* Full width of the viewport */
+    width:auto;
 }
 
 /* Plot takes up full width, with some margin below it */
-.plot-container #plot {
+.plot-container #editDataPlot {
     width: 100%; /* Ensure the plot takes up the full width */
     height: 400px; /* Set a fixed height for the plot */
     margin-bottom: 10px; /* Space below the plot */
@@ -188,7 +191,6 @@ h2, p {
 .icon-btn svg {
     width: 24px; /* Width of the SVG icon */
     height: 24px; /* Height of the SVG icon */
-    display: block; /* Ensures the SVG is treated as a block-level element */
     margin: auto; /* Center SVG within the button */
 }
 
