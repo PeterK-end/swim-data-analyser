@@ -274,12 +274,22 @@ function renderPacePlot(data) {
         return; // Stop execution if no valid length data
     }
 
+    // Define a fixed Viridis color map for swim strokes
+    const fixedStrokeColors = {
+        breaststroke: '#440154',   // Dark purple
+        freestyle: '#3b528b',     // Purple-blue
+        backstroke: '#21918c',    // Cyan-green
+        butterfly: '#5ec962',     // Green
+        // Add more strokes here with fixed values if necessary
+        default: '#fde725'        // Yellow
+    };
+
     const paceData = {
         x: lengthData.map((d, index) => index + 1),
         y: lengthData.map(d => ((d.total_elapsed_time * 2)/60) || 0),  // pace in seconds per unit distance
         name: 'Pace (min/100m)',
         type: 'bar',
-        marker: { color: '#FF6347'} // Stronger color for the pace line
+        marker: { color: 'lightblue', dash: 'dash' }
     };
 
     const strokeData = {
@@ -287,7 +297,7 @@ function renderPacePlot(data) {
         y: lengthData.map(d => d.total_strokes || 0),
         type: 'scatter',
         name: 'Total Strokes',  // Label for the second line
-        line: {color: '#4682B4'}, // Stronger color for the total strokes line
+        line: {color: 'purple'}, // Darker shade of --second-color
         yaxis: 'y2'  // Specify the second y-axis
     };
 
@@ -296,7 +306,7 @@ function renderPacePlot(data) {
         y: lengthData.map(d => d.avg_swimming_cadence || 0),
         name: 'Cadence (SPM)',
         type: 'scatter',
-        line: {color: '#32CD32'}, // Stronger color for the cadence line
+        line: {color: 'blue'}, // Darker shade of --third-color
         yaxis: 'y3'
     };
 
@@ -310,21 +320,21 @@ function renderPacePlot(data) {
         xaxis: {title: 'Length Index'},
         yaxis: {
             title: 'Pace (min/100m)',
-            titlefont: { color: '#FF6347' },
-            tickfont: { color: '#FF6347' },
+            titlefont: { color: 'lightblue' },
+            tickfont: { color: 'lightblue' },
             autorange: 'reversed'
         },
         yaxis2: {
             title: 'Total Strokes',  // Second Y-axis for total strokes
-            titlefont: {color: '#4682B4'},
-            tickfont: {color: '#4682B4'},
+            titlefont: {color: 'purple'},
+            tickfont: {color: 'purple'},
             overlaying: 'y',
             side: 'right'
         },
         yaxis3: {
             title: '',  // Y-axis for cadence
-            titlefont: {color: '#32CD32'},
-            tickfont: {color: '#32CD32'},
+            titlefont: {color: 'blue'},
+            tickfont: {color: 'blue'},
             overlaying: 'y',  // Overlay the second y-axis on the same plot
             showticklabels: false
         },
