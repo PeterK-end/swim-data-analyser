@@ -14,8 +14,26 @@ UPLOAD_PATH = join(dirname(realpath(__file__)), 'static/upload/')
 ALLOWED_EXTENSIONS = {'fit'}
 session = {}
 
+# helper
+def pull_each(name, data):
+    return [entry.get(name) for entry in data if entry.get(name)]
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def refresh_meta():
+    if not session['modified_data']:
+        raise ValueError("Modified data not found in session.")
+
+    lengths = session['modified_data']['length']
+    active_lengths =  [entry for entry in
+                       session['modified_data']['length'] if entry['event'] == 'length'
+                       and entry['length_type'] == 'active']
+
+    # update meta
+    session_data = session['modified_data']['session']
+    session_data[0]['total_elapsed_time'] = sum(pull_each('total_elapsed_time', lengths))
+    session_data[0]['total_distance'] = len(active_lengths)*session_data[0]['pool_length']
 
 @main.route('/')
 def index():
@@ -33,6 +51,7 @@ def get_default_data():
 
 @main.route('/getCurrentData', methods=['GET'])
 def getCurrentData():
+    refresh_meta()
     return jsonify(session['modified_data'])
 
 @main.route('/upload', methods=['POST'])
@@ -68,23 +87,19 @@ def merge():
 
     merge_entries = [entry for i, entry in length_data if i in labels_to_merge]
 
-    # helper
-    def pull_each(name, data=merge_entries):
-        return [entry.get(name) for entry in data if entry.get(name)]
-
     new_entry = {
         'timestamp': merge_entries[0]['timestamp'],
         'start_time': merge_entries[0]['start_time'],
-        'total_elapsed_time': sum(pull_each('total_elapsed_time')),
-        'total_timer_time': sum(pull_each('total_timer_time')),
-        'message_index': min(pull_each('message_index')),
-        'total_strokes': sum(pull_each('total_strokes')),
-        'avg_speed': sum(pull_each('avg_speed'))/len(pull_each('avg_speed')),
-        'total_calories': sum(pull_each('total_calories')),
+        'total_elapsed_time': sum(pull_each('total_elapsed_time', merge_entries)),
+        'total_timer_time': sum(pull_each('total_timer_time', merge_entries)),
+        'message_index': min(pull_each('message_index', merge_entries)),
+        'total_strokes': sum(pull_each('total_strokes', merge_entries)),
+        'avg_speed': sum(pull_each('avg_speed', merge_entries))/len(pull_each('avg_speed', merge_entries)),
+        'total_calories': sum(pull_each('total_calories', merge_entries)),
         'event': merge_entries[0]['event'],
         'event_type': merge_entries[0]['event_type'],
         'swim_stroke': merge_entries[0]['swim_stroke'],
-        'avg_swimming_cadence': sum(pull_each('avg_swimming_cadence'))/len(pull_each('avg_swimming_cadence')),
+        'avg_swimming_cadence': sum(pull_each('avg_swimming_cadence', merge_entries))/len(pull_each('avg_swimming_cadence', merge_entries)),
         'event_group': None,
         'length_type': merge_entries[0]['length_type']
     }

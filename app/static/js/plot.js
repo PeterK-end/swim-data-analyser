@@ -2,8 +2,41 @@
 
 let selectedLabels = [];
 
+function loadMeta() {
+    fetch('/getCurrentData')
+        .then(response => response.json())
+        .then(data => {
+            const metadata = data.session[0]
+            console.log("Matadata received:", metadata);
+            // Update the content dynamically with fetched metadata
+            document.getElementById('metadata-container').innerHTML = `
+    <div class="metadata-flex">
+    <div class="metadata-box">
+      <strong>Total Time:</strong>
+      <span id="totalTime">${(metadata.total_elapsed_time/60).toFixed(2)}min</span>
+    </div>
+    <div class="metadata-box">
+      <strong>Total Length:</strong>
+      <span id="totalLength">${metadata.total_distance}m</span>
+    </div>
+    <div class="metadata-box">
+      <strong>Workout Date:</strong>
+      <span id="workoutDate">${metadata.timestamp}</span>
+    </div>
+    <!-- Add additional metadata boxes here -->
+  </div>
+`;
+        })
+        .catch(error => console.error('Error fetching metadata:', error));
+}
+
+
 function renderEditPlot(data) {
     console.log("Plot data received:", data);
+
+    // Update Metada, reasoning: plot is intitially rendered with
+    // default data, every change leads to rerendering of the plot
+    loadMeta()
 
     // Filter data to include only entries where event is 'length' and length_type is 'active'
     const lengthData = data.filter(d => d.event === 'length' && d.length_type === 'active');

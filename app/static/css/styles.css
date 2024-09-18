@@ -288,3 +288,43 @@ footer {
   width: 100%;
   padding: 8px;
 }
+
+/* Metadata Box */
+
+.metadata-container {
+  padding: 20px 20px 0px 20px;
+  border-radius: 8px;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center; /* Center align text */
+}
+
+.metadata-flex {
+  display: flex;
+  flex-wrap: wrap; /* Allow items to wrap onto multiple lines */
+  justify-content: center; /* Center items horizontally */
+  gap: 20px; /* Space between items */
+}
+
+.metadata-box {
+  background-color: #ffffff;  /* White background for each box */
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  display: flex; /* Flexbox layout */
+  flex-direction: column; /* Stack content vertically */
+  align-items: center; /* Center align items */
+  border: 1px solid var(--third-color); /* Add border for a clear look */
+}
+
+.metadata-box strong {
+  display: block;
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.metadata-box span {
+  color: #333;
+  font-size: 16px;
+}
