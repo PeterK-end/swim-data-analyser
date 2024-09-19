@@ -7,13 +7,31 @@ function loadMeta() {
         .then(response => response.json())
         .then(data => {
             const metadata = data.session[0]
-            console.log("Matadata received:", metadata);
+
+            console.log("Metadata:", metadata);
+
+            const date = new Date(metadata.timestamp);
+            // Format date based on local timezone (YYYY-MM-DD format)
+            const day = date.toLocaleDateString('en-CA'); // 'en-CA' forces YYYY-MM-DD format
+            const daytime = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+            const totalMinutes = Math.floor(metadata.total_elapsed_time/60);
+            const totalSeconds = Math.floor(metadata.total_elapsed_time % 60);
+
+            const paceMinutes = Math.floor(((metadata.total_elapsed_time/(metadata.total_distance/100))/60));
+            const paceSeconds = Math.floor(((metadata.total_elapsed_time/(metadata.total_distance/100)) % 60)).toString().padStart(2, '0');
+
+
             // Update the content dynamically with fetched metadata
             document.getElementById('metadata-container').innerHTML = `
     <div class="metadata-flex">
     <div class="metadata-box">
+      <strong>Pool Length:</strong>
+      <span id="poolLength">${metadata.pool_length}m</span>
+    </div>
+    <div class="metadata-box">
       <strong>Total Time:</strong>
-      <span id="totalTime">${(metadata.total_elapsed_time/60).toFixed(2)}min</span>
+      <span id="totalTime">${totalMinutes}m ${totalSeconds}s</span>
     </div>
     <div class="metadata-box">
       <strong>Total Length:</strong>
@@ -21,9 +39,16 @@ function loadMeta() {
     </div>
     <div class="metadata-box">
       <strong>Workout Date:</strong>
-      <span id="workoutDate">${metadata.timestamp}</span>
+      <span id="workoutDate">${day} ${daytime}</span>
     </div>
-    <!-- Add additional metadata boxes here -->
+    <div class="metadata-box">
+      <strong>Avg. Pace:</strong>
+      <span id="avgPace">${paceMinutes}:${paceSeconds}min/100m</span>
+    </div>
+    <div class="metadata-box">
+      <strong>Avg. Strokes:</strong>
+      <span id="avgStrokes">${Math.floor(metadata.total_strokes/metadata.num_lengths)}/length</span>
+    </div>
   </div>
 `;
         })

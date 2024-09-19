@@ -34,6 +34,8 @@ def refresh_meta():
     session_data = session['modified_data']['session']
     session_data[0]['total_elapsed_time'] = sum(pull_each('total_elapsed_time', lengths))
     session_data[0]['total_distance'] = len(active_lengths)*session_data[0]['pool_length']
+    session_data[0]['total_strokes'] = sum(pull_each('total_strokes', lengths))
+    session_data[0]['num_lengths'] = len(active_lengths)
 
 @main.route('/')
 def index():
