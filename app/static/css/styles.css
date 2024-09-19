@@ -303,12 +303,12 @@ footer {
   display: flex;
   flex-wrap: wrap; /* Allow items to wrap onto multiple lines */
   justify-content: center; /* Center items horizontally */
-  gap: 20px; /* Space between items */
+  gap: 10px; /* Space between items */
 }
 
 .metadata-box {
   background-color: #ffffff;  /* White background for each box */
-  padding: 15px;
+  padding: 10px;
   border-radius: 8px;
   box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
   display: flex; /* Flexbox layout */
@@ -326,5 +326,5 @@ footer {
 
 .metadata-box span {
   color: #333;
-  font-size: 16px;
+  font-size: 14px;
 }
