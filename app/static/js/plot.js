@@ -340,12 +340,21 @@ function renderPacePlot(data) {
         default: '#fde725'        // Yellow
     };
 
+    // Create paceData with stroke-based colors for the bars
     const paceData = {
-        x: lengthData.map((d, index) => index + 1),
-        y: lengthData.map(d => ((d.total_elapsed_time * 2)/60) || 0),  // pace in seconds per unit distance
-        name: 'Pace (min/100m)',
+        x: lengthData.map((d, index) => index + 1),  // X-axis as the length index
+        y: lengthData.map(d => ((d.total_elapsed_time * 2) / 60) || 0),  // Pace in minutes per 100m
+        name: '',
         type: 'bar',
-        marker: { color: 'lightblue', dash: 'dash' }
+        text: lengthData.map(d => `Stroke: ${d.swim_stroke || 'Unknown'}<br>Pace: ${((d.total_elapsed_time * 2) / 60)}`),  // Hover text
+        hoverinfo: 'text',
+        marker: {
+            color: lengthData.map(d => {
+                const stroke = d.swim_stroke || 'default';  // Get stroke, fallback to default
+                return fixedStrokeColors[stroke] || fixedStrokeColors['default'];  // Apply color based on stroke
+            }),
+            opacity: 0.6
+        }
     };
 
     const strokeData = {
@@ -376,8 +385,8 @@ function renderPacePlot(data) {
         xaxis: {title: 'Length Index'},
         yaxis: {
             title: 'Pace (min/100m)',
-            titlefont: { color: 'lightblue' },
-            tickfont: { color: 'lightblue' },
+            titlefont: { color: 'black' },
+            tickfont: { color: 'black' },
             autorange: 'reversed'
         },
         yaxis2: {
