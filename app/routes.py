@@ -66,9 +66,8 @@ def upload_file():
         return jsonify({"error": "No selected file"}), 400
 
     if file and allowed_file(file.filename):
-        file_path = secure_filename(file.filename)
         try:
-            parsed_data = parse_fit_file(file_path)
+            parsed_data = parse_fit_file(file.stream)
             # Store the parsed data in the session
             session['original_data'] = copy.deepcopy(parsed_data)  # Store original data
             session['modified_data'] = copy.deepcopy(parsed_data)  # Store modifiable copy of data
@@ -82,12 +81,12 @@ def upload_file():
 @main.route('/merge', methods=['POST'])
 def merge():
     labels_to_merge = request.json['labels']
-    length_data = [
-        (i, entry) for i, entry in enumerate(session['modified_data']['length'])
-    if entry['event'] == 'length' and entry['length_type'] == 'active'
-    ]
 
-    merge_entries = [entry for i, entry in length_data if i in labels_to_merge]
+    length_data = [entry for entry in
+                   session['modified_data']['length'] if entry['event'] == 'length'
+                   and entry['length_type'] == 'active']
+
+    merge_entries = [entry for i, entry in enumerate(length_data) if i in labels_to_merge]
 
     new_entry = {
         'timestamp': merge_entries[0]['timestamp'],
@@ -106,23 +105,20 @@ def merge():
         'length_type': merge_entries[0]['length_type']
     }
 
-    new_data = [entry for i, entry in length_data if i not in labels_to_merge]
+    new_data = [entry for i, entry in enumerate(length_data) if i not in labels_to_merge]
     new_data.insert(min(labels_to_merge), new_entry)
 
     session['modified_data']['length'] = new_data
-
-    # TODO: call update metadata function
 
     return jsonify(session['modified_data'])
 
 @main.route('/split', methods=['POST'])
 def split():
     label_to_split = request.json['labels'][0]
-    # filter according to plot view
-    length_data = [
-        (i, entry) for i, entry in enumerate(session['modified_data']['length'])
-    if entry['event'] == 'length' and entry['length_type'] == 'active'
-    ]
+
+    length_data = [(i, entry) for i, entry in
+                   enumerate(session['modified_data']['length'])
+                   if entry['event'] == 'length' and entry['length_type'] == 'active']
 
     entry = length_data[label_to_split][1]
 
@@ -164,7 +160,6 @@ def changeStroke():
     labels = user_input['labels']  # The selected labels
     stroke = user_input['stroke']  # The selected stroke
 
-    # filter according to plot view
     length_data = [entry for entry in
                    session['modified_data']['length'] if entry['event'] == 'length'
                    and entry['length_type'] == 'active']
@@ -174,29 +169,24 @@ def changeStroke():
 
     session['modified_data']['length'] = length_data
 
-    # TODO: call update metadata function
-
     return jsonify(session['modified_data'])
 
 @main.route('/deleteLength', methods=['POST'])
 def deleteLength():
     label_to_delete = request.json['labels']
 
-    new_data = [entry for i, entry in
-                enumerate(session['modified_data']['length']) if
-                entry['event'] == 'length' and
-                entry['length_type'] == 'active' and
-                i not in label_to_delete]
+    length_data = [entry for entry in
+                   session['modified_data']['length'] if entry['event'] == 'length'
+                   and entry['length_type'] == 'active']
+
+    new_data = [entry for i, entry in enumerate(length_data) if i not in label_to_delete]
 
     session['modified_data']['length'] = new_data
-
-    # TODO: call update metadata function
 
     return jsonify(session['modified_data'])
 
 @main.route('/undoChanges', methods=['POST'])
 def undoChanges():
-
     session['modified_data'] = copy.deepcopy(session['original_data'])
 
     return jsonify(session['modified_data'])

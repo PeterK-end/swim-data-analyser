@@ -64,12 +64,7 @@ function renderEditPlot(data) {
     loadMeta()
 
     // Filter data to include only entries where event is 'length' and length_type is 'active'
-    const lengthData = data.filter(d => d.event === 'length' && d.length_type === 'active');
-
-    if (lengthData.length === 0) {
-        console.error("No valid 'length' data found.");
-        return; // Stop execution if no valid length data
-    }
+    const lengthData = data.filter(d => d.event === 'length' && d.length_type === 'active')
 
     // Define a fixed Viridis color map for swim strokes
     const fixedStrokeColors = {
@@ -307,6 +302,7 @@ document.getElementById('undoBtn').addEventListener('click', function() {
 
 });
 
+// Renders all analyse plots
 document.getElementById('analyseView').addEventListener('click', function() {
 
     fetch('/getCurrentData')
@@ -326,11 +322,13 @@ function renderPacePlot(data) {
 
     // Filter data to include only entries where event is 'length' and length_type is 'active'
     const lengthData = data.filter(d => d.event === 'length' && d.length_type === 'active');
+    // const time = lengthData.total_elapsed_time
+    // const distance = lengthData.total_distance
+    // const poolLength =
 
-    if (lengthData.length === 0) {
-        console.error("No valid 'length' data found.");
-        return; // Stop execution if no valid length data
-    }
+    // const paceMinutes = Math.floor(((/(/))/60));
+    // const paceSeconds = Math.floor(((lengthData.total_elapsed_time/(lengthData.total_distance/)) % 60)).toString().padStart(2, '0');
+
 
     // Define a fixed Viridis color map for swim strokes
     const fixedStrokeColors = {
