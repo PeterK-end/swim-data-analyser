@@ -6,6 +6,7 @@ import copy
 import fitdecode
 import flask_session
 import os
+import pandas as pd
 
 main= Blueprint('main', __name__)
 
@@ -190,3 +191,16 @@ def undoChanges():
     session['modified_data'] = copy.deepcopy(session['original_data'])
 
     return jsonify(session['modified_data'])
+
+
+@main.route('/getSummaryData', methods=['GET'])
+def getSummaryData():
+    df = pd.DataFrame(session['modified_data']['length'])
+    grouped_df = df.groupby('swim_stroke').agg(
+        total_lengths=('swim_stroke', 'count'),
+        total_time=('total_elapsed_time', 'sum'),
+        avg_spl=('total_strokes', lambda x: x.sum() / len(x)),
+        avg_spm=('avg_swimming_cadence', lambda x: x.sum() / len(x))
+    ).to_dict(orient='index')
+
+    return jsonify([grouped_df, session['modified_data']])

@@ -328,3 +328,68 @@ footer {
   color: #333;
   font-size: 14px;
 }
+
+.summary-container {
+  padding: 20px 20px 0px 20px;
+  border-radius: 8px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Center the table and style it */
+table {
+    width: 80%; /* Adjust the width of the table */
+    margin: 20px auto; /* Center the table horizontally */
+    border-collapse: collapse; /* Ensure borders are collapsed */
+    text-align: center; /* Center text inside table cells */
+    border: 2px solid var(--third-color); /* Border around the table */
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); /* Optional: Add a subtle shadow */
+}
+
+/* Style the table header */
+thead th {
+    padding: 10px; /* Add some padding */
+    font-weight: bold; /* Bold text */
+    font-size: 16px; /* Increase the font size */
+    border-bottom: 2px solid var(--fourth-color); /* Bottom border */
+}
+
+/* Style the table body */
+tbody td {
+    padding: 8px 8px; /* Padding around the table cells */
+    font-size: 14px; /* Font size for table cells */
+}
+
+/* Style for table rows */
+tbody tr {
+    transition: background-color 0.3s ease; /* Smooth transition for hover effect */
+}
+
+/* Hover effect for rows */
+tbody tr:hover {
+    background-color: var(--second-color); /* Lighter background on hover */
+}
+
+/* Highlight different swim styles with specific classes */
+tr.freestyle {
+    background-color: #3b528b; /* Light blue background for freestyle */
+}
+
+tr.backstroke {
+    background-color: #21918c; /* Light yellow background for backstroke */
+}
+
+tr.breaststroke {
+    background-color: #440154; /* Light orange background for breaststroke */
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 600px) {
+    table {
+        width: 100%; /* Ensure table takes full width on smaller screens */
+    }
+
+    thead th, tbody td {
+        font-size: 12px; /* Smaller font size for smaller screens */
+    }
+}
