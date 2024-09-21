@@ -89,7 +89,7 @@ function renderEditPlot(data) {
                 const baseColor = fixedStrokeColors[stroke] || fixedStrokeColors['default'];
 
                 // Highlight selected lengths by making the color brighter (adjust brightness for selection)
-                return selectedLabels.includes(index) ? 'rgba(255, 127, 14, 1)' : baseColor;  // Highlight with orange
+                return selectedLabels.includes(index) ? '#2A4D69' : baseColor;  // Highlight with Navy Teal
             }),
             opacity: lengthData.map((d, index) => selectedLabels.includes(index) ? 1 : 0.9),  // Full opacity if selected
             line: {
