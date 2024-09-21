@@ -8,8 +8,6 @@ function loadMeta() {
         .then(data => {
             const metadata = data.session[0]
 
-            console.log("Metadata:", metadata);
-
             const date = new Date(metadata.timestamp);
             // Format date based on local timezone (YYYY-MM-DD format)
             const day = date.toLocaleDateString('en-CA'); // 'en-CA' forces YYYY-MM-DD format
@@ -320,43 +318,77 @@ document.getElementById('analyseView').addEventListener('click', function() {
 });
 
 function renderSummary(){
-
     fetch('/getSummaryData')
-        .then(response => response.json())
-        .then(data => {
-            if (data){
-                console.log("Grouped Data:", data);
-                const grouped_data = data[0]
-                document.getElementById('summaryData').innerHTML = `
-<table>
-  <thead>
-    <tr>
-      <th>Style </th>
-      <th>Lengths </th>
-      <th>Distance </th>
-      <th>Time </th>
-      <th>Pace </th>
-      <th>SPM </th>
-      <th>SPL </th>
-    </thead>
-    <tbody>
-<tr class="freestyle"><td>Freestyle</td><td>${grouped_data.freestyle.total_lengths}</td><td>650</td><td>16:35.1</td><td>2:33</td><td>28.3</td><td>36.2</td></tr>
-<tr class="backstroke"><td>Backstroke</td><td>12</td><td>600</td><td>14:04.7</td><td>2:20</td><td>24.9</td><td>29.2</td></tr>
-<tr class="breaststroke"><td>BreastStroke</td><td>22</td><td>1100</td><td>17:14.2</td><td>1:34</td><td>26.2</td><td>20.5</td></tr>
-<tr class="total"><td>Sub Total</td><td>47</td><td>2350</td><td>47:53.9</td><td>2:02</td><td>26.6</td><td>27.1</td></tr>
-<tr class="rest"><td>Rest</td><td></td><td></td><td>3:08.6</td><td></td><td></td><td></td></tr>
-<tr class="total"><td>Total</td><td>47</td><td>2350</td><td>51:02.6</td><td></td><td></td><td></td></tr>
-</tbody></table></td><td>
-  <div id="summaryChart">
-  </div>
-</td></tr></table>
-</div>
-`;
-            } else {
-                console.error("/getSummaryData did not return data object.");
+    .then(response => response.json())
+    .then(data => {
+        if (data){
+            console.log("Grouped Data:", data);
+            const grouped_data = data[0]; // Assuming this holds the swim stroke data
+            const session_data = data[1]['session'][0];
+
+            // Initialize table with headers
+            let tableHTML = `
+            <table>
+            <thead>
+            <tr>
+            <th>Style </th>
+            <th>Lengths </th>
+            <th>Distance </th>
+            <th>Time </th>
+            <th>Pace </th>
+            <th>SPM </th>
+            <th>SPL </th>
+            </tr>
+            </thead>
+            <tbody>
+            `;
+
+            // Iterate over strokes in the returned data and dynamically create rows
+            for (const stroke in grouped_data) {
+                if (grouped_data.hasOwnProperty(stroke)) {
+                    const strokeData = grouped_data[stroke];
+                    const totalMinutes = Math.floor(strokeData.total_time/60);
+                    const totalSeconds = Math.floor(strokeData.total_time % 60);
+                    const totalDistance  = strokeData.total_lengths * session_data.pool_length;
+                    const paceMinutes = Math.floor(((strokeData.total_time/(totalDistance/100))/60));
+                    const paceSeconds = Math.floor(((strokeData.total_time/(totalDistance/100)) % 60)).toString().padStart(2, '0');
+                    // Ensure avg_spm and avg_spl are numbers before applying toFixed
+                    const avg_spm = strokeData.avg_spm ? strokeData.avg_spm.toFixed(2) : '';
+                    const avg_spl = strokeData.avg_spl ? strokeData.avg_spl.toFixed(2) : '';
+
+
+                    tableHTML += `
+                    <tr class="${stroke}">
+                    <td>${stroke.charAt(0).toUpperCase() + stroke.slice(1)}</td>
+                    <td>${strokeData.total_lengths}</td>
+                    <td>${totalDistance || ''}m</td>
+                    <td>${totalMinutes || ''}:${totalSeconds || ''}</td>
+                    <td>${paceMinutes || ''}:${paceSeconds || ''}</td>
+                    <td>${avg_spm || ''}</td>
+                    <td>${avg_spl || ''}</td>
+                    </tr>
+                    `;
+                }
             }
-        });
+
+            // Add subtotal and total rows, if needed
+            tableHTML += `<tr class="total"><td>Sub
+Total</td><td>47</td><td>2350</td><td>47:53.9</td><td>2:02</td><td>26.6</td><td>27.1</td></tr><tr
+class="rest"><td>Rest</td><td></td><td></td><td>3:08.6</td><td></td><td></td><td></td></tr><tr
+class="total"><td>Total</td><td>47</td><td>2350</td><td>51:02.6</td><td></td><td></td><td></td></tr>`;
+
+            // Close the table
+            tableHTML += `</tbody></table>`;
+
+            // Insert the dynamically created table into the DOM
+            document.getElementById('summaryData').innerHTML = tableHTML;
+
+        } else {
+            console.error("/getSummaryData did not return a data object.");
+        }
+    });
 }
+
 
 function renderPacePlot(data) {
 
