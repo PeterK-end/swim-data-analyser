@@ -68,10 +68,10 @@ function renderEditPlot(data) {
 
     // Define a fixed Viridis color map for swim strokes
     const fixedStrokeColors = {
-        breaststroke: '#440154',   // Dark purple
-        freestyle: '#3b528b',     // Purple-blue
-        backstroke: '#21918c',    // Cyan-green
-        butterfly: '#5ec962',     // Green
+        breaststroke: '#A8D8EA',
+        freestyle: '#AA96DA',
+        backstroke: '#FCBAD3',
+        butterfly: '#2FFFFD2',
         // Add more strokes here with fixed values if necessary
         default: '#fde725'        // Yellow
     };
@@ -91,7 +91,7 @@ function renderEditPlot(data) {
                 // Highlight selected lengths by making the color brighter (adjust brightness for selection)
                 return selectedLabels.includes(index) ? 'rgba(255, 127, 14, 1)' : baseColor;  // Highlight with orange
             }),
-            opacity: lengthData.map((d, index) => selectedLabels.includes(index) ? 1 : 0.7),  // Full opacity if selected
+            opacity: lengthData.map((d, index) => selectedLabels.includes(index) ? 1 : 0.9),  // Full opacity if selected
             line: {
                 width: lengthData.map((d, index) => selectedLabels.includes(index) ? 2 : 1),  // Thicker border for selected
                 color: lengthData.map((d, index) => selectedLabels.includes(index) ? 'rgba(0, 0, 0, 1)' : 'rgba(0, 0, 0, 0.5)')  // Stronger border color for selected
@@ -372,10 +372,10 @@ function renderPacePlot(data) {
 
     // Define a fixed Viridis color map for swim strokes
     const fixedStrokeColors = {
-        breaststroke: '#440154',   // Dark purple
-        freestyle: '#3b528b',     // Purple-blue
-        backstroke: '#21918c',    // Cyan-green
-        butterfly: '#5ec962',     // Green
+        breaststroke: '#A8D8EA',
+        freestyle: '#AA96DA',
+        backstroke: '#FCBAD3',
+        butterfly: '#FFFFD2',
         // Add more strokes here with fixed values if necessary
         default: '#fde725'        // Yellow
     };

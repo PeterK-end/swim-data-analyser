@@ -372,15 +372,19 @@ tbody tr:hover {
 
 /* Highlight different swim styles with specific classes */
 tr.freestyle {
-    background-color: #3b528b; /* Light blue background for freestyle */
+    background-color: #AA96DA;
 }
 
 tr.backstroke {
-    background-color: #21918c; /* Light yellow background for backstroke */
+    background-color: #FCBAD3;
 }
 
 tr.breaststroke {
-    background-color: #440154; /* Light orange background for breaststroke */
+    background-color: #A8D8EA;
+}
+
+tr.butterfly {
+    background-color: #FFFFD2;
 }
 
 /* Responsive design for smaller screens */
