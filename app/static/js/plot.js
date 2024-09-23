@@ -69,7 +69,7 @@ function renderEditPlot(data) {
         breaststroke: '#A8D8EA',
         freestyle: '#AA96DA',
         backstroke: '#FCBAD3',
-        butterfly: '#2FFFFD2',
+        butterfly: '#FFFFD2',
         // Add more strokes here with fixed values if necessary
         default: '#fde725'        // Yellow
     };
