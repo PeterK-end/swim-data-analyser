@@ -1,3 +1,6 @@
+import FitParser from 'fit-file-parser';
+import {renderEditPlot} from './editView.js';
+
 // Declare 'data' as a global variable
 let data = null;
 
@@ -16,33 +19,67 @@ document.getElementById('uploadForm').addEventListener('submit', function(event)
 
     formData.append('file', file);
 
-    fetch('/upload', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(fitData => {
-        if (fitData.error) {
-            displayFlashMessage(fitData.error, 'error');
-        } else {
-            displayFlashMessage('File successfully uploaded and parsed!', 'success');
+    // New parsing logic using fit-file-parser
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        const arrayBuffer = event.target.result;
 
-            // Assign the received data to the global 'data' variable
-            data = fitData;
+        const fitParser = new FitParser({
+            force: true,
+            speedUnit: 'km/h',
+            lengthUnit: 'm',
+            temperatureUnit: 'celsius',
+            pressureUnit: 'bar',
+            elapsedRecordField: true,
+            mode: 'both',
+        });
 
-            // Assuming your new data structure has multiple blocks like 'length'
-            if (data.length) {
-                const lengthData = data.length;
-                renderEditPlot(lengthData); // Render the plot with the 'length' data block
+        fitParser.parse(arrayBuffer, function (error, parsedData) {
+            if (error) {
+                console.error('Error parsing FIT file:', error);
             } else {
-                console.error("No 'length' data found in the response");
+                sessionStorage.setItem('orginalData', JSON.stringify(parsedData));
+                sessionStorage.setItem('modifiedData', JSON.stringify(parsedData));
+
+                // const attributesToRemove = [
+                //     'zones_target',
+                //     'workout_step',
+                //     'workout',
+                //     'records',
+                //     'file_creator',
+                //     'devices',
+                //     'device_settings',
+                //     'device_infos',
+                //     'file_ids',
+                //     'events',
+                //     'user_profile',
+                //     'activity'
+                // ];
+
+                // // Create a new object with specified attributes removed
+                // const cleanedData = Object.keys(parsedData)
+                //       .filter(key => !attributesToRemove.includes(key))
+                //       .reduce((obj, key) => {
+                //           obj[key] = parsedData[key];
+                //           return obj;
+                //       }, {});
+
+                // // Create a downloadable JSON file
+                // const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cleanedData));
+                // const downloadAnchorNode = document.createElement('a');
+                // downloadAnchorNode.setAttribute("href", dataStr);
+                // downloadAnchorNode.setAttribute("download", "parsed_data.json");
+                // document.body.appendChild(downloadAnchorNode); // required for Firefox
+                // downloadAnchorNode.click();
+                // downloadAnchorNode.remove();
+
+                const lengthsData = parsedData.lengths;
+                renderEditPlot(lengthsData);
             }
-        }
-    })
-    .catch(error => {
-        console.error('Error during upload:', error);
-        displayFlashMessage('An error occurred during file upload.', 'error');
-    });
+        });
+    };
+
+    reader.readAsArrayBuffer(file); // Read the file as an ArrayBuffer
 });
 
 function displayFlashMessage(message, category) {
@@ -59,16 +96,18 @@ function displayFlashMessage(message, category) {
 
 // Fetch default data and render it when the page loads
 function loadDefaultData() {
-    fetch('/get_default_data')
-        .then(response => response.json())
-        .then(fitData => {
-            // Assign the fetched data to the global 'data' variable
-            data = fitData;
 
-            // Assuming your new data structure has multiple blocks like 'length'
-            if (data.length) {
-                const lengthData = data.length;
-                renderEditPlot(lengthData); // Render the plot with the 'length' data block
+    fetch('/getDefaultData')
+        .then(response => response.json())
+        .then(data => {
+
+            sessionStorage.setItem('originalData', JSON.stringify(data));
+            sessionStorage.setItem('modifiedData', JSON.stringify(data));
+
+            // Assuming your new data structure has multiple blocks like 'lengths'
+            if (data.lengths) {
+                const lengthData = data.lengths;
+                renderEditPlot(lengthData); // Render the plot with the 'lengths' data block
             } else {
                 console.error("No 'length' data found in the response");
             }
@@ -79,15 +118,21 @@ function loadDefaultData() {
         });
 }
 
-// Call loadDefaultData on page load if no file is uploaded
 document.addEventListener('DOMContentLoaded', function() {
-    // Check if 'data' is already available (e.g., after file upload)
-    // If not, load the default data from the backend
-    if (!data) {
+    const modifiedData = sessionStorage.getItem('modifiedData');
+
+    // Check if 'modifiedData' is null or an empty string
+    if (!modifiedData || modifiedData === 'null' || modifiedData === '') {
         // Fetch the default data if no file was uploaded
         loadDefaultData();
     } else {
         // Render the plot with the existing 'data'
-        renderEditPlot(data.length); // If data is already available (e.g., after file upload)
+        try {
+            const data = JSON.parse(modifiedData);
+            renderEditPlot(data.lengths); // Use existing data if available
+        } catch (error) {
+            console.error('Error parsing modifiedData:', error);
+            loadDefaultData(); // If parsing fails, load default data
+        }
     }
 });
