@@ -351,7 +351,7 @@ thead th {
     padding: 10px; /* Add some padding */
     font-weight: bold; /* Bold text */
     font-size: 16px; /* Increase the font size */
-    border-bottom: 2px solid var(--fourth-color); /* Bottom border */
+    border-bottom: 1px solid var(--second-color); /* Bottom border */
 }
 
 /* Style the table body */
