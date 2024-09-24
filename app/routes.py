@@ -154,52 +154,6 @@ def split():
 
     return jsonify(session['modified_data'])
 
-# @main.route('/changePoolSize', methods=['POST'])
-# def changePoolSize():
-#     label_to_splot = request.json['labels']
-
-#     # TODO: implement logic
-
-#     return jsonify(data)
-
-@main.route('/changeStroke', methods=['POST'])
-def changeStroke():
-    user_input = request.json
-    labels = user_input['labels']  # The selected labels
-    stroke = user_input['stroke']  # The selected stroke
-
-    length_data = [entry for entry in
-                   session['modified_data']['length'] if entry['event'] == 'length'
-                   and entry['length_type'] == 'active']
-
-    for length in labels:
-        length_data[length]['swim_stroke'] = stroke
-
-    session['modified_data']['length'] = length_data
-
-    return jsonify(session['modified_data'])
-
-@main.route('/deleteLength', methods=['POST'])
-def deleteLength():
-    label_to_delete = request.json['labels']
-
-    length_data = [entry for entry in
-                   session['modified_data']['length'] if entry['event'] == 'length'
-                   and entry['length_type'] == 'active']
-
-    new_data = [entry for i, entry in enumerate(length_data) if i not in label_to_delete]
-
-    session['modified_data']['length'] = new_data
-
-    return jsonify(session['modified_data'])
-
-@main.route('/undoChanges', methods=['POST'])
-def undoChanges():
-    session['modified_data'] = copy.deepcopy(session['original_data'])
-
-    return jsonify(session['modified_data'])
-
-
 @main.route('/getSummaryData', methods=['GET'])
 def getSummaryData():
     df = pd.DataFrame(session['modified_data']['length'])
