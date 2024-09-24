@@ -7,12 +7,13 @@ import fitdecode
 import flask_session
 import os
 import pandas as pd
+import json
 
 main= Blueprint('main', __name__)
 
 # Session variables
-UPLOAD_PATH = join(dirname(realpath(__file__)), 'static/upload/')
-ALLOWED_EXTENSIONS = {'fit'}
+DATA_PATH = join(dirname(realpath(__file__)), 'static/data/')
+ALLOWED_EXTENSIONS = {'json'}
 session = {}
 
 # helper
@@ -42,15 +43,21 @@ def refresh_meta():
 def index():
  return render_template('index.html')
 
-@main.route('/get_default_data')
-def get_default_data():
+@main.route('/getDefaultData', methods=['GET'])
+def getDefaultData():
+    default_file_path = os.path.join(DATA_PATH, 'example_workout.json')
 
-    default_file = os.path.join(UPLOAD_PATH, 'default_workout.fit')
-    parsed_data = parse_fit_file(default_file)
-    session['original_data'] = copy.deepcopy(parsed_data)  # Store original data
-    session['modified_data'] = copy.deepcopy(parsed_data) # Store modifiable copy of data
+    try:
+        # Open the file and load its contents as JSON
+        with open(default_file_path, 'r') as default_file:
+            data = json.load(default_file)
 
-    return jsonify(session['modified_data'])
+        # Return the JSON data to the frontend
+        return jsonify(data)
+
+    except Exception as e:
+        # Handle file not found or JSON parsing errors
+        return jsonify({'error': 'Failed to load default data', 'message': str(e)}), 500
 
 @main.route('/getCurrentData', methods=['GET'])
 def getCurrentData():
