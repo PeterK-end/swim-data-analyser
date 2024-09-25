@@ -38,7 +38,7 @@ document.getElementById('uploadForm').addEventListener('submit', function(event)
             if (error) {
                 console.error('Error parsing FIT file:', error);
             } else {
-                sessionStorage.setItem('orginalData', JSON.stringify(parsedData));
+                sessionStorage.setItem('originalData', JSON.stringify(parsedData));
                 sessionStorage.setItem('modifiedData', JSON.stringify(parsedData));
 
                 // const attributesToRemove = [

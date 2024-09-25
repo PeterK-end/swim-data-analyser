@@ -1,141 +1,155 @@
 import Plotly from 'plotly.js-basic-dist-min'
 
-// Renders all analyse plots
-document.getElementById('analyseView').addEventListener('click', function() {
-
-    fetch('/getCurrentData')
-        .then(response => response.json())
-        .then(data => {
-            if (data.length) {
-                const lengthData = data.length;
-                renderSummary();
-                renderPacePlot(lengthData); // Render the plot with the 'length' data block
-            } else {
-                console.error("No 'length' data found in the response");
-            }
-        });
-
-});
-
 export function renderSummary() {
-    fetch('/getSummaryData')
-    .then(response => response.json())
-    .then(data => {
-        if (data) {
-            console.log("Grouped Data:", data);
-            const grouped_data = data[0]; // Swim stroke data
-            const session_data = data[1]['session'][0];
-            const length_data = data[1]['length']
+    // Retrieve the modified data from session storage
+    const data = JSON.parse(sessionStorage.getItem('modifiedData'));
+    const lengthData = data.lengths;
+    const activeLengths = data.lengths.filter(d => d.event === 'length' && d.length_type === 'active');
+    const sessionData = data.sessions[0];
+    const grouped_data = {};
 
-            // Initialize table with headers
-            let tableHTML = `
-            <table>
-            <thead>
-            <tr>
-            <th>Style </th>
-            <th>Lengths </th>
-            <th>Distance </th>
-            <th>Time </th>
-            <th>Pace </th>
-            <th>SPM </th>
-            <th>SPL </th>
-            </tr>
-            </thead>
-            <tbody>
-            `;
+    // Group data by swim stroke and calculate required metrics
+    activeLengths.forEach(entry => {
+        const stroke = entry.swim_stroke;
 
-            // Variables to accumulate subtotal values
-            let totalLengths = 0;
-            let totalDistance = 0;
-            let totalTime = 0;
-            let totalSPM = 0;
-            let totalSPL = 0;
-            let strokeCount = 0;  // To calculate average for SPM and SPL
-
-            // Iterate over strokes in the returned data and dynamically create rows
-            for (const stroke in grouped_data) {
-                if (grouped_data.hasOwnProperty(stroke)) {
-                    const strokeData = grouped_data[stroke];
-                    const totalMinutes = Math.floor(strokeData.total_time / 60);
-                    const totalSeconds = Math.floor(strokeData.total_time % 60).toString().padStart(2, '0');
-                    const distance = strokeData.total_lengths * session_data.pool_length;
-                    const paceMinutes = Math.floor(((strokeData.total_time / (distance / 100)) / 60));
-                    const paceSeconds = Math.floor(((strokeData.total_time / (distance / 100)) % 60)).toString().padStart(2, '0');
-
-                    // Ensure avg_spm and avg_spl are numbers before applying toFixed
-                    const avg_spm = strokeData.avg_spm ? strokeData.avg_spm.toFixed(2) : '';
-                    const avg_spl = strokeData.avg_spl ? strokeData.avg_spl.toFixed(2) : '';
-
-                    // Accumulate totals
-                    totalLengths += strokeData.total_lengths;
-                    totalDistance += distance;
-                    totalTime += strokeData.total_time;
-                    totalSPM += parseFloat(avg_spm) || 0;  // Convert to number
-                    totalSPL += parseFloat(avg_spl) || 0;
-                    strokeCount++;
-
-                    // Add row for this stroke
-                    tableHTML += `
-                    <tr class="${stroke}">
-                    <td>${stroke.charAt(0).toUpperCase() + stroke.slice(1)}</td>
-                    <td>${strokeData.total_lengths}</td>
-                    <td>${distance || ''}m</td>
-                    <td>${totalMinutes || ''}:${totalSeconds || ''}</td>
-                    <td>${paceMinutes || ''}:${paceSeconds || ''}</td>
-                    <td>${avg_spm || ''}</td>
-                    <td>${avg_spl || ''}</td>
-                    </tr>
-                    `;
-                }
-            }
-
-            // Calculate subtotals for SPM and SPL (averages)
-            const avgSPMSubtotal = (totalSPM / strokeCount).toFixed(2);
-            const avgSPLSubtotal = (totalSPL / strokeCount).toFixed(2);
-
-            // numbers.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
-            const totalRest = length_data
-                  .filter(d => d.length_type === 'idle') // filter the data for 'idle' lengths
-                  .map(d => d.total_elapsed_time)        // extract the total_elapsed_time values into a new array
-                  .reduce((acc, curr) => acc + curr, 0); // sum the values using reduce
-            const totalRestMinutes = Math.floor(totalRest / 60);
-            const totalRestSeconds = Math.floor(totalRest % 60).toString().padStart(2, '0');
-
-            const totalActiveMinutes = Math.floor(totalTime / 60);
-            const totalActiveSeconds = Math.floor(totalTime % 60).toString().padStart(2, '0');
-
-            const totalMinutes = Math.floor((totalTime + totalRest) / 60);
-            const totalSeconds = Math.floor((totalTime + totalRest) % 60).toString().padStart(2, '0');
-
-            tableHTML += `
-            <tr class="subTotal"><td>Sub Total</td><td></td><td></td><td>${totalActiveMinutes}:${totalActiveSeconds}</td><td></td><td></td><td></td></tr>
-            <tr class="rest"><td>Rest</td><td></td><td></td><td>${totalRestMinutes}:${totalRestSeconds}</td><td></td><td></td><td></td></tr>
-            `;
-
-            // Add subtotal row
-            tableHTML += `
-            <tr class="total">
-            <td>Total</td>
-            <td>${totalLengths}</td>
-            <td>${totalDistance}m</td>
-            <td>${totalMinutes}:${totalSeconds}</td>
-            <td></td>
-            <td>${avgSPMSubtotal}</td>
-            <td>${avgSPLSubtotal}</td>
-            </tr>
-            `;
-
-
-            // Close the table
-            tableHTML += `</tbody></table>`;
-
-            // Insert the dynamically created table into the DOM
-            document.getElementById('summaryData').innerHTML = tableHTML;
-
-        } else {
-            console.error("/getSummaryData did not return a data object.");
+        // Initialize if stroke group doesn't exist
+        if (!grouped_data[stroke]) {
+            grouped_data[stroke] = {
+                total_lengths: 0,
+                total_time: 0,
+                total_strokes: 0,
+                avg_spl: 0,
+                avg_spm: 0,
+            };
         }
+
+        // Update totals for the stroke
+        grouped_data[stroke].total_lengths++;
+        grouped_data[stroke].total_time += entry.total_elapsed_time;
+        grouped_data[stroke].total_strokes += entry.total_strokes;
+        grouped_data[stroke].avg_spm += entry.avg_swimming_cadence || 0; // Handle undefined gracefully
     });
+
+    // Calculate averages for SPM and SPL
+    for (const stroke in grouped_data) {
+        const strokeData = grouped_data[stroke];
+        strokeData.avg_spl = (strokeData.total_strokes > 0) ? strokeData.total_strokes / strokeData.total_lengths : 0;
+        strokeData.avg_spm = (strokeData.total_lengths > 0) ? (strokeData.avg_spm / strokeData.total_lengths) : 0;
+    }
+
+    // Initialize table with headers
+    let tableHTML = `
+    <table>
+    <thead>
+    <tr>
+    <th>Style</th>
+    <th>Lengths</th>
+    <th>Distance</th>
+    <th>Time</th>
+    <th>Pace</th>
+    <th>SPM</th>
+    <th>SPL</th>
+    </tr>
+    </thead>
+    <tbody>
+    `;
+
+    // Variables to accumulate subtotal values
+    let totalLengths = 0;
+    let totalDistance = 0;
+    let totalTime = 0;
+    let totalSPM = 0;
+    let totalSPL = 0;
+    let strokeCount = 0; // To calculate average for SPM and SPL
+
+    // Iterate over the grouped data and create rows
+    for (const stroke in grouped_data) {
+        if (grouped_data.hasOwnProperty(stroke)) {
+
+            const strokeData = grouped_data[stroke];
+            const totalMinutes = Math.floor(strokeData.total_time / 60);
+            const totalSeconds = Math.floor(strokeData.total_time % 60).toString().padStart(2, '0');
+            const distance = strokeData.total_lengths * sessionData.pool_length; // Assuming pool_length is in session data
+            const paceMinutes = (distance > 0) ? Math.floor(((strokeData.total_time / (distance / 100)) / 60)) : 0;
+            const paceSeconds = (distance > 0) ? Math.floor(((strokeData.total_time / (distance / 100)) % 60)).toString().padStart(2, '0') : '00';
+
+            // Accumulate totals
+            totalLengths += strokeData.total_lengths;
+            totalDistance += distance;
+            totalTime += strokeData.total_time;
+            totalSPM += strokeData.avg_spm;
+            totalSPL += strokeData.avg_spl;
+            strokeCount++;
+
+            // Add row for this stroke
+            tableHTML += `
+            <tr class="${stroke}">
+            <td>${stroke.charAt(0).toUpperCase() + stroke.slice(1)}</td>
+            <td>${strokeData.total_lengths}</td>
+            <td>${distance}m</td>
+            <td>${totalMinutes}:${totalSeconds}</td>
+            <td>${paceMinutes}:${paceSeconds}</td>
+            <td>${strokeData.avg_spm.toFixed(2)}</td>
+            <td>${strokeData.avg_spl.toFixed(2)}</td>
+            </tr>
+            `;
+        }
+    }
+
+    // Calculate total time, distance, and averages for SPM and SPL
+    const totalRest = lengthData
+        .filter(d => d.length_type === 'idle') // Filter the data for 'idle' lengths
+        .reduce((acc, curr) => acc + curr.total_elapsed_time , 0); // Sum the values
+
+    const totalRestMinutes = Math.floor(totalRest / 60);
+    const totalRestSeconds = Math.floor(totalRest % 60).toString().padStart(2, '0');
+
+    const totalActiveMinutes = Math.floor(totalTime / 60);
+    const totalActiveSeconds = Math.floor(totalTime % 60).toString().padStart(2, '0');
+
+    const overallTotalMinutes = Math.floor((totalTime + totalRest) / 60);
+    const overallTotalSeconds = Math.floor((totalTime + totalRest) % 60).toString().padStart(2, '0');
+
+    // Add subtotal row
+    tableHTML += `
+    <tr class="subTotal">
+        <td>Sub Total</td>
+        <td>${totalLengths}</td>
+        <td>${totalDistance}m</td>
+        <td>${totalActiveMinutes}:${totalActiveSeconds}</td>
+        <td></td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr class="rest">
+        <td>Rest</td>
+        <td></td>
+        <td></td>
+        <td>${totalRestMinutes}:${totalRestSeconds}</td>
+        <td></td>
+        <td></td>
+        <td></td>
+    </tr>
+    `;
+
+    // Add total row
+    tableHTML += `
+    <tr class="total">
+        <td>Total</td>
+        <td>${totalLengths}</td>
+        <td>${totalDistance}m</td>
+        <td>${overallTotalMinutes}:${overallTotalSeconds}</td>
+        <td></td>
+        <td>${(strokeCount > 0) ? (totalSPM / strokeCount).toFixed(2) : '0.00'}</td>
+        <td>${(strokeCount > 0) ? (totalSPL / strokeCount).toFixed(2) : '0.00'}</td>
+    </tr>
+    `;
+
+    // Close the table
+    tableHTML += `</tbody></table>`;
+
+    // Insert the dynamically created table into the DOM
+    document.getElementById('summaryData').innerHTML = tableHTML;
 }
 
 export function renderPacePlot(data) {

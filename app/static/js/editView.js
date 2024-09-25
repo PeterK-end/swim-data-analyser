@@ -1,26 +1,58 @@
 import Plotly from 'plotly.js-basic-dist-min'
 
-// static/js/plot.js
 let selectedLabels = [];
 
+// Utility function to sum specific attributes of objects in an array
+function sumAttribute(attribute, entries) {
+    return entries.reduce((total, entry) => total + (entry[attribute] || 0), 0);
+}
+
 export function loadMeta() {
-
     const data = JSON.parse(sessionStorage.getItem('modifiedData'));
-    const metadata = data.sessions[0];
 
+    if (!data || !data.lengths || !data.sessions) {
+        console.error("No 'modifiedData' found in sessionStorage.");
+        return;
+    }
+
+    const lengths = data.lengths;
+    const sessionData = data.sessions[0];
+
+    // Filter active lengths
+    const activeLengths = lengths.filter(entry => entry.event === 'length' && entry.length_type === 'active');
+
+    // Recalculate session metadata
+    sessionData.total_elapsed_time = lengths.reduce((acc, entry) => acc + entry.total_elapsed_time, 0);
+    sessionData.total_distance = activeLengths.length * sessionData.pool_length; // Total distance is based on pool length and active lengths
+    sessionData.total_strokes = lengths.reduce((acc, entry) => {
+        const strokes = entry.total_strokes || 0; // Fallback to 0 if total_strokes is undefined or null
+        return acc + strokes;
+    }, 0);
+    sessionData.num_active_lengths = activeLengths.length;
+
+    // Save the updated data back to sessionStorage
+    sessionStorage.setItem('modifiedData', JSON.stringify(data));
+
+    // Extract metadata for display
+    const metadata = sessionData;
+
+    // Format date and time
     const date = new Date(metadata.timestamp);
-    // Format date based on local timezone (YYYY-MM-DD format)
     const day = date.toLocaleDateString('en-CA'); // 'en-CA' forces YYYY-MM-DD format
     const daytime = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
-    const totalMinutes = Math.floor(metadata.total_elapsed_time/60);
+    // Calculate total time in minutes and seconds
+    const totalMinutes = Math.floor(metadata.total_elapsed_time / 60);
     const totalSeconds = Math.floor(metadata.total_elapsed_time % 60);
 
-    const paceMinutes = Math.floor(((metadata.total_elapsed_time/(metadata.total_distance/100))/60));
-    const paceSeconds = Math.floor(((metadata.total_elapsed_time/(metadata.total_distance/100)) % 60)).toString().padStart(2, '0');
+    // Calculate average pace per 100 meters
+    const paceMinutes = Math.floor((metadata.total_elapsed_time / (metadata.total_distance / 100)) / 60);
+    const paceSeconds = Math.floor((metadata.total_elapsed_time / (metadata.total_distance / 100)) % 60).toString().padStart(2, '0');
 
+    // Calculate average strokes per active length
+    const avgStrokesPerLength = Math.floor(metadata.total_strokes / sessionData.num_active_lengths);
 
-    // Update the content dynamically with fetched metadata
+    // Update the content dynamically with recalculated metadata
     document.getElementById('metadata-container').innerHTML = `
     <div class="metadata-flex">
     <div class="metadata-box">
@@ -45,7 +77,7 @@ export function loadMeta() {
     </div>
     <div class="metadata-box">
       <strong>Avg. Strokes:</strong>
-      <span id="avgStrokes">${Math.floor(metadata.total_cycles/metadata.num_active_lengths)}/length</span>
+      <span id="avgStrokes">${avgStrokesPerLength}/length</span>
     </div>
   </div>
 `;
@@ -133,57 +165,155 @@ export function renderEditPlot(data) {
     });
 }
 
-/*Edit Buttons Listener*/
+// Edit Buttons Listener for Merge
 document.getElementById('mergeBtn').addEventListener('click', function() {
+
+    // check selected Label condition
     if (selectedLabels.length < 2) {
         alert("Select at least two bars to merge.");
         return;
     }
 
-    fetch('/merge', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ labels: selectedLabels })
-    })
-        .then(response => response.json())
-        .then(data => {
-            selectedLabels = [];
-            if (data.length) {
-                const lengthData = data.length;
-                renderEditPlot(lengthData); // Render the plot with the 'length' data block
-            } else {
-                console.error("No 'length' data found in the response");
-            }
-        });
+    // sort the labels to slice them later
+    selectedLabels.sort();
+
+    // Get modified data from sessionStorage
+    const modifiedData = JSON.parse(sessionStorage.getItem('modifiedData'));
+
+    if (!modifiedData || !modifiedData.lengths) {
+        console.error("No 'modifiedData' found in sessionStorage.");
+        return;
+    }
+
+    // Extract the lengths of type 'active' that will be merged based on message_index.value
+    const lengthsToMerge = modifiedData.lengths.filter(entry =>
+        selectedLabels.includes(entry.message_index.value)
+    );
+
+    if (lengthsToMerge.length < 2) {
+        console.error("Selected labels do not match enough lengths for merging.");
+        return;
+    }
+
+    // Create a new merged entry based on selected lengths
+    const newEntry = {
+        timestamp: lengthsToMerge[0].timestamp,
+        start_time: lengthsToMerge[0].start_time,
+        total_elapsed_time: sumAttribute('total_elapsed_time', lengthsToMerge),
+        total_timer_time: sumAttribute('total_timer_time', lengthsToMerge),
+        message_index: { value: Math.min(...lengthsToMerge.map(entry => entry.message_index.value)) },
+        total_strokes: sumAttribute('total_strokes', lengthsToMerge),
+        avg_speed: sumAttribute('avg_speed', lengthsToMerge) / lengthsToMerge.length,
+        total_calories: sumAttribute('total_calories', lengthsToMerge),
+        event: lengthsToMerge[0].event,
+        event_type: lengthsToMerge[0].event_type,
+        swim_stroke: lengthsToMerge[0].swim_stroke,
+        avg_swimming_cadence: sumAttribute('avg_swimming_cadence', lengthsToMerge) / lengthsToMerge.length,
+        event_group: null,
+        length_type: lengthsToMerge[0].length_type
+    };
+
+    // Filter out the merged lengths from the data based on message_index.value
+    const remainingLengths = modifiedData.lengths.filter(entry =>
+        // keep the first entry to replace it later with merged version
+        !selectedLabels.slice(1).includes(entry.message_index.value)
+    );
+
+    console.log("remaining Lengths before insert:", remainingLengths);
+
+    // Insert the new merged entry into the correct position
+    const minIndex = Math.min(...selectedLabels);
+    // first of the provided indices, the length that will be substituted with the merged one
+    const firstIndexLength = remainingLengths.findIndex(entry =>
+        entry.message_index.value === minIndex
+    );
+
+    if (firstIndexLength === -1) {
+        console.error("First index length for insertion not found.");
+        return;
+    }
+
+    // insert merged length
+    remainingLengths.splice(firstIndexLength, 1, newEntry);
+
+    // Update the sessionStorage with the new merged data
+    modifiedData.lengths = remainingLengths;
+
+    sessionStorage.setItem('modifiedData', JSON.stringify(modifiedData));
+
+    // Clear selected labels after merging
+    selectedLabels = [];
+
+    // Re-render the plot with updated data
+    renderEditPlot(modifiedData.lengths);
 });
 
 document.getElementById('splitBtn').addEventListener('click', function() {
-
-    if (selectedLabels.length > 1) {
+    if (selectedLabels.length !== 1) {
         alert("Select a single length to be split.");
         return;
     }
 
-    fetch('/split', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ labels: selectedLabels })
-    })
-        .then(response => response.json())
-        .then(data => {
-            selectedLabels = [];
-            if (data.length) {
-                const lengthData = data.length;
-                renderEditPlot(lengthData); // Render the plot with the 'length' data block
-            } else {
-                console.error("No 'length' data found in the response");
-            }
-        });
+    // Get modified data from sessionStorage
+    const modifiedData = JSON.parse(sessionStorage.getItem('modifiedData'));
 
+    if (!modifiedData || !modifiedData.lengths) {
+        console.error("No 'modifiedData' found in sessionStorage.");
+        return;
+    }
+
+    // Find the length that matches the selected label (using message_index.value)
+    const labelToSplit = selectedLabels[0];
+    const lengthToSplitIndex = modifiedData.lengths.findIndex(entry =>
+        entry.message_index.value === labelToSplit
+    );
+
+    if (lengthToSplitIndex === -1) {
+        console.error("Selected label not found in lengths.");
+        return;
+    }
+
+    // Get the entry to be split
+    const entryToSplit = modifiedData.lengths[lengthToSplitIndex];
+
+    // Find the highest existing message_index in the current data
+    const highestMessageIndex = Math.max(...modifiedData.lengths.map(entry => entry.message_index.value));
+
+    // Create the first split entry (split the time, strokes, and other attributes as needed)
+    const splitEntry = {
+        timestamp: entryToSplit.timestamp,
+        start_time: entryToSplit.start_time,
+        total_elapsed_time: entryToSplit.total_elapsed_time / 2,
+        total_timer_time: entryToSplit.total_timer_time / 2,
+        message_index: { value: entryToSplit.message_index.value },
+        total_strokes: entryToSplit.total_strokes / 2,
+        avg_speed: entryToSplit.avg_speed,
+        total_calories: entryToSplit.total_calories / 2, // Split calories evenly
+        event: entryToSplit.event,
+        event_type: entryToSplit.event_type,
+        swim_stroke: entryToSplit.swim_stroke,
+        avg_swimming_cadence: entryToSplit.avg_swimming_cadence,
+        event_group: null,  // Reset to None
+        length_type: entryToSplit.length_type
+    };
+
+    // Create the second split entry (same attributes as splitEntry but with updated message_index)
+    const secondSplitEntry = {
+        ...splitEntry,  // Copy from the first split entry
+        message_index: { value: highestMessageIndex + 1 } // Increment message_index.value
+    };
+
+    // Insert the split entries in place of the original
+    modifiedData.lengths.splice(lengthToSplitIndex, 1, splitEntry, secondSplitEntry);
+
+    // Update sessionStorage with modified data
+    sessionStorage.setItem('modifiedData', JSON.stringify(modifiedData));
+
+    // Clear selected labels after splitting
+    selectedLabels = [];
+
+    // Re-render the plot with updated data
+    renderEditPlot(modifiedData.lengths);
 });
 
 // document.getElementById('poolSizeBtn').addEventListener('click', function() {
@@ -228,7 +358,6 @@ document.getElementById('confirmStroke').addEventListener('click', function() {
         console.error("No 'modifiedData' found in sessionStorage.");
         return;
     }
-    console.log("Selected Lengths:", selectedLabels);
 
     // Update swim_stroke for lengths where message_index is in selectedLabels
     modifiedData.lengths = modifiedData.lengths.map(entry => {
@@ -265,11 +394,8 @@ document.getElementById('deleteBtn').addEventListener('click', function() {
     // Get the current modified data from sessionStorage
     const modifiedData = JSON.parse(sessionStorage.getItem('modifiedData'));
 
-    console.log("selecteLabels:", selectedLabels);
-    console.log("Full Data:", modifiedData.lengths);
     // Filter to only keep the 'length' entries where the messageIndex.value is not in selectedLabels
     const newLengthData = modifiedData.lengths.filter(entry => !selectedLabels.includes(entry.message_index.value));
-    console.log("Data with deleted Data:", newLengthData);
 
     // Update the modified data with the new length data
     modifiedData.lengths = newLengthData;
@@ -280,7 +406,6 @@ document.getElementById('deleteBtn').addEventListener('click', function() {
 
     // Render the updated plot
     renderEditPlot(newLengthData);
-    console.log("Selected lengths deleted successfully.");
 });
 
 document.getElementById('undoBtn').addEventListener('click', function() {
