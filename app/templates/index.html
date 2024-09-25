@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Swim Data Analyser</title>
     <link rel="stylesheet" href="/static/css/styles.css">
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   </head>
   <body>
     <!-- Top bar -->
@@ -129,13 +128,23 @@
 
 	<!-- Hidden by default (Analyse content) -->
 	<div id="analyseContent" style="display: none;">
-          <h2>Data Analyser</h2>
 
-	  <p>This is the content for analysing your data.</p>
+          <h2>Workout Summary per Stroke</h2>
+
+          <p>Stroke per Minute, Strokes per Length and accordingly the pace most likely variies accross your Strokes.</p>
 
             <div class="summary-container">
               <div id="summaryData"></div>
             </div>
+
+            <h2>Strokerate Pace Relationship</h2>
+
+           <p>Increased Stroke Rate leads to a certain degree to
+           increased Speed in the Water. Also improving the swimming
+           technique to perform more efficient Strokes will increase
+           the speed in the Water. The plot demonstrate how Strokes
+           per length and the Stroke Rate (Strokes per Minute)
+           corresponds to pace acomplished withine a lane.</p>
 
             <div class="plot-container">
               <div id="pacePlot"></div>
@@ -143,9 +152,8 @@
 	</div>
       </div>
 
-      <script src="/static/js/upload.js"></script>
-      <script src="/static/js/plot.js"></script>
-      <script src="/static/js/view-switcher.js"></script>
+      <script src="/static/js/dist/main.js"></script>
+
     </div> <!-- End of main-content -->
   </body>
   <footer><p><small>The content for this site is <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC-BY-SA</a> licensed. Check the <a href="https://github.com/PeterK-end/swim-data-analyser">source code</a>.</small></p></footer>

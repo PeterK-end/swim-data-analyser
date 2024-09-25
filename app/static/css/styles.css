@@ -67,11 +67,11 @@ h1 {
     color: var(--fourth-color);
 }
 
-h2, p {
+p, h2, h3, h4 {
     text-align: left;  /* Centers the text horizontally */
     margin: 0 auto;      /* Center elements with automatic margin */
     max-width: 800px;    /* Optional: limits the width of the content */
-    padding-top: 20px;   /* Adds some space at the top */
+    padding: 20px 20px 0px 20px;   /* Adds some space at the top */
 }
 
 /* Style for the view selector container */
@@ -122,10 +122,15 @@ h2, p {
 }
 
 /*redefine witdh for viewContext box*/
-#viewContent p, h2 {
+#viewContent p {
     max-width: 100%; /* Example text alignment */
-    padding: 20px 20px 0px 20px;
+    padding: 10px 20px 0px 20px;
 }
+
+#viewContent h2, h3, h4 {
+    max-width: 100%;
+}
+
 
 /* Border around the Edit content */
 #editContent {
@@ -238,16 +243,39 @@ h2, p {
     position: relative; /* Required for centering vertically */
 }
 
+/* Ensure label is properly styled */
 .upload-container label {
     display: block;
     margin-bottom: 10px; /* Space between label and input */
     font-weight: bold;
 }
 
+/* Use flexbox for the form to keep elements in a row */
+.upload-container form {
+    display: flex; /* Enable flexbox */
+    align-items: center; /* Center items vertically */
+}
+
+/* Style for file input */
 .upload-container input[type="file"] {
     border: 2px solid var(--second-color); /* Border color */
     border-radius: 5px;
     background-color: #ffffff; /* White background for the file input */
+    margin-right: 10px; /* Space between file input and button */
+    flex: 1; /* Allow input to grow */
+}
+
+/* Style for the submit button */
+.upload-container button {
+    padding: 5px 10px; /* Add padding for the button */
+    border: 0.8px solid black; /* Remove border */
+    border-radius: 5px; /* Match the border radius */
+    cursor: pointer; /* Change cursor on hover */
+}
+
+/* Optional: Button hover effect */
+.upload-container button:hover {
+    background-color: darken(var(--second-color), 10%); /* Darken on hover */
 }
 
 footer {
@@ -339,7 +367,7 @@ footer {
 /* Center the table and style it */
 table {
     width: 80%; /* Adjust the width of the table */
-    margin: 20px auto; /* Center the table horizontally */
+    margin: 0 auto;
     border-collapse: collapse; /* Ensure borders are collapsed */
     text-align: center; /* Center text inside table cells */
     border: 2px solid var(--third-color); /* Border around the table */
@@ -351,7 +379,7 @@ thead th {
     padding: 10px; /* Add some padding */
     font-weight: bold; /* Bold text */
     font-size: 16px; /* Increase the font size */
-    border-bottom: 2px solid var(--fourth-color); /* Bottom border */
+    border-bottom: 1px solid var(--second-color); /* Bottom border */
 }
 
 /* Style the table body */
