@@ -152,17 +152,18 @@ export function renderSummary() {
     document.getElementById('summaryData').innerHTML = tableHTML;
 }
 
+function formatPace(seconds, poolLengthMultiplier) {
+    const secPer100 = seconds * poolLengthMultiplier;
+    const minutes = Math.floor(secPer100 / 60);
+    const secs = Math.floor(secPer100 % 60);
+    return `${minutes}:${secs.toString().padStart(2, '0')}`; // Ensure seconds are two digits
+}
+
 export function renderPacePlot(data) {
 
     // Filter data to include only entries where event is 'length' and length_type is 'active'
-    const lengthData = data.filter(d => d.event === 'length' && d.length_type === 'active');
-    // const time = lengthData.total_elapsed_time
-    // const distance = lengthData.total_distance
-    // const poolLength =
-
-    // const paceMinutes = Math.floor(((/(/))/60));
-    // const paceSeconds = Math.floor(((lengthData.total_elapsed_time/(lengthData.total_distance/)) % 60)).toString().padStart(2, '0');
-
+    const lengthData = data.lengths.filter(d => d.event === 'length' && d.length_type === 'active');
+    const poolLengthMultiplier = 100/data.sessions[0].pool_length;
 
     // Define a fixed Viridis color map for swim strokes
     const fixedStrokeColors = {
@@ -177,10 +178,12 @@ export function renderPacePlot(data) {
     // Create paceData with stroke-based colors for the bars
     const paceData = {
         x: lengthData.map((d, index) => index + 1),  // X-axis as the length index
-        y: lengthData.map(d => ((d.total_elapsed_time * 2) / 60) || 0),  // Pace in minutes per 100m
+        y: lengthData.map(d => ((d.total_elapsed_time * poolLengthMultiplier) / 60) || 0),  // Pace in minutes per 100m
         name: '',
         type: 'bar',
-        text: lengthData.map(d => `Stroke: ${d.swim_stroke || 'Unknown'}<br>Pace: ${((d.total_elapsed_time * 2) / 60)}`),  // Hover text
+        text: lengthData.map(d => `Stroke: ${d.swim_stroke || 'Unknown'}<br>Pace:
+${formatPace(d.total_elapsed_time, poolLengthMultiplier)}<br>SPM:
+${d.avg_swimming_cadence}<br>SPL: ${d.total_strokes}`),  // Hover text
         hoverinfo: 'text',
         textposition: 'none', // Prevent the text from being shown on the bars
         marker: {
@@ -217,12 +220,13 @@ export function renderPacePlot(data) {
             t: 0,   // Top margin
             b: 50   // Bottom margin
         },
-        xaxis: {title: 'Length Index'},
+        xaxis: {title: 'Length'},
         yaxis: {
             title: 'Pace (min/100m)',
             titlefont: { color: 'black' },
             tickfont: { color: 'black' },
-            autorange: 'reversed'
+            autorange: 'reversed',
+            showticklabels: false
         },
         yaxis2: {
             title: 'Total Strokes',  // Second Y-axis for total strokes
