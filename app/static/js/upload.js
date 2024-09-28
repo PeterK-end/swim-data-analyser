@@ -4,7 +4,13 @@ import {renderEditPlot} from './editView.js';
 // Declare 'data' as a global variable
 let data = null;
 
-// Handle the form submission for file upload
+// Function to check if the parsed data represents a pool swimming workout
+function isPoolSwimming(parsedData) {
+    // Check if the sport is swimming and if there is pool length data
+    console.log("Parsed Data:", parsedData);
+    return parsedData.sports[0].sport === 'swimming' && parsedData.sports[0].sub_sport === 'lap_swimming';
+}
+
 document.getElementById('uploadForm').addEventListener('submit', function(event) {
     event.preventDefault(); // Prevent the default form submission
 
@@ -17,12 +23,38 @@ document.getElementById('uploadForm').addEventListener('submit', function(event)
         return;
     }
 
+    // Check for valid file extension
+    const validExtensions = ['.fit'];
+    const fileExtension = file.name.slice((file.name.lastIndexOf(".") - 1 >>> 0) + 2).toLowerCase();
+
+    if (!validExtensions.includes(`.${fileExtension}`)) {
+        displayFlashMessage('Invalid file type. Please upload a .fit file.', 'error');
+        return;
+    }
+
     formData.append('file', file);
 
     // New parsing logic using fit-file-parser
     const reader = new FileReader();
+
     reader.onload = function(event) {
         const arrayBuffer = event.target.result;
+
+        // Validate FIT file header before parsing
+        const headerView = new DataView(arrayBuffer, 0, 14); // Read the first 14 bytes
+        const headerSize = headerView.getUint8(0);
+        const fileSignature = String.fromCharCode(
+            headerView.getUint8(8),
+            headerView.getUint8(9),
+            headerView.getUint8(10),
+            headerView.getUint8(11)
+        );
+
+        // Check if the header is correct
+        if (headerSize !== 14 || fileSignature !== '.FIT') {
+            displayFlashMessage('Invalid FIT file header. Please upload a valid .fit file.', 'error');
+            return; // Stop further processing
+        }
 
         const fitParser = new FitParser({
             force: true,
@@ -35,46 +67,21 @@ document.getElementById('uploadForm').addEventListener('submit', function(event)
         });
 
         fitParser.parse(arrayBuffer, function (error, parsedData) {
-            if (error) {
+            if (error || !parsedData) {
                 console.error('Error parsing FIT file:', error);
+                displayFlashMessage('Error parsing FIT file.', 'error');
+                return;
             } else {
-                sessionStorage.setItem('originalData', JSON.stringify(parsedData));
-                sessionStorage.setItem('modifiedData', JSON.stringify(parsedData));
-
-                // const attributesToRemove = [
-                //     'zones_target',
-                //     'workout_step',
-                //     'workout',
-                //     'records',
-                //     'file_creator',
-                //     'devices',
-                //     'device_settings',
-                //     'device_infos',
-                //     'file_ids',
-                //     'events',
-                //     'user_profile',
-                //     'activity'
-                // ];
-
-                // // Create a new object with specified attributes removed
-                // const cleanedData = Object.keys(parsedData)
-                //       .filter(key => !attributesToRemove.includes(key))
-                //       .reduce((obj, key) => {
-                //           obj[key] = parsedData[key];
-                //           return obj;
-                //       }, {});
-
-                // // Create a downloadable JSON file
-                // const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cleanedData));
-                // const downloadAnchorNode = document.createElement('a');
-                // downloadAnchorNode.setAttribute("href", dataStr);
-                // downloadAnchorNode.setAttribute("download", "parsed_data.json");
-                // document.body.appendChild(downloadAnchorNode); // required for Firefox
-                // downloadAnchorNode.click();
-                // downloadAnchorNode.remove();
-
-                const lengthsData = parsedData.lengths;
-                renderEditPlot(lengthsData);
+                // Check if the workout is pool swimming
+                if (isPoolSwimming(parsedData)) {
+                    displayFlashMessage('File successfully parsed.', 'success');
+                    sessionStorage.setItem('originalData', JSON.stringify(parsedData));
+                    sessionStorage.setItem('modifiedData', JSON.stringify(parsedData));
+                    const lengthsData = parsedData.lengths;
+                    renderEditPlot(lengthsData);
+                } else {
+                    displayFlashMessage('The uploaded file is not a pool swimming workout.', 'error');
+                }
             }
         });
     };
