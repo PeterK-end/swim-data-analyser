@@ -76,7 +76,7 @@ export function loadMeta() {
       <span id="avgPace">${paceMinutes}:${paceSeconds}min/100m</span>
     </div>
     <div class="metadata-box">
-      <strong>Avg. Strokes:</strong>
+      <strong>Avg. SPL:</strong>
       <span id="avgStrokes">${avgStrokesPerLength}/length</span>
     </div>
   </div>
