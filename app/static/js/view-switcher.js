@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', function () {
             analyseView.classList.add('highlighted');
             editView.classList.remove('highlighted');
 
-            const data = JSON.parse(sessionStorage.getItem('modifiedData')).lengths;
+            const data = JSON.parse(sessionStorage.getItem('modifiedData'));
             AnalyseView.renderSummary();
             AnalyseView.renderPacePlot(data);
         }
