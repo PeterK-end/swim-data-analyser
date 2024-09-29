@@ -124,6 +124,7 @@ p, h2, h3, h4 {
 /*redefine witdh for viewContext box*/
 #viewContent p {
     max-width: 100%; /* Example text alignment */
+    font-size: 0.8rem;
     padding: 10px 20px 0px 20px;
 }
 
@@ -153,21 +154,17 @@ p, h2, h3, h4 {
 }
 
 /* Container for the plot and buttons */
-.plot-container {
-    border-radius: 8px; /* Rounded corners */
+.plot-object-container {
     margin: 20px; /* Margin around the container */
-    width:auto;
+    border: 1px solid black;
 }
 
-/* Plot takes up full width, with some margin below it */
-.plot-container #editDataPlot {
-    width: 100%; /* Ensure the plot takes up the full width */
-    height: 400px; /* Set a fixed height for the plot */
-    margin-bottom: 10px; /* Space below the plot */
+#editPlot {
+    border: 0px;
 }
 
 /* Style the buttons */
-.plot-container .button-container {
+.plot-object-container .button-container {
     display: flex; /* Flexbox layout for buttons */
     justify-content: flex-start; /* Align buttons to the left */
     gap: 10px; /* Space between buttons */
@@ -199,11 +196,11 @@ p, h2, h3, h4 {
     margin: auto; /* Center SVG within the button */
 }
 
-.plot-container .icon-btn:hover {
+.plot-object-container .icon-btn:hover {
     background-color: var(--second-color); /* Change button background on hover */
 }
 
-.plot-container .icon-btn:hover svg {
+.plot-object-container .icon-btn:hover svg {
     fill: var(--third-color); /* Change icon color on hover */
 }
 
