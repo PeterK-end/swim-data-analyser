@@ -123,7 +123,7 @@
             </div>
 	    <div id="editDataPlot"></div>
           </div>
-          <p>Select the bars on which one of the editing options should be performed.</p>
+          <p>Select the bars on which one of the editing actions should be performed.</p>
 	</div>
 
 	<!-- Hidden by default (Analyse content) -->
@@ -132,28 +132,55 @@
           <h2>Workout Summary per Stroke</h2>
 
           <p>Stroke rate per minute, strokes per length, and
-          consequently, the pace likely varies across the different
-          strokes. Additionally, the stroke rate (SPM) might have a
-          different impact on the pace for the various swimming
-          strokes.</p>
+            consequently, the pace likely varies across the different
+            strokes. Additionally, the stroke rate (SPM) might have a
+            different impact on the pace for the various swimming
+            strokes.</p>
 
-            <div class="summary-container">
-              <div id="summaryData"></div>
-            </div>
+          <div class="summary-container">
+            <div id="summaryData"></div>
+          </div>
 
-            <h2>Strokerate Pace Relationship</h2>
+          <h2>Stroke efficency</h2>
 
-           <p>Increased stroke rate leads to a certain degree of
-           increased speed in the water. Additionally, improving
-           swimming technique to perform more efficient strokes will
-           also increase speed in the water. The plot demonstrates how
-           strokes per length and stroke rate (strokes per minute)
-           correspond to the pace accomplished within a lane.</p>
+          <p>Increased stroke rate leads to a certain degree of
+            increased speed in the water. Additionally, improving
+            swimming technique to perform more efficient strokes will
+            also increase speed and potentially decrease the strokes
+            needed to cover a length (SPL). The plot demonstrates how
+            strokes per length and stroke rate (strokes per minute)
+            correspond to the pace accomplished within a lane. Looking
+            at data, you should observe that fastest lengths are those
+            with high stroke rate and/or low stroke count values. The
+            axis for the pace is reversed to visually account for the
+            fact that higher values in SPM and SPL should lead to
+            faster pace (lower values).</p>
 
-            <div class="plot-container">
-              <div id="pacePlot"></div>
-            </div>
-	</div>
+          <div class="plot-object-container">
+            <div id="pacePlot"></div>
+          </div>
+
+          <h2>Stroke Analysis</h2>
+
+          <p> Good swimmers are able to maintain a constant stroke
+          count at a high stroke rate. Unfortunately, for most of us,
+          increasing the stroke rate often leads to an increase in
+          stroke count. This indicates that more strokes are needed
+          per lane, resulting in a less effective stroke and wasted
+          energy.</p>
+
+          <select id="strokeFilter">
+            <option value="breaststroke">Breaststroke</option>
+            <option value="backstroke">Backstroke</option>
+            <option value="freestyle">Freestyle</option>
+            <option value="butterfly">Butterfly</option>
+          </select>
+
+          <div class="plot-object-container">
+            <div id="strokeRateStrokeCountPlot"></div>
+          </div>
+
+        </div>
       </div>
 
       <script src="/static/js/dist/main.js"></script>
