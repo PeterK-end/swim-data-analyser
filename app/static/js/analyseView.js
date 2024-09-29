@@ -248,3 +248,94 @@ ${d.avg_swimming_cadence}<br>SPL: ${d.total_strokes}`),  // Hover text
     // Render the plot
     Plotly.newPlot('pacePlot', [paceData, strokeData, spmData], layout, { displayModeBar: false });
 }
+
+// Stroke Analysis
+export function renderStrokeRateStrokeCountPlot(data) {
+
+    // Get the dropdown element and attach an event listener for when the stroke changes
+    console.log("full data:", data);
+    const strokeFilter = document.getElementById('strokeFilter');
+
+    strokeFilter.addEventListener('change', function() {
+        const selectedStroke = strokeFilter.value;
+        updatePlot(selectedStroke);
+    });
+
+    // Initial rendering with "breaststroke" selected
+    updatePlot('breaststroke');
+
+    function updatePlot(stroke) {
+
+        const activeData = data.lengths
+              .filter(d => d.event === 'length' && d.length_type === 'active')
+              .map((d, index) => ({
+                  index: index + 1,
+                  ...d
+              }));
+        const filteredData = activeData.filter(d => d.swim_stroke === stroke);
+        const poolLengthMultiplier = 100 / data.sessions[0].pool_length;
+
+        // Reverse the color scale to align with faster times being darker colors and slower times being lighter
+        const paceColorScale = [
+            [0, '#6B285E'],
+            [0.25, '#87439C'],
+            [0.5, '#7E80D5'],
+            [0.75, '#9BB7E1'],
+            [1, '#B9E1EC']
+        ];
+
+        // Calculate the pace values (min/100m) for the color bar
+        const paceValues = filteredData.map(d => ((d.total_elapsed_time * poolLengthMultiplier) / 60) || 0);
+        const paceMin = Math.min(...paceValues);
+        const paceMax = Math.max(...paceValues);
+
+        // Create a scatter plot for stroke rate vs stroke count, with color representing pace
+        const strokeRateStrokeCountData = {
+            x: filteredData.map(d => d.avg_swimming_cadence || 0),  // X-axis: Stroke Rate (SPM)
+            y: filteredData.map(d => d.total_strokes || 0),  // Y-axis: Stroke Count (SPL)
+            mode: 'markers',
+            text: filteredData.map(d => `Length: ${d.index} <br>Pace: ${formatPace(d.total_elapsed_time,
+poolLengthMultiplier)} min/100m<br>SPM:
+${d.avg_swimming_cadence}<br>SPL: ${d.total_strokes}`),  // Hover text
+            hoverinfo: 'text',
+            marker: {
+                size: 12,  // Size of the points
+                color: paceValues,  // Color: Pace (min/100m)
+                colorscale: paceColorScale,
+                cmin: paceMin,
+                cmax: paceMax,
+                colorbar: {
+                    title: 'Pace (min/100m)',
+                    titleside: 'right',
+                    tickmode: 'array',
+                    tickvals: [paceMin, paceMax],
+                    ticktext: ['Fast', 'Slow'],
+                    ticks: 'outside'
+                }
+            }
+        };
+
+        const layout = {
+            margin: {
+                l: 50,  // Left margin
+                r: 50,  // Right margin
+                t: 0,   // Top margin
+                b: 50   // Bottom margin
+            },
+            xaxis: {
+                title: 'Stroke Rate (SPM)',
+                titlefont: { color: 'black' },
+                tickfont: { color: 'black' },
+            },
+            yaxis: {
+                title: 'Stroke Count (SPL)',
+                titlefont: { color: 'black' },
+                tickfont: { color: 'black' }
+            },
+            showlegend: false
+        };
+
+        // Render the plot with updated data
+        Plotly.newPlot('strokeRateStrokeCountPlot', [strokeRateStrokeCountData], layout, { displayModeBar: false });
+    }
+}
