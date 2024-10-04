@@ -1,5 +1,18 @@
 import Plotly from 'plotly.js-basic-dist-min'
 
+function formatPace(seconds, poolLengthMultiplier) {
+    const secPer100 = seconds * poolLengthMultiplier;
+    const minutes = Math.floor(secPer100 / 60);
+    const secs = Math.floor(secPer100 % 60);
+    return `${minutes}:${secs.toString().padStart(2, '0')}`; // Ensure seconds are two digits
+}
+
+function formatTime(seconds){
+    const totalMinutes = Math.floor(seconds / 60);
+    const totalSeconds = Math.floor(seconds % 60).toString().padStart(2, '0');
+    return `${totalMinutes}:${totalSeconds.toString().padStart(2, '0')}`;
+}
+
 export function renderSummary() {
     // Retrieve the modified data from session storage
     const data = JSON.parse(sessionStorage.getItem('modifiedData'));
@@ -67,11 +80,8 @@ export function renderSummary() {
         if (grouped_data.hasOwnProperty(stroke)) {
 
             const strokeData = grouped_data[stroke];
-            const totalMinutes = Math.floor(strokeData.total_time / 60);
-            const totalSeconds = Math.floor(strokeData.total_time % 60).toString().padStart(2, '0');
             const distance = strokeData.total_lengths * sessionData.pool_length; // Assuming pool_length is in session data
-            const paceMinutes = (distance > 0) ? Math.floor(((strokeData.total_time / (distance / 100)) / 60)) : 0;
-            const paceSeconds = (distance > 0) ? Math.floor(((strokeData.total_time / (distance / 100)) % 60)).toString().padStart(2, '0') : '00';
+            const poolLengthMultiplier = 100/sessionData.pool_length;
 
             // Accumulate totals
             totalLengths += strokeData.total_lengths;
@@ -87,8 +97,8 @@ export function renderSummary() {
             <td>${stroke.charAt(0).toUpperCase() + stroke.slice(1)}</td>
             <td>${strokeData.total_lengths}</td>
             <td>${distance}m</td>
-            <td>${totalMinutes}:${totalSeconds}</td>
-            <td>${paceMinutes}:${paceSeconds}</td>
+            <td>${formatTime(strokeData.total_time)}</td>
+            <td>${formatPace(strokeData.total_time/strokeData.total_lengths, poolLengthMultiplier)}</td>
             <td>${strokeData.avg_spm.toFixed(2)}</td>
             <td>${strokeData.avg_spl.toFixed(2)}</td>
             </tr>
@@ -101,22 +111,13 @@ export function renderSummary() {
         .filter(d => d.length_type === 'idle') // Filter the data for 'idle' lengths
         .reduce((acc, curr) => acc + curr.total_elapsed_time , 0); // Sum the values
 
-    const totalRestMinutes = Math.floor(totalRest / 60);
-    const totalRestSeconds = Math.floor(totalRest % 60).toString().padStart(2, '0');
-
-    const totalActiveMinutes = Math.floor(totalTime / 60);
-    const totalActiveSeconds = Math.floor(totalTime % 60).toString().padStart(2, '0');
-
-    const overallTotalMinutes = Math.floor((totalTime + totalRest) / 60);
-    const overallTotalSeconds = Math.floor((totalTime + totalRest) % 60).toString().padStart(2, '0');
-
     // Add subtotal row
     tableHTML += `
     <tr class="subTotal">
         <td>Sub Total</td>
         <td>${totalLengths}</td>
         <td>${totalDistance}m</td>
-        <td>${totalActiveMinutes}:${totalActiveSeconds}</td>
+        <td>${formatTime(totalTime)}</td>
         <td></td>
         <td></td>
         <td></td>
@@ -125,7 +126,7 @@ export function renderSummary() {
         <td>Rest</td>
         <td></td>
         <td></td>
-        <td>${totalRestMinutes}:${totalRestSeconds}</td>
+        <td>${formatTime(totalRest)}</td>
         <td></td>
         <td></td>
         <td></td>
@@ -138,7 +139,7 @@ export function renderSummary() {
         <td>Total</td>
         <td>${totalLengths}</td>
         <td>${totalDistance}m</td>
-        <td>${overallTotalMinutes}:${overallTotalSeconds}</td>
+        <td>${formatTime(totalTime + totalRest)}</td>
         <td></td>
         <td>${(strokeCount > 0) ? (totalSPM / strokeCount).toFixed(2) : '0.00'}</td>
         <td>${(strokeCount > 0) ? (totalSPL / strokeCount).toFixed(2) : '0.00'}</td>
@@ -150,13 +151,6 @@ export function renderSummary() {
 
     // Insert the dynamically created table into the DOM
     document.getElementById('summaryData').innerHTML = tableHTML;
-}
-
-function formatPace(seconds, poolLengthMultiplier) {
-    const secPer100 = seconds * poolLengthMultiplier;
-    const minutes = Math.floor(secPer100 / 60);
-    const secs = Math.floor(secPer100 % 60);
-    return `${minutes}:${secs.toString().padStart(2, '0')}`; // Ensure seconds are two digits
 }
 
 export function renderPacePlot(data) {
