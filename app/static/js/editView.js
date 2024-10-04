@@ -276,9 +276,6 @@ document.getElementById('splitBtn').addEventListener('click', function() {
     // Get the entry to be split
     const entryToSplit = modifiedData.lengths[lengthToSplitIndex];
 
-    // Find the highest existing message_index in the current data
-    const highestMessageIndex = Math.max(...modifiedData.lengths.map(entry => entry.message_index.value));
-
     // Create the first split entry (split the time, strokes, and other attributes as needed)
     const splitEntry = {
         timestamp: entryToSplit.timestamp,
@@ -300,7 +297,9 @@ document.getElementById('splitBtn').addEventListener('click', function() {
     // Create the second split entry (same attributes as splitEntry but with updated message_index)
     const secondSplitEntry = {
         ...splitEntry,  // Copy from the first split entry
-        message_index: { value: highestMessageIndex + 1 } // Increment message_index.value
+        // Increment message_index.value (by 0.01 because the index
+        // value should still fall in the old intervall)
+        message_index: { value: entryToSplit.message_index.value + 0.01 }
     };
 
     // Insert the split entries in place of the original
