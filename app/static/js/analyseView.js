@@ -197,11 +197,11 @@ ${d.avg_swimming_cadence}<br>SPL: ${d.total_strokes}`),  // Hover text
         y: lengthData.map(d => d.total_strokes || 0),
         type: 'scatter',
         name: 'Total Strokes',  // Label for the second line
-        line: {color: 'purple'}, // Darker shade of --second-color
-        yaxis: 'y2'  // Specify the second y-axis
+        line: {color: 'purple'}, // Darker shade of --second-
+        yaxis: 'y2'
     };
 
-    const spmData = {
+     const spmData = {
         x: lengthData.map((d, index) => index + 1),  // X-axis as the length index (1, 2, 3, etc.)
         y: lengthData.map(d => d.avg_swimming_cadence || 0),
         name: 'Cadence (SPM)',
@@ -219,25 +219,25 @@ ${d.avg_swimming_cadence}<br>SPL: ${d.total_strokes}`),  // Hover text
         },
         xaxis: {title: 'Length'},
         yaxis: {
-            title: 'Pace (min/100m)',
+            title: '',
             titlefont: { color: 'black' },
             tickfont: { color: 'black' },
             autorange: 'reversed',
             showticklabels: false
         },
         yaxis2: {
-            title: 'Total Strokes',  // Second Y-axis for total strokes
+            title: 'Total Strokes (SPL)',  // Second Y-axis for total strokes
             titlefont: {color: 'purple'},
             tickfont: {color: 'purple'},
             overlaying: 'y',
             side: 'right'
         },
         yaxis3: {
-            title: '',  // Y-axis for cadence
+            title: 'Cadence (SPM)',
             titlefont: {color: 'blue'},
             tickfont: {color: 'blue'},
             overlaying: 'y',  // Overlay the second y-axis on the same plot
-            showticklabels: false
+            side: 'left'
         },
         showlegend: false
     };
