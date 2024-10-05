@@ -2,6 +2,13 @@ import Plotly from 'plotly.js-basic-dist-min'
 
 let selectedLabels = [];
 
+// Helper function for formatting seconds to minute:sec
+function formatTime(seconds){
+    const totalMinutes = Math.floor(seconds / 60);
+    const totalSeconds = Math.floor(seconds % 60).toString().padStart(2, '0');
+    return `${totalMinutes}:${totalSeconds.toString().padStart(2, '0')}`;
+}
+
 // Utility function to sum specific attributes of objects in an array
 function sumAttribute(attribute, entries) {
     return entries.reduce((total, entry) => total + (entry[attribute] || 0), 0);
@@ -41,13 +48,8 @@ export function loadMeta() {
     const day = date.toLocaleDateString('en-CA'); // 'en-CA' forces YYYY-MM-DD format
     const daytime = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
-    // Calculate total time in minutes and seconds
-    const totalMinutes = Math.floor(metadata.total_elapsed_time / 60);
-    const totalSeconds = Math.floor(metadata.total_elapsed_time % 60);
-
-    // Calculate average pace per 100 meters
-    const paceMinutes = Math.floor((metadata.total_elapsed_time / (metadata.total_distance / 100)) / 60);
-    const paceSeconds = Math.floor((metadata.total_elapsed_time / (metadata.total_distance / 100)) % 60).toString().padStart(2, '0');
+    // Pace calculation
+    const pace = (metadata.total_elapsed_time/metadata.total_distance)*100;
 
     // Calculate average strokes per active length
     const avgStrokesPerLength = Math.floor(metadata.total_strokes / sessionData.num_active_lengths);
@@ -61,10 +63,10 @@ export function loadMeta() {
     </div>
     <div class="metadata-box">
       <strong>Total Time:</strong>
-      <span id="totalTime">${totalMinutes}m ${totalSeconds}s</span>
+      <span id="totalTime">${formatTime(metadata.total_elapsed_time)}m</span>
     </div>
     <div class="metadata-box">
-      <strong>Total Length:</strong>
+      <strong>Total Distance:</strong>
       <span id="totalLength">${metadata.total_distance}m</span>
     </div>
     <div class="metadata-box">
@@ -73,7 +75,7 @@ export function loadMeta() {
     </div>
     <div class="metadata-box">
       <strong>Avg. Pace:</strong>
-      <span id="avgPace">${paceMinutes}:${paceSeconds}min/100m</span>
+      <span id="avgPace">${formatTime(pace)}</span>
     </div>
     <div class="metadata-box">
       <strong>Avg. SPL:</strong>
@@ -218,8 +220,6 @@ document.getElementById('mergeBtn').addEventListener('click', function() {
         // keep the first entry to replace it later with merged version
         !selectedLabels.slice(1).includes(entry.message_index.value)
     );
-
-    console.log("remaining Lengths before insert:", remainingLengths);
 
     // Insert the new merged entry into the correct position
     const minIndex = Math.min(...selectedLabels);

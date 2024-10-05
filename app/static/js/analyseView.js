@@ -82,8 +82,9 @@ export function renderSummary() {
         if (grouped_data.hasOwnProperty(stroke)) {
 
             const strokeData = grouped_data[stroke];
-            const distance = strokeData.total_lengths * sessionData.pool_length; // Assuming pool_length is in session data
-            const poolLengthMultiplier = 100/sessionData.pool_length;
+            const poolLength =  sessionData.pool_length;
+            const distance = strokeData.total_lengths * poolLength ;
+            const pace = (strokeData.total_time / distance) * 100;
 
             // Accumulate totals
             totalLengths += strokeData.total_lengths;
@@ -100,7 +101,7 @@ export function renderSummary() {
             <td>${strokeData.total_lengths}</td>
             <td>${distance}m</td>
             <td>${formatTime(strokeData.total_time)}</td>
-            <td>${formatPace(strokeData.total_time/strokeData.total_lengths, poolLengthMultiplier)}</td>
+            <td>${formatTime(pace)}</td>
             <td>${strokeData.avg_spm.toFixed(2)}</td>
             <td>${strokeData.avg_spl.toFixed(2)}</td>
             </tr>
@@ -159,7 +160,7 @@ export function renderPacePlot(data) {
 
     // Filter data to include only entries where event is 'length' and length_type is 'active'
     const lengthData = data.lengths.filter(d => d.event === 'length' && d.length_type === 'active');
-    const poolLengthMultiplier = 100/data.sessions[0].pool_length;
+    const poolLength = data.sessions[0].pool_length;
 
     // Define a fixed Viridis color map for swim strokes
     const fixedStrokeColors = {
@@ -174,11 +175,11 @@ export function renderPacePlot(data) {
     // Create paceData with stroke-based colors for the bars
     const paceData = {
         x: lengthData.map((d, index) => index + 1),  // X-axis as the length index
-        y: lengthData.map(d => ((d.total_elapsed_time * poolLengthMultiplier) / 60) || 0),  // Pace in minutes per 100m
+        y: lengthData.map(d => (d.total_elapsed_time / poolLength)*100 || 0),  // Pace in minutes per 100m
         name: '',
         type: 'bar',
         text: lengthData.map(d => `Stroke: ${d.swim_stroke || 'Unknown'}<br>Pace:
-${formatPace(d.total_elapsed_time, poolLengthMultiplier)}<br>SPM:
+${formatTime((d.total_elapsed_time / poolLength)*100)}<br>SPM:
 ${d.avg_swimming_cadence}<br>SPL: ${d.total_strokes}`),  // Hover text
         hoverinfo: 'text',
         textposition: 'none', // Prevent the text from being shown on the bars
@@ -249,7 +250,6 @@ ${d.avg_swimming_cadence}<br>SPL: ${d.total_strokes}`),  // Hover text
 export function renderStrokeRateStrokeCountPlot(data) {
 
     // Get the dropdown element and attach an event listener for when the stroke changes
-    console.log("full data:", data);
     const strokeFilter = document.getElementById('strokeFilter');
 
     strokeFilter.addEventListener('change', function() {
@@ -269,7 +269,7 @@ export function renderStrokeRateStrokeCountPlot(data) {
                   ...d
               }));
         const filteredData = activeData.filter(d => d.swim_stroke === stroke);
-        const poolLengthMultiplier = 100 / data.sessions[0].pool_length;
+        const poolLength = data.sessions[0].pool_length;
 
         // Reverse the color scale to align with faster times being darker colors and slower times being lighter
         const paceColorScale = [
@@ -281,7 +281,7 @@ export function renderStrokeRateStrokeCountPlot(data) {
         ];
 
         // Calculate the pace values (min/100m) for the color bar
-        const paceValues = filteredData.map(d => ((d.total_elapsed_time * poolLengthMultiplier) / 60) || 0);
+        const paceValues = filteredData.map(d => (d.total_elapsed_time / poolLength)*100 || 0);
         const paceMin = Math.min(...paceValues);
         const paceMax = Math.max(...paceValues);
 
@@ -290,9 +290,9 @@ export function renderStrokeRateStrokeCountPlot(data) {
             x: filteredData.map(d => d.avg_swimming_cadence || 0),  // X-axis: Stroke Rate (SPM)
             y: filteredData.map(d => d.total_strokes || 0),  // Y-axis: Stroke Count (SPL)
             mode: 'markers',
-            text: filteredData.map(d => `Length: ${d.index} <br>Pace: ${formatPace(d.total_elapsed_time,
-poolLengthMultiplier)} min/100m<br>SPM:
-${d.avg_swimming_cadence}<br>SPL: ${d.total_strokes}`),  // Hover text
+            text: filteredData.map(d => `Length: ${d.index} <br>Pace: ${formatTime((d.total_elapsed_time /
+poolLength)*100)} min/100m<br>SPM: ${d.avg_swimming_cadence}<br>SPL:
+${d.total_strokes}`),  // Hover text
             hoverinfo: 'text',
             marker: {
                 size: 12,  // Size of the points
