@@ -1,16 +1,18 @@
 import Plotly from 'plotly.js-basic-dist-min'
 
-function formatPace(seconds, poolLengthMultiplier) {
-    const secPer100 = seconds * poolLengthMultiplier;
-    const minutes = Math.floor(secPer100 / 60);
-    const secs = Math.floor(secPer100 % 60);
-    return `${minutes}:${secs.toString().padStart(2, '0')}`; // Ensure seconds are two digits
-}
-
+// Helper function for formatting seconds to minute:sec
 function formatTime(seconds){
     const totalMinutes = Math.floor(seconds / 60);
     const totalSeconds = Math.floor(seconds % 60).toString().padStart(2, '0');
     return `${totalMinutes}:${totalSeconds.toString().padStart(2, '0')}`;
+}
+
+function ordinalSuffixOf(i) {
+    const j = i % 10, k = i % 100;
+    if (j === 1 && k !== 11) return i + "st";
+    if (j === 2 && k !== 12) return i + "nd";
+    if (j === 3 && k !== 13) return i + "rd";
+    return i + "th";
 }
 
 export function renderSummary() {
@@ -332,4 +334,131 @@ ${d.avg_swimming_cadence}<br>SPL: ${d.total_strokes}`),  // Hover text
         // Render the plot with updated data
         Plotly.newPlot('strokeRateStrokeCountPlot', [strokeRateStrokeCountData], layout, { displayModeBar: false });
     }
+}
+
+export function renderIntervalSummaryTable() {
+    const data = JSON.parse(sessionStorage.getItem('modifiedData'));
+    const lengthData = data.lengths;
+    const activeLengths = lengthData.filter(d => d.event === 'length' && d.length_type === 'active');
+    const activeLapsData = data.laps.filter(d => d.num_active_lengths > 0);
+    const sessionData = data.sessions[0];
+    const poolLength = sessionData.pool_length;
+
+    // Define the intervals
+    const intervals = activeLapsData.map((lap, index) => {
+        const nextLap = activeLapsData[index + 1];
+        return {
+            lap,
+            start: lap.first_length_index,
+            end: nextLap ? nextLap.first_length_index - 1 : Infinity // Last interval extends to infinity
+        };
+    });
+
+    // Initialize table with headers
+    let tableHTML = `
+    <table id="intervalSummaryTable">
+    <thead>
+    <tr>
+      <th>Length</th>
+      <th>Distance</th>
+      <th>Stroke</th>
+      <th>Time</th>
+      <th>Pace</th>
+      <th>SPM</th>
+      <th>SPL</th>
+    </tr>
+    </thead>
+    <tbody>
+    `;
+
+    let totalTime = 0;
+    let totalRest = 0;
+
+    // Process each length for each interval
+    let lengthCounter = 1;
+    intervals.forEach((interval, intervalIndex) => {
+        const intervalLengths = activeLengths.filter(length =>
+            length.message_index.value >= interval.start && length.message_index.value <= interval.end
+        );
+
+        if (intervalLengths.length === 0) {
+            return
+        }
+
+        // Loop through each length within the interval
+        intervalLengths.forEach(length => {
+            const distance = poolLength; // Assuming each length is one pool length
+            const time = length.total_elapsed_time;
+            const pace = (time / distance) * 100;
+            const spm = length.avg_swimming_cadence || 0;
+            const spl = (length.total_strokes || 0);
+
+            tableHTML += `
+        <tr class="length ${length.swim_stroke}">
+            <td>${lengthCounter}</td>
+            <td>${distance}</td>
+            <td>${length.swim_stroke.charAt(0).toUpperCase() + length.swim_stroke.slice(1)}</td>
+            <td>${formatTime(time)}</td>
+            <td>${formatTime(pace)}</td>
+            <td>${spm}</td>
+            <td>${spl}</td>
+        </tr>
+        `;
+
+            totalTime += time;
+            lengthCounter++;
+        });
+
+        // Add rest if applicable
+        const intervalRest = lengthData
+              .filter(d => d.length_type === 'idle' && d.message_index.value >= interval.start && d.message_index.value <= interval.end)
+              .reduce((sum, length) => sum + length.total_elapsed_time, 0);
+
+        if (intervalRest > 0) {
+            tableHTML += `
+        <tr class="rest">
+            <td>Rest</td>
+            <td></td>
+            <td></td>
+            <td>${formatTime(intervalRest)}</td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+        `;
+            totalRest += intervalRest;
+        }
+
+        // Calculate interval summary
+        const totalLengths = intervalLengths.length;
+        const intervalDistance = totalLengths * poolLength;
+        const intervalTime = intervalLengths.reduce((sum, length) => sum + length.total_elapsed_time, 0);
+        const intervalSPM = intervalLengths.reduce((sum, length) => sum + (length.avg_swimming_cadence || 0), 0) / totalLengths;
+        const intervalSPL = intervalLengths.reduce((sum, length) => sum + (length.total_strokes || 0), 0) / totalLengths;
+        const intervalPace = (intervalTime / intervalDistance) * 100;
+
+        // Calculate interval stroke
+        const strokesInInterval = intervalLengths.map(length => length.swim_stroke);
+        const uniqueStrokes = [...new Set(strokesInInterval)]; // Get unique strokes
+        const intervalStroke = uniqueStrokes.length === 1 ? uniqueStrokes[0].charAt(0).toUpperCase() + uniqueStrokes[0].slice(1) : 'Mixed';
+
+        // Add interval summary
+        tableHTML += `
+    <tr class="interval">
+        <td>${ordinalSuffixOf(intervalIndex + 1)} Interval</td>
+        <td>${intervalDistance}</td>
+        <td>${intervalStroke}</td>
+        <td>${formatTime(intervalTime)}</td>
+        <td>${formatTime(intervalPace)}</td>
+        <td>${intervalSPM.toFixed(2)}</td>
+        <td>${intervalSPL.toFixed(2)}</td>
+    </tr>
+    `;
+    });
+
+    // Close the table
+    tableHTML += `</tbody></table>`;
+
+    // Insert the dynamically created table into the DOM
+    document.getElementById('intervalSummaryTable').innerHTML = tableHTML;
 }

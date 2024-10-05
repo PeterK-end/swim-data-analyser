@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', function () {
             AnalyseView.renderSummary();
             AnalyseView.renderPacePlot(data);
             AnalyseView.renderStrokeRateStrokeCountPlot(data);
+            AnalyseView.renderIntervalSummaryTable();
         }
     }
 

@@ -422,3 +422,10 @@ tr.butterfly {
         font-size: 12px; /* Smaller font size for smaller screens */
     }
 }
+
+/* Extra styling for intervalSummaryTable  */
+
+.interval {
+    border: 1px solid black;
+}
+
