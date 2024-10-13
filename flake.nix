@@ -22,7 +22,7 @@
          nodePackages.webpack-cli
        ] ++ [python-env];
        shellHook = ''
-           echo 'loaded python'
+           echo 'Dependencies loaded to environment.'
         '';
      };
    };
