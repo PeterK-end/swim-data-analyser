@@ -17,6 +17,10 @@ session = {}
 def index():
  return render_template('index.html')
 
+@main.route('/about.html')
+def about():
+ return render_template('/about.html')
+
 @main.route('/getDefaultData', methods=['GET'])
 def getDefaultData():
     default_file_path = os.path.join(DATA_PATH, 'example_workout.json')
