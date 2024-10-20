@@ -24,3 +24,10 @@ spin up dev server:
 npx webpack --watch
 flask run
 ```
+# Used libraries 
+
+The project depends on some core libraries listed below:
+
+- parsing `.fit` files: https://github.com/jimmykane/fit-parser
+- plots: https://github.com/plotly/plotly.js/
+- server and (future) backend: https://github.com/pallets/flask/
