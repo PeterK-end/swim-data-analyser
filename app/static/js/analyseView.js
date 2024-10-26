@@ -156,6 +156,128 @@ export function renderSummary() {
     document.getElementById('summaryData').innerHTML = tableHTML;
 }
 
+export function renderHeartratePlot(data) {
+    const heartrateRecords = data.records;
+    const lengthData = data.lengths;
+
+    const strokeColors = {
+        breaststroke: '#A8D8EA',
+        freestyle: '#AA96DA',
+        backstroke: '#FCBAD3',
+        butterfly: '#FFFFD2',
+        default: '#fde725'  // Yellow for unknown strokes
+    };
+
+    // Heart rate trace
+    const heartrateData = {
+        x: heartrateRecords.map(d => d.elapsed_time / 60),  // Convert to minutes
+        y: heartrateRecords.map(d => d.heart_rate),
+        name: 'Heart Rate',
+        type: 'scatter',
+        mode: 'lines',
+        line: { color: 'black' }
+    };
+
+    // Calculate cumulative elapsed time for each length
+    let cumulativeElapsedTime = 0;
+    const shapes = lengthData.map((length, index) => {
+        const startTime = cumulativeElapsedTime / 60;  // Start time in minutes
+        cumulativeElapsedTime += length.total_elapsed_time;  // Increment cumulative time
+        const endTime = cumulativeElapsedTime / 60;  // End time in minutes
+
+        const color = length.length_type === "active"
+              ? (strokeColors[length.swim_stroke] || strokeColors.default)
+              : 'rgba(255, 255, 255, 0)';  // Transparent for idle lengths
+
+        return {
+            type: 'rect',
+            xref: 'x',
+            yref: 'y',  // Reference to y-axis to stay within the axis bounds
+            x0: startTime,
+            x1: endTime,
+            y0: 0,  // Set y0 based on the minimum heart rate value
+            y1: Math.max(...heartrateRecords.map(d => d.heart_rate)),  // Set y1 based on the maximum heart rate value
+            fillcolor: color,
+            line: { width: 0 },
+            layer: 'below',
+        };
+    });
+
+    // Vertical lines for each length start
+    cumulativeElapsedTime = 0;  // Reset for line positioning
+    const lengthLines = lengthData.map((length, index) => {
+        const linePosition = cumulativeElapsedTime / 60;  // Current cumulative time in minutes
+        cumulativeElapsedTime += length.total_elapsed_time;  // Increment cumulative time
+
+        return {
+            type: 'line',
+            xref: 'x',
+            yref: 'y',  // Align lines with y-axis
+            x0: linePosition,
+            x1: linePosition,
+            y0: 0,
+            y1: Math.max(...heartrateRecords.map(d => d.heart_rate)),  // Set y1 based on heart rate range
+            line: {
+                color: 'gray',
+                width: 1,
+                dash: 'dot'
+            }
+        };
+    });
+
+    // Invisible markers for hover labels with cumulative length count for active lengths
+    cumulativeElapsedTime = 0;
+    let cumulativeLengthCount = 0;  // Track only active lengths
+    const hoverMarkers = {
+        x: lengthData.map((length, index) => {
+            const time = cumulativeElapsedTime / 60;
+            cumulativeElapsedTime += length.total_elapsed_time;
+            return time;
+        }),
+        y: Array(lengthData.length).fill(0.5),  // Place markers halfway up the y-axis
+        mode: 'markers',
+        marker: {
+            opacity: 0,  // Make markers invisible
+            color: lengthData.map(length => {
+                // Return stroke color for active lengths or transparent for idle lengths
+                return length.length_type === "active"
+                    ? (strokeColors[length.swim_stroke] || strokeColors.default)  // Use defined colors
+                    : 'rgba(255, 255, 255, 0)';  // Transparent for idle lengths
+            })
+        },
+        hovertext: lengthData.map((length) => {
+            // Increment count only for active lengths
+            if (length.length_type === "active") {
+                cumulativeLengthCount++;
+                return `Length ${cumulativeLengthCount}: ${length.swim_stroke || 'Unknown'}`;
+            }
+            return `Rest`;
+        }),
+        hoverinfo: 'text'
+    };
+
+    // Define max elapsed time for consistent x-axis range based on the last cumulative time
+    const maxElapsedTime = cumulativeElapsedTime / 60;  // Convert to minutes
+
+    const layout = {
+        margin: { l: 50, r: 50, t: 0, b: 50 },
+        xaxis: {
+            title: 'Elapsed Time (Minutes)',
+            range: [0, maxElapsedTime]  // Explicit x-axis range
+        },
+        yaxis: {
+            title: 'Heart Rate',
+            titlefont: { color: 'black' },
+            tickfont: { color: 'black' },
+        },
+        shapes: [...shapes, ...lengthLines],  // Add both rectangles and lines
+        showlegend: false
+    };
+
+    // Render the plot with heartrateData and invisible hoverMarkers traces
+    Plotly.newPlot('heartratePlot', [heartrateData, hoverMarkers], layout, { displayModeBar: false });
+}
+
 export function renderPacePlot(data) {
 
     // Filter data to include only entries where event is 'length' and length_type is 'active'
