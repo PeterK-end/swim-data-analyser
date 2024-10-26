@@ -111,15 +111,17 @@ export function renderSummary() {
 
     // Calculate total time, distance, and averages for SPM and SPL
     const totalRest = lengthData
-        .filter(d => d.length_type === 'idle') // Filter the data for 'idle' lengths
-        .reduce((acc, curr) => acc + curr.total_elapsed_time , 0); // Sum the values
+          .filter(d => d.length_type === 'idle') // Filter the data for 'idle' lengths
+          .reduce((acc, curr) => acc + curr.total_elapsed_time , 0); // Sum the values
+
+    const totalPace = (totalTime/totalDistance) * 100;
 
     // Add subtotal row
     tableHTML += `
     <tr class="subTotal">
         <td>Sub Total</td>
-        <td>${totalLengths}</td>
-        <td>${totalDistance}m</td>
+        <td></td>
+        <td></td>
         <td>${formatTime(totalTime)}</td>
         <td></td>
         <td></td>
@@ -136,14 +138,14 @@ export function renderSummary() {
     </tr>
     `;
 
-    // Add total row
+    // Add total row (interval class for box styling)
     tableHTML += `
-    <tr class="total">
+    <tr class="interval">
         <td>Total</td>
         <td>${totalLengths}</td>
         <td>${totalDistance}m</td>
         <td>${formatTime(totalTime + totalRest)}</td>
-        <td></td>
+        <td>${formatTime(totalPace)}</td>
         <td>${(strokeCount > 0) ? (totalSPM / strokeCount).toFixed(2) : '0.00'}</td>
         <td>${(strokeCount > 0) ? (totalSPL / strokeCount).toFixed(2) : '0.00'}</td>
     </tr>
