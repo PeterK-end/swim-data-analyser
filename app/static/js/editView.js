@@ -49,7 +49,8 @@ export function loadMeta() {
     const daytime = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
     // Pace calculation
-    const pace = (metadata.total_elapsed_time/metadata.total_distance)*100;
+    const activeTime = activeLengths.reduce((acc, length) => acc + length.total_elapsed_time, 0);
+    const pace = (activeTime/metadata.total_distance)*100;
 
     // Calculate average strokes per active length
     const avgStrokesPerLength = Math.floor(metadata.total_strokes / sessionData.num_active_lengths);
@@ -80,6 +81,14 @@ export function loadMeta() {
     <div class="metadata-box">
       <strong>Avg. SPL:</strong>
       <span id="avgStrokes">${avgStrokesPerLength}/length</span>
+    </div>
+    <div class="metadata-box">
+      <strong>Avg. Heartrate</strong>
+      <span id="avgStrokes">${metadata.avg_heart_rate} bpm</span>
+    </div>
+    <div class="metadata-box">
+      <strong>Calories</strong>
+      <span id="avgStrokes">${metadata.total_calories} kcal</span>
     </div>
   </div>
 `;
