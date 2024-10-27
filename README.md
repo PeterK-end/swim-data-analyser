@@ -30,4 +30,4 @@ The project depends on some core libraries listed below:
 
 - parsing `.fit` files: https://github.com/jimmykane/fit-parser
 - plots: https://github.com/plotly/plotly.js/
-- server and (future) backend: https://github.com/pallets/flask/
+- server and (future) backend: https://www.djangoproject.com/
