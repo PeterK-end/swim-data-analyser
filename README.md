@@ -22,7 +22,7 @@ spin up dev server:
 
 ```
 npx webpack --watch
-flask run
+python manage.py runserver
 ```
 # Used libraries 
 

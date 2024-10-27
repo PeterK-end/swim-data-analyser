@@ -9,10 +9,10 @@
   let
     system = "x86_64-linux";
     pkgs = inputs.nixpkgs.legacyPackages.${system};
-    python-env = pkgs.python310.withPackages (pp: with pp;
+    python-env = pkgs.python312.withPackages (pp: with pp;
     [
-      flask
-      flask-session
+      django
+      gunicorn # WSGI HTTP Server for UNIX, fast clients and sleepy applications
     ]);
    in {
      devShell."${system}" = pkgs.mkShell {
