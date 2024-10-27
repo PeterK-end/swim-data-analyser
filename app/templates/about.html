@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/x-icon">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About - Swim Data Analyser</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+
+  <!-- Top bar with link back to home -->
+  <header class="top-bar">
+    <a href="/" class="logo">Home</a>
+    <a href="/about.html" class="top-bar-link">About</a>
+    <a href="https://github.com/PeterK-end/swim-data-analyser" target="_blank">
+      <img src="/static/graphics/git-logo.svg" class="logo">
+    </a>
+  </header>
+
+  <div id="main-content">
+    <!-- About Content -->
+    <h1>About Swim Data Analyser</h1>
+    <p>This project originated as an attempt to
+    rewrite <a href="https://www.swimmingwatchtools.com/">Swimming
+    Watch Tools</a> using client-side data processing. In its current
+    state, the project provides full parsing and analysis capabilities
+    through JavaScript that loads with the website. This means you can
+    even analyse workouts without an internet connection once the site
+    is fully loaded.</p>
+
+    <p>The project aims to use only free and open-source software as
+    building blocks. As a result, there is currently no option to
+    export edited data back to FIT format, as this would require
+    Garmin's proprietary FIT SDK.</p>
+
+    <p>Future plans include extending current functionality beyond
+    Swimming Watch Tools, with a focus on long-term analysis of swim
+    workouts, which would require account handling. Basic parsing and
+    analysis of single workouts will remain client-side for casual
+    website users.</p>
+
+    <p>Everyone is welcome to contribute ideas, feature requests, and
+    thoughts via email or on GitHub.</p>
+
+    <p>Contact: Reach out on GitHub or via email
+    at <a href="mailto:shelf-hosted@posteo.org">shelf-hosted@posteo.org</a>.</p>
+
+  </div>
+
+  <footer>
+    <p><small>The content for this site is <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC-BY-SA</a> licensed. Check the <a href="https://github.com/PeterK-end/swim-data-analyser">source code</a>.</small></p>
+  </footer>
+</body>
+</html>
