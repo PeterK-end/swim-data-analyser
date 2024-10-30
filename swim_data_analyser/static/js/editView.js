@@ -100,7 +100,8 @@ export function renderEditPlot(data) {
     loadMeta();
 
     // Filter data to include only entries where event is 'length' and length_type is 'active'
-    const lengthData = data.filter(d => d.event === 'length' && d.length_type === 'active');
+    const lengths = data.lengths;
+    const lengthData = lengths.filter(d => d.event === 'length' && d.length_type === 'active');
 
     // Define a fixed Viridis color map for swim strokes
     const fixedStrokeColors = {
@@ -254,7 +255,7 @@ document.getElementById('mergeBtn').addEventListener('click', function() {
     selectedLabels = [];
 
     // Re-render the plot with updated data
-    renderEditPlot(modifiedData.lengths);
+    renderEditPlot(modifiedData);
 });
 
 document.getElementById('splitBtn').addEventListener('click', function() {
@@ -321,7 +322,7 @@ document.getElementById('splitBtn').addEventListener('click', function() {
     selectedLabels = [];
 
     // Re-render the plot with updated data
-    renderEditPlot(modifiedData.lengths);
+    renderEditPlot(modifiedData);
 });
 
 // document.getElementById('poolSizeBtn').addEventListener('click', function() {
@@ -382,7 +383,7 @@ document.getElementById('confirmStroke').addEventListener('click', function() {
     selectedLabels = [];
 
     // Re-render the plot with updated data
-    renderEditPlot(modifiedData.lengths);
+    renderEditPlot(modifiedData);
 });
 
 // Cancel button inside the modal
@@ -403,17 +404,17 @@ document.getElementById('deleteBtn').addEventListener('click', function() {
     const modifiedData = JSON.parse(sessionStorage.getItem('modifiedData'));
 
     // Filter to only keep the 'length' entries where the messageIndex.value is not in selectedLabels
-    const newLengthData = modifiedData.lengths.filter(entry => !selectedLabels.includes(entry.message_index.value));
+    const remainingLengths = modifiedData.lengths.filter(entry => !selectedLabels.includes(entry.message_index.value));
+    modifiedData.lengths = remainingLengths;
 
     // Update the modified data with the new length data
-    modifiedData.lengths = newLengthData;
     sessionStorage.setItem('modifiedData', JSON.stringify(modifiedData));
 
     // Clear the selected labels after deletion
     selectedLabels = [];
 
     // Render the updated plot
-    renderEditPlot(newLengthData);
+    renderEditPlot(modifiedData);
 });
 
 document.getElementById('undoBtn').addEventListener('click', function() {
@@ -428,7 +429,7 @@ document.getElementById('undoBtn').addEventListener('click', function() {
 
     // Check if data exists before rendering
     if (data && data.lengths) {
-        renderEditPlot(data.lengths); // Render the plot with the length data
+        renderEditPlot(data); // Render the plot with the length data
     } else {
         console.error("No 'length' data found in the original data.");
     }

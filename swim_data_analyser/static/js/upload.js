@@ -7,7 +7,6 @@ let data = null;
 // Function to check if the parsed data represents a pool swimming workout
 function isPoolSwimming(parsedData) {
     // Check if the sport is swimming and if there is pool length data
-    console.log("Parsed Data:", parsedData);
     return parsedData.sports[0].sport === 'swimming' && parsedData.sports[0].sub_sport === 'lap_swimming';
 }
 
@@ -113,8 +112,7 @@ function loadDefaultData() {
 
             // Assuming your new data structure has multiple blocks like 'lengths'
             if (data.lengths) {
-                const lengthData = data.lengths;
-                renderEditPlot(lengthData); // Render the plot with the 'lengths' data block
+                renderEditPlot(data);
             } else {
                 console.error("No 'length' data found in the response");
             }
@@ -136,7 +134,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Render the plot with the existing 'data'
         try {
             const data = JSON.parse(modifiedData);
-            renderEditPlot(data.lengths); // Use existing data if available
+            renderEditPlot(data); // Use existing data if available
         } catch (error) {
             console.error('Error parsing modifiedData:', error);
             loadDefaultData(); // If parsing fails, load default data
