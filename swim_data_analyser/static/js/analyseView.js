@@ -251,7 +251,7 @@ export function renderHeartratePlot(data) {
             // Increment count only for active lengths
             if (length.length_type === "active") {
                 cumulativeLengthCount++;
-                return `Length ${cumulativeLengthCount}: ${length.swim_stroke || 'Unknown'}`;
+                return `Length: ${cumulativeLengthCount} <br>Stroke: ${length.swim_stroke || 'Unknown'} <br>Total Time: ${length.total_elapsed_time}s`;
             }
             return `Rest`;
         }),
