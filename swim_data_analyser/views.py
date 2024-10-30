@@ -10,7 +10,7 @@ import os
 # BASE_DIR: Path to the project root directory
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-DATA_PATH = os.path.join(settings.BASE_DIR, 'static', 'data')
+DATA_PATH = os.path.join(settings.BASE_DIR, 'swim_data_analyser', 'static', 'data')
 
 def index(request):
     return render(request, 'index.html')
