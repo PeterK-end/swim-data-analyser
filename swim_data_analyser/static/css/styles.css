@@ -51,13 +51,6 @@
   flex-shrink: 0; /* Prevent the image from shrinking */
 }
 
-/* Resize icons for smaller screens */
-@media (max-width: 600px) {
-    .logo {
-        height: 25px; /* Resize icons for smaller screens */
-    }
-}
-
 /* Ensure the body has no margin and is centered horizontally */
 body {
     font-family: "iA Writer Quattro", -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -71,7 +64,7 @@ body {
 
 /* Wrapper for the main content to limit its width to 80% of the viewport */
 #main-content {
-    width: 95vw; /* 80% of the viewport width */
+    width: 96vw;
     max-width: 900px; /* Optional: you can set a max-width for larger screens */
     margin: 0 auto; /* Center the content */
 }
@@ -162,7 +155,7 @@ p, h2, h3, h4 {
 #analyseContent {
     border: 2px solid var(--third-color); /* Same thin border for analyse view */
     padding: 10px; /* Add padding inside the content box */
-    margin: 10px;
+    margin-top: 20px;
     border-radius: 8px; /* Rounded corners */
     background-color: #fff; /* White background inside the box */
     width: auto;
@@ -249,8 +242,7 @@ p, h2, h3, h4 {
     padding: 10px 20px 20px 20px;
     border-radius: 5px;
     background-color: #f8f9fa; /* Light background for visibility */
-    width: 40%; /* Set width to 40% of the viewport, adjust as needed */
-    max-width: 500px; /* Optional: limit the maximum width */
+    max-width: 350px; /* Optional: limit the maximum width */
     margin: 20px auto; /* Center horizontally */
     position: relative; /* Required for centering vertically */
 }
@@ -374,6 +366,8 @@ footer {
   border-radius: 8px;
   margin-left: auto;
   margin-right: auto;
+  overflow-x: auto;
+  max-width: 90vw;
 }
 
 /* Center the table and style it */
@@ -444,3 +438,15 @@ tr.butterfly {
     border: 1px solid black;
 }
 
+/* Resize icons for smaller screens */
+@media (max-width: 600px) {
+    .logo {
+        height: 25px; /* Resize icons for smaller screens */
+    }
+    table {
+        width: 100%;
+    }
+    #analyseContent {
+        padding: 0px;
+    }
+}
