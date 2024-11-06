@@ -286,27 +286,19 @@ document.getElementById('splitBtn').addEventListener('click', function() {
     // Get the entry to be split
     const entryToSplit = modifiedData.lengths[lengthToSplitIndex];
 
-    // Create the first split entry (split the time, strokes, and other attributes as needed)
+    // Create split entries by adjusting values
     const splitEntry = {
-        timestamp: entryToSplit.timestamp,
-        start_time: entryToSplit.start_time,
+        ...entryToSplit,  // Copy all properties from original entry
         total_elapsed_time: entryToSplit.total_elapsed_time / 2,
         total_timer_time: entryToSplit.total_timer_time / 2,
-        message_index: { value: entryToSplit.message_index.value },
-        total_strokes: entryToSplit.total_strokes / 2,
-        avg_speed: entryToSplit.avg_speed,
-        total_calories: entryToSplit.total_calories / 2, // Split calories evenly
-        event: entryToSplit.event,
-        event_type: entryToSplit.event_type,
-        swim_stroke: entryToSplit.swim_stroke,
-        avg_swimming_cadence: entryToSplit.avg_swimming_cadence,
-        event_group: null,  // Reset to None
-        length_type: entryToSplit.length_type
+        total_strokes: Math.floor(entryToSplit.total_strokes / 2),
+        total_calories: entryToSplit.total_calories / 2,
+        event_group: null
     };
 
-    // Create the second split entry (same attributes as splitEntry but with updated message_index)
+    // Create second split entry with incremented message_index
     const secondSplitEntry = {
-        ...splitEntry,  // Copy from the first split entry
+        ...splitEntry,
         // Increment message_index.value (by 0.01 because the index
         // value should still fall in the old intervall)
         message_index: { value: entryToSplit.message_index.value + 0.01 }
