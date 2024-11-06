@@ -179,7 +179,6 @@ export function renderEditPlot(data) {
 
 // Edit Buttons Listener for Merge
 document.getElementById('mergeBtn').addEventListener('click', function() {
-
     // check selected Label condition
     if (selectedLabels.length < 2) {
         alert("Select at least two bars to merge.");
@@ -209,33 +208,25 @@ document.getElementById('mergeBtn').addEventListener('click', function() {
 
     // Create a new merged entry based on selected lengths
     const newEntry = {
-        timestamp: lengthsToMerge[0].timestamp,
-        start_time: lengthsToMerge[0].start_time,
+        ...lengthsToMerge[0],  // Copy all properties from first entry
         total_elapsed_time: sumAttribute('total_elapsed_time', lengthsToMerge),
         total_timer_time: sumAttribute('total_timer_time', lengthsToMerge),
-        message_index: { value: Math.min(...lengthsToMerge.map(entry => entry.message_index.value)) },
         total_strokes: sumAttribute('total_strokes', lengthsToMerge),
-        avg_speed: sumAttribute('avg_speed', lengthsToMerge) / lengthsToMerge.length,
         total_calories: sumAttribute('total_calories', lengthsToMerge),
-        event: lengthsToMerge[0].event,
-        event_type: lengthsToMerge[0].event_type,
-        swim_stroke: lengthsToMerge[0].swim_stroke,
+        avg_speed: sumAttribute('avg_speed', lengthsToMerge) / lengthsToMerge.length,
         avg_swimming_cadence: sumAttribute('avg_swimming_cadence', lengthsToMerge) / lengthsToMerge.length,
-        event_group: null,
-        length_type: lengthsToMerge[0].length_type
+        message_index: { value: Math.min(...lengthsToMerge.map(entry => entry.message_index.value)) },
+        event_group: null
     };
 
-    // Filter out the merged lengths from the data based on message_index.value
+    // Filter out the merged lengths from the data based on message_index.value and keep the first entry
     const remainingLengths = modifiedData.lengths.filter(entry =>
-        // keep the first entry to replace it later with merged version
         !selectedLabels.slice(1).includes(entry.message_index.value)
     );
 
-    // Insert the new merged entry into the correct position
-    const minIndex = Math.min(...selectedLabels);
-    // first of the provided indices, the length that will be substituted with the merged one
+    // Find index of first selected length to place merged entry
     const firstIndexLength = remainingLengths.findIndex(entry =>
-        entry.message_index.value === minIndex
+        entry.message_index.value === Math.min(...selectedLabels)
     );
 
     if (firstIndexLength === -1) {
@@ -243,12 +234,11 @@ document.getElementById('mergeBtn').addEventListener('click', function() {
         return;
     }
 
-    // insert merged length
+    // Replace first length with merged entry
     remainingLengths.splice(firstIndexLength, 1, newEntry);
 
     // Update the sessionStorage with the new merged data
     modifiedData.lengths = remainingLengths;
-
     sessionStorage.setItem('modifiedData', JSON.stringify(modifiedData));
 
     // Clear selected labels after merging
