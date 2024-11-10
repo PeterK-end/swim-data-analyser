@@ -307,37 +307,51 @@ document.getElementById('splitBtn').addEventListener('click', function() {
     renderEditPlot(modifiedData);
 });
 
-// document.getElementById('poolSizeBtn').addEventListener('click', function() {
 
-//     fetch('/changePoolSize', {
-//         method: 'POST',
-//         headers: {
-//             'Content-Type': 'application/json'
-//         },
-//         body: JSON.stringify({ labels: selectedLabels })
-//     })
-//         .then(response => response.json())
-//         .then(data => {
-//             selectedLabels = [];
-//             if (data.length) {
-//                 const lengthData = data.length;
-//                 renderEditPlot(lengthData); // Render the plot with the 'length' data block
-//             } else {
-//                 console.error("No 'length' data found in the response");
-//             }
-//         });
+document.getElementById('deleteBtn').addEventListener('click', function() {
 
-// });
+    // Ensure at least one label is selected for deletion
+    if (selectedLabels.length < 1) {
+        alert("Select at least one length to delete.");
+        return;
+    }
 
+    // Get the current modified data from sessionStorage
+    const modifiedData = JSON.parse(sessionStorage.getItem('modifiedData'));
+
+    // Filter to only keep the 'length' entries where the messageIndex.value is not in selectedLabels
+    const remainingLengths = modifiedData.lengths.filter(entry => !selectedLabels.includes(entry.message_index.value));
+    modifiedData.lengths = remainingLengths;
+
+    // Update the modified data with the new length data
+    sessionStorage.setItem('modifiedData', JSON.stringify(modifiedData));
+
+    // Clear the selected labels after deletion
+    selectedLabels = [];
+
+    // Render the updated plot
+    renderEditPlot(modifiedData);
+});
+
+// Event listener for choosing poolsize/stroke options
 document.getElementById('changeStrokeBtn').addEventListener('click', function() {
     // Show the modal
     document.getElementById('strokeModal').style.display = 'block';
 });
 
+document.getElementById('cancelStroke').addEventListener('click', function() {
+    // Hide the modal without doing anything
+    document.getElementById('strokeModal').style.display = 'none';
+});
+
+document.getElementById('togglePoolSizeBtn').addEventListener('click', function() {
+    document.getElementById('poolSizeModal').style.display = 'block';
+});
+
 // Confirm button inside the modal
 document.getElementById('confirmStroke').addEventListener('click', function() {
     // Get the selected stroke from the modal
-    const selectedStroke = document.getElementById('strokeSelect').value;
+    const selectedStroke = document.getElementById('poolSizeSelect').value;
 
     // Hide the modal
     document.getElementById('strokeModal').style.display = 'none';
@@ -368,34 +382,37 @@ document.getElementById('confirmStroke').addEventListener('click', function() {
     renderEditPlot(modifiedData);
 });
 
-// Cancel button inside the modal
-document.getElementById('cancelStroke').addEventListener('click', function() {
-    // Hide the modal without doing anything
-    document.getElementById('strokeModal').style.display = 'none';
-});
+document.getElementById('confirmPoolSize').addEventListener('click', function() {
+    // Get the current pool size from the metadata
+    const newPoolSize = parseInt(document.getElementById('poolSizeSelect').value);
+    const currentPoolSize = modifiedData.sessions[0].pool_length;
 
-document.getElementById('deleteBtn').addEventListener('click', function() {
+    // Hide the modal
+    document.getElementById('poolSizeModal').style.display = 'none';
 
-    // Ensure at least one label is selected for deletion
-    if (selectedLabels.length < 1) {
-        alert("Select at least one length to delete.");
+    // Get the modified data from sessionStorage
+    const modifiedData = JSON.parse(sessionStorage.getItem('modifiedData'));
+
+    if (!modifiedData || !modifiedData.lengths) {
+        console.error("No 'modifiedData' found in sessionStorage.");
         return;
     }
 
-    // Get the current modified data from sessionStorage
-    const modifiedData = JSON.parse(sessionStorage.getItem('modifiedData'));
+    // Adjust the relevant values in the lengths data
+    modifiedData.lengths = modifiedData.lengths.map(entry => {
+        const adjustmentFactor = currentPoolSize / newPoolSize ;
+        return {
+            ...entry,
+            total_distance: entry.total_distance * adjustmentFactor,
+        };
+    });
+    // Update the pool size in the modifiedData object
+    modifiedData.sessions[0].pool_length = newPoolSize;
 
-    // Filter to only keep the 'length' entries where the messageIndex.value is not in selectedLabels
-    const remainingLengths = modifiedData.lengths.filter(entry => !selectedLabels.includes(entry.message_index.value));
-    modifiedData.lengths = remainingLengths;
-
-    // Update the modified data with the new length data
+    // Update the sessionStorage with the modified data
     sessionStorage.setItem('modifiedData', JSON.stringify(modifiedData));
 
-    // Clear the selected labels after deletion
-    selectedLabels = [];
-
-    // Render the updated plot
+    // Re-render the plot with the updated pool size and data
     renderEditPlot(modifiedData);
 });
 
