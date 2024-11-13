@@ -335,18 +335,21 @@ document.getElementById('deleteBtn').addEventListener('click', function() {
 
 // Event listener for choosing poolsize/stroke options
 document.getElementById('changeStrokeBtn').addEventListener('click', function() {
-    // Show the modal
     document.getElementById('strokeModal').style.display = 'block';
 });
 
 document.getElementById('cancelStroke').addEventListener('click', function() {
-    // Hide the modal without doing anything
     document.getElementById('strokeModal').style.display = 'none';
 });
 
 document.getElementById('togglePoolSizeBtn').addEventListener('click', function() {
     document.getElementById('poolSizeModal').style.display = 'block';
 });
+
+document.getElementById('cancelPoolSize').addEventListener('click', function() {
+    document.getElementById('poolSizeModal').style.display = 'none';
+});
+
 
 // Confirm button inside the modal
 document.getElementById('confirmStroke').addEventListener('click', function() {
@@ -435,3 +438,25 @@ document.getElementById('undoBtn').addEventListener('click', function() {
         console.error("No 'length' data found in the original data.");
     }
 });
+
+document.getElementById('exportBtn').addEventListener('click', function() {
+    const data = sessionStorage.getItem('modifiedData');
+    if (!data) {
+        console.error("No 'modifiedData' found in sessionStorage.");
+        return;
+    }
+
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'workout-data.json';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // Close modal after export
+    document.getElementById('exportModal').style.display = 'none';
+});
+

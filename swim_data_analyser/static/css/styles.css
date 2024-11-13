@@ -174,9 +174,11 @@ p, h2, h3, h4 {
 /* Style the buttons */
 .plot-object-container .button-container {
     display: flex; /* Flexbox layout for buttons */
-    justify-content: flex-start; /* Align buttons to the left */
+    justify-content: space-between; /* Align buttons to the left */
+    overflow-x: auto; /* Enable horizontal scrolling when content overflows */
+    flex-wrap: nowrap; /* Prevent wrapping to a new line */
     gap: 10px; /* Space between buttons */
-    width: 100%; /* Ensure buttons container takes up full width */
+    width: 100%; /* Ensure buttons container takes up full  */
 }
 
 /* Base styles for all buttons */
@@ -210,6 +212,14 @@ p, h2, h3, h4 {
 
 .plot-object-container .icon-btn:hover svg {
     fill: var(--third-color); /* Change icon color on hover */
+}
+
+.spacer {
+    flex-grow: 1; /* Fills the space between the two button groups */
+}
+
+#exportBtn {
+    margin-left: auto; /* Ensure it stays at the rightmost position */
 }
 
 /* Flash messages */

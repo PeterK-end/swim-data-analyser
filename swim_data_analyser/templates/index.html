@@ -57,7 +57,6 @@
 	  <div class="plot-object-container" id="editPlot">
             <div class="button-container">
               <!-- Buttons with icons and text -->
-              <!-- <button id="poolSizeBtn" class="icon-btn"></button> -->
               <button title="Split" id="splitBtn" class="icon-btn">
                 <!-- split icon by Free Icons (https://free-icons.github.io/free-icons/) -->
                 <svg xmlns="http://www.w3.org/2000/svg" height="1em" fill="currentColor" viewBox="0 0 512 512">
@@ -102,6 +101,17 @@
                 </svg>
               </button>
 
+              <!-- Spacer to push the export button to the right -->
+              <div class="spacer"></div>
+
+              <!-- Right-aligned export button -->
+              <button class="icon-btn" id="exportBtn">
+                <!-- Icon for export -->
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 448">
+                  <path d="M 16 448 Q 1 447 0 432 Q 1 417 16 416 L 368 416 L 368 416 Q 383 417 384 432 Q 383 447 368 448 L 16 448 L 16 448 Z M 203 347 Q 192 357 181 347 L 53 219 L 53 219 Q 43 208 53 197 Q 64 187 75 197 L 176 297 L 176 297 L 176 192 L 176 192 L 176 16 L 176 16 Q 177 1 192 0 Q 207 1 208 16 L 208 192 L 208 192 L 208 297 L 208 297 L 309 197 L 309 197 Q 320 187 331 197 Q 341 208 331 219 L 203 347 L 203 347 Z" />
+                </svg>
+              </button>
+
               <!-- Modal Structure -->
               <div id="strokeModal" class="modal" style="display: none;">
                 <div class="modal-content">
@@ -126,8 +136,11 @@
                     <option value="25">25 meters</option>
                     <option value="50">50 meters</option>
                   </select>
-                  <button id="confirmPoolSize">Confirm</button>
                 </div>
+                <div class="modal-footer">
+                  <button id="confirmPoolSize" class="btn">Confirm</button>
+                  <button id="cancelPoolSize" class="btn">Cancel</button>
+                  </div>
               </div>
             </div>
 	    <div id="editDataPlot"></div>
