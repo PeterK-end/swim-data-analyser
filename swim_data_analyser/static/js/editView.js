@@ -351,7 +351,7 @@ document.getElementById('togglePoolSizeBtn').addEventListener('click', function(
 // Confirm button inside the modal
 document.getElementById('confirmStroke').addEventListener('click', function() {
     // Get the selected stroke from the modal
-    const selectedStroke = document.getElementById('poolSizeSelect').value;
+    const selectedStroke = document.getElementById('strokeSelect').value;
 
     // Hide the modal
     document.getElementById('strokeModal').style.display = 'none';
@@ -383,6 +383,10 @@ document.getElementById('confirmStroke').addEventListener('click', function() {
 });
 
 document.getElementById('confirmPoolSize').addEventListener('click', function() {
+
+    // Get the modified data from sessionStorage
+    const modifiedData = JSON.parse(sessionStorage.getItem('modifiedData'));
+
     // Get the current pool size from the metadata
     const newPoolSize = parseInt(document.getElementById('poolSizeSelect').value);
     const currentPoolSize = modifiedData.sessions[0].pool_length;
@@ -390,8 +394,6 @@ document.getElementById('confirmPoolSize').addEventListener('click', function() 
     // Hide the modal
     document.getElementById('poolSizeModal').style.display = 'none';
 
-    // Get the modified data from sessionStorage
-    const modifiedData = JSON.parse(sessionStorage.getItem('modifiedData'));
 
     if (!modifiedData || !modifiedData.lengths) {
         console.error("No 'modifiedData' found in sessionStorage.");
