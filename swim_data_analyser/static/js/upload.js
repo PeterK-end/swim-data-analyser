@@ -73,11 +73,12 @@ document.getElementById('uploadForm').addEventListener('submit', function(event)
             } else {
                 // Check if the workout is pool swimming
                 if (isPoolSwimming(parsedData)) {
-                    displayFlashMessage('File successfully parsed.', 'success');
                     sessionStorage.setItem('originalData', JSON.stringify(parsedData));
                     sessionStorage.setItem('modifiedData', JSON.stringify(parsedData));
-                    const lengthsData = parsedData.lengths;
-                    renderEditPlot(lengthsData);
+                    // Retrieve and parse the modified data
+                    const data = JSON.parse(sessionStorage.getItem('modifiedData'));
+                    renderEditPlot(data);
+                    displayFlashMessage('File successfully parsed.', 'success');
                 } else {
                     displayFlashMessage('The uploaded file is not a pool swimming workout.', 'error');
                 }
