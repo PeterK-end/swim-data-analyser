@@ -67,6 +67,10 @@ export function loadMeta() {
       <span id="totalTime">${formatTime(metadata.total_elapsed_time)}m</span>
     </div>
     <div class="metadata-box">
+      <strong>Total Lengths:</strong>
+      <span id="numLengths">${activeLengths.length}</span>
+    </div>
+    <div class="metadata-box">
       <strong>Total Distance:</strong>
       <span id="totalLength">${metadata.total_distance}m</span>
     </div>
