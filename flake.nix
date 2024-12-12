@@ -27,31 +27,6 @@
              echo 'Dependencies loaded to development environment.'
           '';
         };
-
-        # Deployment shell with runtime dependencies and JS asset build
-        deployment = pkgs.mkShell {
-          buildInputs = [
-            python-env
-            pkgs.nodejs
-            pkgs.nodePackages.webpack
-            pkgs.nodePackages.webpack-cli
-          ];
-
-          shellHook = ''
-            # Build static files with Webpack for production
-            echo "Building JS and CSS assets..."
-            npm install  # Install Node packages defined in package.json
-            npx webpack  # Run Webpack to generate production assets
-
-            # Django collectstatic for production
-            python manage.py collectstatic --noinput
-
-            # Run Gunicorn server
-            echo "Starting Gunicorn..."
-            ${python-env}/bin/gunicorn --bind 0.0.0.0:8000 swim_data_analyser.wsgi:application &
-            echo "Gunicorn is running on 0.0.0.0:8000."
-         '';
-        };
       };
     };
 }
