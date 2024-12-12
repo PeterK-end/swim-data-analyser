@@ -24,6 +24,29 @@ spin up dev server:
 npx webpack --watch
 python manage.py runserver
 ```
+
+# deployment
+
+1. Clone the repository:
+
+```
+git clone https://github.com/PeterK-end/swim-data-analyser
+```
+
+2. Build the Docker Image
+
+```
+docker build -t swim-data-analyser:latest .
+```
+
+3. Serve static content and Docker
+
+```
+docker run -p 8000:8000 -v /srv/swim-data-analyser:/app/static swim-data-analyser:latest
+```
+
+- make sure to serve static content `/srv/swim-data-analyser` via your webserver and proxy requests to 8000
+
 # Used libraries 
 
 The project depends on some core libraries listed below:
