@@ -29,4 +29,3 @@ EXPOSE 8000
 
 # Start Gunicorn server
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "swim_data_analyser.wsgi:application"]
-nb
