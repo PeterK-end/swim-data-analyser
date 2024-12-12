@@ -33,13 +33,17 @@ python manage.py runserver
 git clone https://github.com/PeterK-end/swim-data-analyser
 ```
 
+2.
+- adjust `swim_data_analyser/settings.py`
+  - change `SECRET_KEY` and `ALLOWED_HOSTS` 
+
 2. Build the Docker Image
 
 ```
 docker build -t swim-data-analyser:latest .
 ```
 
-3. Serve static content and Docker
+4. Serve static content and Docker
 
 ```
 docker run -p 8000:8000 -v /srv/swim-data-analyser:/app/static swim-data-analyser:latest
