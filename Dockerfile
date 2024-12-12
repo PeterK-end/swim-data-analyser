@@ -8,9 +8,7 @@ WORKDIR /app
 COPY . /app
 
 # Install node.js for running webpack
-RUN apt-get update && apt-get install -y nodejs npm && \
-    npm install -g npx
-
+RUN apt-get update && apt-get install -y nodejs npm
 # Install Python dependencies
 # Assuming requirements.txt includes Django, gunicorn and any other Python packages
 COPY requirements.txt /app/
