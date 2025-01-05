@@ -460,3 +460,57 @@ document.getElementById('exportBtn').addEventListener('click', function() {
     link.click();
     document.body.removeChild(link);
 });
+
+document.getElementById('downloadFitBtn').addEventListener('click', function() {
+    const modifiedData = JSON.parse(sessionStorage.getItem('modifiedData'));
+    console.log(modifiedData);
+
+    if (!modifiedData) {
+        alert("No workout data available to export.");
+        return;
+    }
+
+    // Helper function to get the CSRF token from cookies
+    function getCookie(name) {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.startsWith(name + '=')) {
+                return cookie.substring(name.length + 1);
+            }
+        }
+        return null;
+    }
+
+    const csrfToken = getCookie('csrftoken'); // Retrieve the CSRF token from cookies
+
+    fetch('/encode_js_object_to_fit', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken // Add the CSRF token to the headers
+        },
+        body: JSON.stringify(modifiedData)
+    })
+        .then(response => {
+        if (!response.ok) {
+            throw new Error(`Error: ${response.statusText}`);
+        }
+        return response.blob();
+    })
+    .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = 'activity.fit';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+    })
+    .catch(error => {
+        console.error('Error downloading FIT file:', error);
+        alert('Failed to download FIT file.');
+    });
+});

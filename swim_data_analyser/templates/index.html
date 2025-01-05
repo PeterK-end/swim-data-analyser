@@ -9,6 +9,7 @@
     <meta name="description" content="Swim data analyser with tools to edit, manipulate, and analyze swim data from Garmin Devices. Edit .FIT files visually, gain workout insights, and preserve privacy with client-side data handling. Open-source tool.">
     <title>Swim Data Analyser</title>
     <link rel="stylesheet" href="/static/css/styles.css">
+    <meta name="csrf-token" content="{{ csrf_token }}">
   </head>
   <body>
     <!-- Top bar -->
@@ -106,6 +107,7 @@
               <div class="spacer"></div>
 
               <!-- Right-aligned export button -->
+              <button id="downloadFitBtn">Download FIT File</button>
               <button class="icon-btn" id="exportBtn">
                 <!-- Icon for export -->
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 448">
