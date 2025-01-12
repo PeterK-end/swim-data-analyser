@@ -142,7 +142,7 @@
                 <div class="modal-footer">
                   <button id="confirmPoolSize" class="btn">Confirm</button>
                   <button id="cancelPoolSize" class="btn">Cancel</button>
-                  </div>
+                </div>
               </div>
               <!-- Download Button Selection Modal -->
               <div id="downloadModal" class="modal" style="display:none;">
@@ -152,10 +152,12 @@
                     <option value="json">json</option>
                     <option value="fit">fit</option>
                   </select>
+                  <div id="fitWarning" style="color:red; display:none;">
                     Please note: Server-side processing is necessary
                     for this option. If you are viewing this on
-                    swimdata.org, your data will be stored on the
+                    swimdata.org, your data will <b>not</b> be stored on the
                     server.
+                  </div>
                 </div>
                 <div class="modal-footer">
                   <button id="confirmDownloadChoice" class="btn">Confirm</button>
