@@ -1,4 +1,4 @@
 Django
 gunicorn
 fit-tool
-dateutil
+python-dateutil
