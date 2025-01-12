@@ -107,7 +107,6 @@
               <div class="spacer"></div>
 
               <!-- Right-aligned export button -->
-              <button id="downloadFitBtn">Download FIT File</button>
               <button class="icon-btn" id="exportBtn">
                 <!-- Icon for export -->
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 448">
@@ -144,6 +143,24 @@
                   <button id="confirmPoolSize" class="btn">Confirm</button>
                   <button id="cancelPoolSize" class="btn">Cancel</button>
                   </div>
+              </div>
+              <!-- Download Button Selection Modal -->
+              <div id="downloadModal" class="modal" style="display:none;">
+                <div class="modal-content">
+                  <h4>Select Export Format</h4>
+                  <select id="downloadSelect">
+                    <option value="json">json</option>
+                    <option value="fit">fit</option>
+                  </select>
+                    Please note: Server-side processing is necessary
+                    for this option. If you are viewing this on
+                    swimdata.org, your data will be stored on the
+                    server.
+                </div>
+                <div class="modal-footer">
+                  <button id="confirmDownloadChoice" class="btn">Confirm</button>
+                  <button id="cancelDownload" class="btn">Cancel</button>
+                </div>
               </div>
             </div>
 	    <div id="editDataPlot"></div>
