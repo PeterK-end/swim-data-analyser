@@ -27,6 +27,7 @@ export function loadMeta() {
 
     // Filter active lengths
     const activeLengths = lengths.filter(entry => entry.event === 'length' && entry.length_type === 'active');
+    const activeTime = activeLengths.reduce((acc, length) => acc + length.total_elapsed_time, 0);
 
     // Recalculate session metadata
     sessionData.total_elapsed_time = lengths.reduce((acc, entry) => acc + entry.total_elapsed_time, 0);
@@ -36,6 +37,8 @@ export function loadMeta() {
         return acc + strokes;
     }, 0);
     sessionData.num_active_lengths = activeLengths.length;
+    sessionData.enhanced_avg_speed = (sessionData.total_distance/activeTime) *3.6
+    //TODO: update sessionData.enhanced_max_speed based on laps (or fastest lengths?)
 
     // Save the updated data back to sessionStorage
     sessionStorage.setItem('modifiedData', JSON.stringify(data));
@@ -49,7 +52,6 @@ export function loadMeta() {
     const daytime = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
     // Pace calculation
-    const activeTime = activeLengths.reduce((acc, length) => acc + length.total_elapsed_time, 0);
     const pace = (activeTime/metadata.total_distance)*100;
 
     // Calculate average strokes per active length
@@ -102,6 +104,7 @@ export function renderEditPlot(data) {
 
     // Update Metadata (e.g., for loading new plot)
     loadMeta();
+    //console.log("data_object", data);
 
     // Filter data to include only entries where event is 'length' and length_type is 'active'
     const lengths = data.lengths;
