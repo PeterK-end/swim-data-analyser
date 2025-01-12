@@ -27,6 +27,7 @@ export function loadMeta() {
 
     // Filter active lengths
     const activeLengths = lengths.filter(entry => entry.event === 'length' && entry.length_type === 'active');
+    const activeTime = activeLengths.reduce((acc, length) => acc + length.total_elapsed_time, 0);
 
     // Recalculate session metadata
     sessionData.total_elapsed_time = lengths.reduce((acc, entry) => acc + entry.total_elapsed_time, 0);
@@ -36,6 +37,8 @@ export function loadMeta() {
         return acc + strokes;
     }, 0);
     sessionData.num_active_lengths = activeLengths.length;
+    sessionData.enhanced_avg_speed = (sessionData.total_distance/activeTime) *3.6
+    //TODO: update sessionData.enhanced_max_speed based on laps (or fastest lengths?)
 
     // Save the updated data back to sessionStorage
     sessionStorage.setItem('modifiedData', JSON.stringify(data));
@@ -49,7 +52,6 @@ export function loadMeta() {
     const daytime = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
     // Pace calculation
-    const activeTime = activeLengths.reduce((acc, length) => acc + length.total_elapsed_time, 0);
     const pace = (activeTime/metadata.total_distance)*100;
 
     // Calculate average strokes per active length
@@ -102,6 +104,7 @@ export function renderEditPlot(data) {
 
     // Update Metadata (e.g., for loading new plot)
     loadMeta();
+    //console.log("data_object", data);
 
     // Filter data to include only entries where event is 'length' and length_type is 'active'
     const lengths = data.lengths;
@@ -444,19 +447,118 @@ document.getElementById('undoBtn').addEventListener('click', function() {
 });
 
 document.getElementById('exportBtn').addEventListener('click', function() {
-    const data = sessionStorage.getItem('modifiedData');
-    if (!data) {
-        console.error("No 'modifiedData' found in sessionStorage.");
-        return;
+
+});
+
+// Download
+
+document.getElementById('exportBtn').addEventListener('click', function() {
+    document.getElementById('downloadModal').style.display = 'block';
+});
+
+document.getElementById('cancelDownload').addEventListener('click', function() {
+    document.getElementById('downloadModal').style.display = 'none';
+});
+
+document.getElementById('downloadSelect').addEventListener('change', function() {
+    var fitWarning = document.getElementById('fitWarning');
+    if (this.value === 'fit') {
+      fitWarning.style.display = 'block';
+    } else {
+      fitWarning.style.display = 'none';
+    }
+  });
+
+document.getElementById('confirmDownloadChoice').addEventListener('click', function() {
+    const downloadOption = document.getElementById('downloadSelect').value;
+
+    // Hide the modal
+    document.getElementById('downloadModal').style.display = 'none';
+
+    // Helper function to get the CSRF token from cookies
+    function getCookie(name) {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.startsWith(name + '=')) {
+                return cookie.substring(name.length + 1);
+            }
+        }
+        return null;
     }
 
-    const blob = new Blob([data], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
+    const csrfToken = getCookie('csrftoken'); // Retrieve the CSRF token from cookies
 
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'workout-data.json';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    if (downloadOption === "json") {
+        const data = sessionStorage.getItem('modifiedData');
+
+        if (!data) {
+            console.error("No 'modifiedData' found in sessionStorage.");
+            alert("No data available to download.");
+            return;
+        }
+
+        try {
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'workout-data.json';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url); // Revoke the object URL after download
+        } catch (error) {
+            console.error("Error generating JSON file:", error);
+            alert("Failed to generate JSON file.");
+        }
+    } else if (downloadOption === "fit") {
+        const data = sessionStorage.getItem('modifiedData');
+
+        if (!data) {
+            console.error("No 'modifiedData' found in sessionStorage.");
+            alert("No data available to download.");
+            return;
+        }
+
+        try {
+            const modifiedData = JSON.parse(data); // Ensure data is parsed into an object
+
+            fetch('/encode_js_object_to_fit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken // Add the CSRF token to the headers
+                },
+                body: JSON.stringify(modifiedData)
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Error: ${response.statusText}`);
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = 'activity.fit';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                })
+                .catch(error => {
+                    console.error('Error downloading FIT file:', error);
+                    alert('Failed to download FIT file.');
+                });
+        } catch (error) {
+            console.error("Error preparing data for FIT download:", error);
+            alert("Invalid data format for FIT download.");
+        }
+    } else {
+        alert("Please select a valid download option.");
+    }
 });

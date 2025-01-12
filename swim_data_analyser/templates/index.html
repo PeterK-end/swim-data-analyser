@@ -9,6 +9,7 @@
     <meta name="description" content="Swim data analyser with tools to edit, manipulate, and analyze swim data from Garmin Devices. Edit .FIT files visually, gain workout insights, and preserve privacy with client-side data handling. Open-source tool.">
     <title>Swim Data Analyser</title>
     <link rel="stylesheet" href="/static/css/styles.css">
+    <meta name="csrf-token" content="{{ csrf_token }}">
   </head>
   <body>
     <!-- Top bar -->
@@ -141,7 +142,27 @@
                 <div class="modal-footer">
                   <button id="confirmPoolSize" class="btn">Confirm</button>
                   <button id="cancelPoolSize" class="btn">Cancel</button>
+                </div>
+              </div>
+              <!-- Download Button Selection Modal -->
+              <div id="downloadModal" class="modal" style="display:none;">
+                <div class="modal-content">
+                  <h4>Select Export Format</h4>
+                  <select id="downloadSelect">
+                    <option value="json">json</option>
+                    <option value="fit">fit</option>
+                  </select>
+                  <div id="fitWarning" style="color:red; display:none;">
+                    Please note: Server-side processing is necessary
+                    for this option. If you are viewing this on
+                    swimdata.org, your data will <b>not</b> be stored on the
+                    server.
                   </div>
+                </div>
+                <div class="modal-footer">
+                  <button id="confirmDownloadChoice" class="btn">Confirm</button>
+                  <button id="cancelDownload" class="btn">Cancel</button>
+                </div>
               </div>
             </div>
 	    <div id="editDataPlot"></div>

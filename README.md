@@ -51,10 +51,11 @@ docker run -p 8000:8000 -v /srv/swim-data-analyser:/app/static swim-data-analyse
 
 - make sure to serve static content `/srv/swim-data-analyser` via your webserver and proxy requests to 8000
 
-# Used libraries 
+# used libraries
 
 The project depends on some core libraries listed below:
 
 - parsing `.fit` files: https://github.com/jimmykane/fit-parser
+- encoding `.fit` file: https://pypi.org/project/fit-tool/ (requires serve side processing)
 - plots: https://github.com/plotly/plotly.js/
 - server and (future) backend: https://www.djangoproject.com/
