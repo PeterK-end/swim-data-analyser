@@ -35,7 +35,8 @@ git clone https://github.com/PeterK-end/swim-data-analyser
 
 2.
 - adjust `swim_data_analyser/settings.py`
-  - change `SECRET_KEY` and `ALLOWED_HOSTS` 
+  - change `SECRET_KEY` and `ALLOWED_HOSTS`
+  - set `CSRF_TRUSTED_ORIGINS` to your domain
 
 2. Build the Docker Image
 
