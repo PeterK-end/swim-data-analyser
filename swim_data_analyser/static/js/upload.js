@@ -7,7 +7,13 @@ let data = null;
 // Function to check if the parsed data represents a pool swimming workout
 function isPoolSwimming(parsedData) {
     // Check if the sport is swimming and if there is pool length data
-    return parsedData.sports[0].sport === 'swimming' && parsedData.sports[0].sub_sport === 'lap_swimming';
+    if (parsedData.sports[0]){
+        return parsedData.sports[0].sport === 'swimming' && parsedData.sports[0].sub_sport === 'lap_swimming';
+    } else {
+        //can't check will fail later (probably) -> reason: some swim
+        //workouts don't include this but can be parsed anyway
+        return true;
+    }
 }
 
 document.getElementById('uploadForm').addEventListener('submit', function(event) {
