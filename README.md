@@ -47,7 +47,7 @@ docker build -t swim-data-analyser:latest .
 4. Serve static content and Docker
 
 ```
-docker run -p 8000:8000 -v /srv/swim-data-analyser:/app/static swim-data-analyser:latest
+docker run -d --restart=unless-stopped -p 127.0.0.1:8000:8000 -v /srv/swim-data-analyser:/app/static swim-data-analyser:latest
 ```
 
 - make sure to serve static content `/srv/swim-data-analyser` via your webserver and proxy requests to 8000
