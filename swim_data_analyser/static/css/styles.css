@@ -326,9 +326,10 @@ footer {
   text-align: center;
 }
 
-#strokeModal select {
+.modal select {
   width: 100%;
   padding: 8px;
+  font-size: 16px;
 }
 
 /* Metadata Box */
