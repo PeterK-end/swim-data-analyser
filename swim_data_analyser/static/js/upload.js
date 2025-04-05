@@ -1,8 +1,18 @@
 import FitParser from 'fit-file-parser';
 import {renderEditPlot} from './editView.js';
 
-// Declare 'data' as a global variable
-let data = null;
+// Helper for communicating to the user
+function displayFlashMessage(message, category) {
+    const flashMessage = document.createElement('div');
+    flashMessage.className = `flash-message ${category}`;
+    flashMessage.textContent = message;
+
+    document.body.appendChild(flashMessage);
+
+    setTimeout(() => {
+        flashMessage.remove();
+    }, 3000);  // Message disappears after 3 seconds
+}
 
 // Function to check if the parsed data represents a pool swimming workout
 function isPoolSwimming(parsedData) {
@@ -96,17 +106,6 @@ document.getElementById('uploadForm').addEventListener('submit', function(event)
 });
 
 function displayFlashMessage(message, category) {
-    const flashMessage = document.createElement('div');
-    flashMessage.className = `flash-message ${category}`;
-    flashMessage.textContent = message;
-
-    document.body.appendChild(flashMessage);
-
-    setTimeout(() => {
-        flashMessage.remove();
-    }, 3000);  // Message disappears after 3 seconds
-}
-
 // Fetch default data and render it when the page loads
 function loadDefaultData() {
 
