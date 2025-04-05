@@ -26,6 +26,53 @@ function isPoolSwimming(parsedData) {
     }
 }
 
+// Try to fit the workout into session memory with 5MB limit
+function reduceWorkoutSize(parsedData, maxQuotaKB, getSizeKB) {
+    const keepIntervals = [2, 3, 4, 5, 6]; // Try these in order
+
+    let finalData = null;
+    let finalInterval = null;
+
+    const reducedData = structuredClone(parsedData);
+    // remove laps with no lengths to get rid of redundant lengths information
+    reducedData.laps = reducedData.laps.filter(d => d.num_active_lengths > 0);
+
+    if (getSizeKB(reducedData) < maxQuotaKB) {
+        displayFlashMessage("File successfully parsed.");
+        console.log("Removed laps without active lengths.");
+        return reducedData;
+    }
+
+    for (const interval of keepIntervals) {
+
+        if (Array.isArray(reducedData.records)) {
+            reducedData.records = reducedData.records.filter((_, i) => i % interval === 0);
+        }
+
+        const sizeKB = getSizeKB(reducedData);
+        console.log(`Attempt with every ${interval}th record: ${sizeKB.toFixed(2)} KB`);
+
+        if (sizeKB <= maxQuotaKB) {
+            finalData = reducedData;
+            finalInterval = interval;
+            break;
+        }
+    }
+
+    if (!finalData) {
+        console.error('Unable to store FIT file: exceeds browser storage limits.');
+        displayFlashMessage('The FIT file is too large to store in browser memory.', 'error');
+        return;
+    }
+
+    const msg = finalInterval === 1
+          ? 'File successfully parsed.'
+          : `Large file detected — keeping every ${finalInterval}th record for performance.`;
+
+    displayFlashMessage(msg, 'success');
+    return finalData;
+}
+
 document.getElementById('uploadForm').addEventListener('submit', function(event) {
     event.preventDefault(); // Prevent the default form submission
 
@@ -86,26 +133,33 @@ document.getElementById('uploadForm').addEventListener('submit', function(event)
                 console.error('Error parsing FIT file:', error);
                 displayFlashMessage('Error parsing FIT file.', 'error');
                 return;
-            } else {
-                // Check if the workout is pool swimming
-                if (isPoolSwimming(parsedData)) {
-                    sessionStorage.setItem('originalData', JSON.stringify(parsedData));
-                    sessionStorage.setItem('modifiedData', JSON.stringify(parsedData));
-                    // Retrieve and parse the modified data
-                    const data = JSON.parse(sessionStorage.getItem('modifiedData'));
-                    renderEditPlot(data);
-                    displayFlashMessage('File successfully parsed.', 'success');
-                } else {
-                    displayFlashMessage('The uploaded file is not a pool swimming workout.', 'error');
-                }
             }
+
+            if (!isPoolSwimming(parsedData)) {
+                displayFlashMessage('The uploaded file is not a pool swimming workout.', 'error');
+                return;
+            }
+
+            // Session storage is limited to 5MB
+            const maxQuotaKB = 2400; // Safety margin for sessionStorage
+            const getSizeKB = obj => new Blob([JSON.stringify(obj)]).size / 1024;
+
+            let finalData = parsedData;
+
+            if (getSizeKB(parsedData) > maxQuotaKB) {
+                finalData = reduceWorkoutSize(parsedData, maxQuotaKB, getSizeKB);
+            }
+
+            // Save
+            sessionStorage.setItem('originalData', JSON.stringify(finalData));
+            sessionStorage.setItem('modifiedData', JSON.stringify(finalData));
+            renderEditPlot(finalData);
         });
     };
 
     reader.readAsArrayBuffer(file); // Read the file as an ArrayBuffer
 });
 
-function displayFlashMessage(message, category) {
 // Fetch default data and render it when the page loads
 function loadDefaultData() {
 
