@@ -314,6 +314,70 @@ document.getElementById('splitBtn').addEventListener('click', function() {
     renderEditPlot(modifiedData);
 });
 
+// Split 1 Lane into 3
+document.getElementById('split3Btn').addEventListener('click', function() {
+
+    const split3Offset = 0.001; // Offet to negate side effects with split (2) functionality
+
+    if (selectedLabels.length !== 1) {
+        alert("Select a single length to be split.");
+        return;
+    }
+
+    const modifiedData = JSON.parse(sessionStorage.getItem('modifiedData'));
+
+    if (!modifiedData || !modifiedData.lengths) {
+        console.error("No 'modifiedData' found in sessionStorage.");
+        return;
+    }
+
+    // Find the length that matches the selected label (using message_index.value)
+    const labelToSplit = selectedLabels[0];
+    const lengthToSplitIndex = modifiedData.lengths.findIndex(entry =>
+        entry.message_index.value === labelToSplit
+    );
+
+    if (lengthToSplitIndex === -1) {
+        console.error("Selected label not found in lengths.");
+        return;
+    }
+
+    // Get the entry to be split
+    const entryToSplit = modifiedData.lengths[lengthToSplitIndex];
+
+    // Create split entries by adjusting values
+    const splitEntry = {
+        ...entryToSplit,  // Copy all properties from original entry
+        total_elapsed_time: entryToSplit.total_elapsed_time / 3,
+        total_timer_time: entryToSplit.total_timer_time / 3,
+        total_strokes: Math.floor(entryToSplit.total_strokes / 3),
+        total_calories: entryToSplit.total_calories / 3,
+        event_group: null
+    };
+
+    // Create second split entry with incremented message_index
+    const secondSplitEntry = {
+        ...splitEntry,
+        message_index: { value: entryToSplit.message_index.value + 0.01 + split3Offset}
+    };
+
+    const thirdSplitEntry = {
+        ...secondSplitEntry,
+        message_index: { value: secondSplitEntry.message_index.value + 0.01 + split3Offset}
+    };
+
+    // Insert the split entries in place of the original
+    modifiedData.lengths.splice(lengthToSplitIndex, 1, splitEntry, secondSplitEntry, thirdSplitEntry);
+
+    // Update sessionStorage with modified data
+    sessionStorage.setItem('modifiedData', JSON.stringify(modifiedData));
+
+    // Clear selected labels after splitting
+    selectedLabels = [];
+
+    // Re-render the plot with updated data
+    renderEditPlot(modifiedData);
+});
 
 document.getElementById('deleteBtn').addEventListener('click', function() {
 
