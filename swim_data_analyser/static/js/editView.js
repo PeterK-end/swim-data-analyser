@@ -255,10 +255,15 @@ document.getElementById('mergeBtn').addEventListener('click', function() {
     renderEditPlot(modifiedData);
 });
 
-document.getElementById('splitBtn').addEventListener('click', function() {
-    if (selectedLabels.length !== 1) {
-        alert("Select a single length to be split.");
-        return;
+document.getElementById('confirmSplits').addEventListener('click', function() {
+
+    const nSplit = document.getElementById('numberOfSplitsInput').value;
+    const splitOffset = nSplit/1000;
+
+    // Validate the number of splits
+    if (isNaN(nSplit) || nSplit < 1 || nSplit > 10) {
+        alert("Please enter a number between 1 and 10 for splits.", "error");
+        return; // Exit early
     }
 
     // Get modified data from sessionStorage
@@ -283,26 +288,27 @@ document.getElementById('splitBtn').addEventListener('click', function() {
     // Get the entry to be split
     const entryToSplit = modifiedData.lengths[lengthToSplitIndex];
 
-    // Create split entries by adjusting values
-    const splitEntry = {
-        ...entryToSplit,  // Copy all properties from original entry
-        total_elapsed_time: entryToSplit.total_elapsed_time / 2,
-        total_timer_time: entryToSplit.total_timer_time / 2,
-        total_strokes: Math.floor(entryToSplit.total_strokes / 2),
-        total_calories: entryToSplit.total_calories / 2,
-        event_group: null
-    };
+    // Create nSplit entries
+    const splitEntries = [];
 
-    // Create second split entry with incremented message_index
-    const secondSplitEntry = {
-        ...splitEntry,
-        // Increment message_index.value (by 0.01 because the index
-        // value should still fall in the old intervall)
-        message_index: { value: entryToSplit.message_index.value + 0.01 }
-    };
+    for (let i = 0; i < nSplit; i++) {
+        const splitEntry = {
+            ...entryToSplit,
+            total_elapsed_time: entryToSplit.total_elapsed_time / nSplit,
+            total_timer_time: entryToSplit.total_timer_time / nSplit,
+            total_strokes: Math.floor(entryToSplit.total_strokes / nSplit),
+            total_calories: entryToSplit.total_calories / nSplit,
+            event_group: null,
+            message_index: {
+                value: entryToSplit.message_index.value + i * splitOffset
+            }
+        };
 
-    // Insert the split entries in place of the original
-    modifiedData.lengths.splice(lengthToSplitIndex, 1, splitEntry, secondSplitEntry);
+        splitEntries.push(splitEntry);
+    }
+
+    // Replace the original entry with the generated split entries
+    modifiedData.lengths.splice(lengthToSplitIndex, 1, ...splitEntries);
 
     // Update sessionStorage with modified data
     sessionStorage.setItem('modifiedData', JSON.stringify(modifiedData));
@@ -310,70 +316,7 @@ document.getElementById('splitBtn').addEventListener('click', function() {
     // Clear selected labels after splitting
     selectedLabels = [];
 
-    // Re-render the plot with updated data
-    renderEditPlot(modifiedData);
-});
-
-// Split 1 Lane into 3
-document.getElementById('split3Btn').addEventListener('click', function() {
-
-    const split3Offset = 0.001; // Offet to negate side effects with split (2) functionality
-
-    if (selectedLabels.length !== 1) {
-        alert("Select a single length to be split.");
-        return;
-    }
-
-    const modifiedData = JSON.parse(sessionStorage.getItem('modifiedData'));
-
-    if (!modifiedData || !modifiedData.lengths) {
-        console.error("No 'modifiedData' found in sessionStorage.");
-        return;
-    }
-
-    // Find the length that matches the selected label (using message_index.value)
-    const labelToSplit = selectedLabels[0];
-    const lengthToSplitIndex = modifiedData.lengths.findIndex(entry =>
-        entry.message_index.value === labelToSplit
-    );
-
-    if (lengthToSplitIndex === -1) {
-        console.error("Selected label not found in lengths.");
-        return;
-    }
-
-    // Get the entry to be split
-    const entryToSplit = modifiedData.lengths[lengthToSplitIndex];
-
-    // Create split entries by adjusting values
-    const splitEntry = {
-        ...entryToSplit,  // Copy all properties from original entry
-        total_elapsed_time: entryToSplit.total_elapsed_time / 3,
-        total_timer_time: entryToSplit.total_timer_time / 3,
-        total_strokes: Math.floor(entryToSplit.total_strokes / 3),
-        total_calories: entryToSplit.total_calories / 3,
-        event_group: null
-    };
-
-    // Create second split entry with incremented message_index
-    const secondSplitEntry = {
-        ...splitEntry,
-        message_index: { value: entryToSplit.message_index.value + 0.01 + split3Offset}
-    };
-
-    const thirdSplitEntry = {
-        ...secondSplitEntry,
-        message_index: { value: secondSplitEntry.message_index.value + 0.01 + split3Offset}
-    };
-
-    // Insert the split entries in place of the original
-    modifiedData.lengths.splice(lengthToSplitIndex, 1, splitEntry, secondSplitEntry, thirdSplitEntry);
-
-    // Update sessionStorage with modified data
-    sessionStorage.setItem('modifiedData', JSON.stringify(modifiedData));
-
-    // Clear selected labels after splitting
-    selectedLabels = [];
+    document.getElementById('numberOfSplitsModal').style.display = 'none';
 
     // Re-render the plot with updated data
     renderEditPlot(modifiedData);
@@ -405,9 +348,19 @@ document.getElementById('deleteBtn').addEventListener('click', function() {
 });
 
 // Event listener for choosing poolsize/stroke options
+
 document.getElementById('changeStrokeBtn').addEventListener('click', function() {
     document.getElementById('strokeModal').style.display = 'block';
 });
+
+document.getElementById('splitBtn').addEventListener('click', function() {
+    if (selectedLabels.length !== 1) {
+        alert("Select a single length to be split.");
+        return;
+    }
+    document.getElementById('numberOfSplitsModal').style.display = 'block';
+});
+
 
 document.getElementById('cancelStroke').addEventListener('click', function() {
     document.getElementById('strokeModal').style.display = 'none';
@@ -419,6 +372,10 @@ document.getElementById('togglePoolSizeBtn').addEventListener('click', function(
 
 document.getElementById('cancelPoolSize').addEventListener('click', function() {
     document.getElementById('poolSizeModal').style.display = 'none';
+});
+
+document.getElementById('cancelSplits').addEventListener('click', function() {
+    document.getElementById('numberOfSplitsModal').style.display = 'none';
 });
 
 
@@ -527,11 +484,11 @@ document.getElementById('cancelDownload').addEventListener('click', function() {
 document.getElementById('downloadSelect').addEventListener('change', function() {
     var fitWarning = document.getElementById('fitWarning');
     if (this.value === 'fit') {
-      fitWarning.style.display = 'block';
+        fitWarning.style.display = 'block';
     } else {
-      fitWarning.style.display = 'none';
+        fitWarning.style.display = 'none';
     }
-  });
+});
 
 document.getElementById('confirmDownloadChoice').addEventListener('click', function() {
     const downloadOption = document.getElementById('downloadSelect').value;

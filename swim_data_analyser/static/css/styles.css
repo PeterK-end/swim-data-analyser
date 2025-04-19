@@ -317,7 +317,6 @@ footer {
     margin-bottom: 20px;
 }
 
-
 .modal-content {
   margin-bottom: 20px;
 }
@@ -328,6 +327,11 @@ footer {
 
 .modal select {
   width: 100%;
+  padding: 8px;
+  font-size: 16px;
+}
+
+.modal input {
   padding: 8px;
   font-size: 16px;
 }
