@@ -261,8 +261,8 @@ document.getElementById('confirmSplits').addEventListener('click', function() {
     const splitOffset = nSplit/1000;
 
     // Validate the number of splits
-    if (isNaN(nSplit) || nSplit < 1 || nSplit > 10) {
-        alert("Please enter a number between 1 and 10 for splits.", "error");
+    if (isNaN(nSplit) || nSplit < 2 || nSplit > 10) {
+        alert("Please enter a number between 2 and 10 for splits.", "error");
         return; // Exit early
     }
 
