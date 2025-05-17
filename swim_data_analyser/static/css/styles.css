@@ -87,7 +87,7 @@ p, h2, h3, h4 {
   display: flex;
   justify-content: center; /* Center align icons horizontally */
   margin-top: 20px; /* Add some space above and below */
-  widht: 100%;
+  width: 100%;
 }
 
 /* Each option (icon + text) */
