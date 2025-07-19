@@ -101,20 +101,15 @@ function parseFitFile(file, onSuccess) {
             return;
         }
 
-        const removeTopLevelKeys = (dataObject, keysToRemove = []) => {
-            const cleanedData = structuredClone(dataObject);
-            for (const key of keysToRemove) {
-                delete cleanedData[key];
-            }
-            return cleanedData;
-        };
+        // const removeTopLevelKeys = (dataObject, keysToRemove = []) => {
+        //     const cleanedData = structuredClone(dataObject);
+        //     for (const key of keysToRemove) {
+        //         delete cleanedData[key];
+        //     }
+        //     return cleanedData;
+        // };
 
-        const keysToRemove = [
-            "timeInZoneMesgs", "timestampCorrelationMesgs", "deviceInfoMesgs",
-            "deviceSettingsMesgs", "eventMesgs", "fileCreatorMesgs",
-            "trainingSettingsMesgs", "userProfileMesgs", "zonesTargetMesgs"
-        ];
-        const parsedData = removeTopLevelKeys(result.messages, keysToRemove);
+        const parsedData = result.messages;
 
         if (!isPoolSwimming(parsedData)) {
             displayFlashMessage('This is not a pool swimming workout.', 'error');
