@@ -132,7 +132,7 @@ p, h2, h3, h4 {
 /*redefine witdh for viewContext box*/
 #viewContent p {
     max-width: 100%; /* Example text alignment */
-    font-size: 0.8rem;
+    font-size: 1rem;
     padding: 10px 20px 0px 20px;
 }
 
@@ -247,8 +247,10 @@ p, h2, h3, h4 {
 }
 
 /* Upload container styles */
+
+
 .upload-container {
-    border: 2px solid var(--second-color); /* Border color */
+    border: 2px solid var(--first-color); /* Border color */
     padding: 10px 20px 20px 20px;
     border-radius: 5px;
     background-color: #f8f9fa; /* Light background for visibility */
@@ -272,17 +274,20 @@ p, h2, h3, h4 {
 
 /* Style for file input */
 .upload-container input[type="file"] {
-    border: 2px solid var(--second-color); /* Border color */
+    border: 2px solid var(--first-color); /* Border color */
     border-radius: 5px;
     background-color: #ffffff; /* White background for the file input */
     margin-right: 10px; /* Space between file input and button */
     flex: 1; /* Allow input to grow */
+    font-size: 16px;
+    cursor: pointer;
 }
 
 /* Style for the submit button */
 .upload-container button {
     padding: 5px 10px; /* Add padding for the button */
     border: 0.8px solid black; /* Remove border */
+    font-size: 16px;
     border-radius: 5px; /* Match the border radius */
     cursor: pointer; /* Change cursor on hover */
 }
@@ -334,6 +339,33 @@ footer {
 .modal input {
   padding: 8px;
   font-size: 16px;
+}
+
+/* Modal Buttons*/
+
+.btn {
+    padding: 10px 20px;
+    font-size: 16px;
+    border: none;
+    border-radius: 6px;
+    background-color: var(--third-color);
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.1s ease;
+}
+
+.btn:hover {
+    background-color: var(--fourth-color);
+}
+
+.btn:active {
+    transform: scale(0.98); /* Adds a nice "pressed" effect */
+}
+
+select#strokeFilter{
+    padding: 10px;
+    font-size: 16px;
 }
 
 /* Metadata Box */
