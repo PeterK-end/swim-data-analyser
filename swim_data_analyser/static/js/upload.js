@@ -35,8 +35,6 @@ function reduceWorkoutSize(parsedData, maxQuotaKB, getSizeKB) {
     let finalInterval = null;
 
     const reducedData = structuredClone(parsedData);
-    // remove laps with no lengths to get rid of redundant lengths information
-    reducedData.laps = reducedData.laps.filter(d => d.num_active_lengths > 0);
 
     if (getSizeKB(reducedData) < maxQuotaKB) {
         displayFlashMessage("File successfully parsed.");
@@ -46,8 +44,8 @@ function reduceWorkoutSize(parsedData, maxQuotaKB, getSizeKB) {
 
     for (const interval of keepIntervals) {
 
-        if (Array.isArray(reducedData.records)) {
-            reducedData.records = reducedData.records.filter((_, i) => i % interval === 0);
+        if (Array.isArray(reducedData.recordMesgs)) {
+            reducedData.recordMesgs = reducedData.recordMesgs.filter((_, i) => i % interval === 0);
         }
 
         const sizeKB = getSizeKB(reducedData);
@@ -68,25 +66,15 @@ function reduceWorkoutSize(parsedData, maxQuotaKB, getSizeKB) {
 
     const msg = finalInterval === 1
           ? 'File successfully parsed.'
-          : `Large file detected — keeping every ${finalInterval}th record for performance.`;
+          : `Large file detected — keeping every ${finalInterval}th heartrate record for performance.`;
 
     displayFlashMessage(msg, 'success');
     return finalData;
 }
 
-
-document.getElementById('uploadForm')?.addEventListener('submit', (event) => {
-    event.preventDefault();
-
-    const fileInput = document.getElementById('fileInput');
-    const file = fileInput?.files?.[0];
-
-    if (!file) {
-        displayFlashMessage('Please select a file to upload.', 'error');
-        return;
-    }
-
+function parseFitFile(file, onSuccess) {
     const extension = file.name.slice(((file.name.lastIndexOf('.') - 1) >>> 0) + 2).toLowerCase();
+
     if (extension !== 'fit') {
         displayFlashMessage('Invalid file type. Please upload a .fit file.', 'error');
         return;
@@ -107,15 +95,26 @@ document.getElementById('uploadForm')?.addEventListener('submit', (event) => {
 
         const result = decoder.read();
 
-        //console.log(result);
-
         if (!result || result.errors?.length) {
             console.error('Error decoding FIT:', result.errors);
             displayFlashMessage('Error decoding FIT file.', 'error');
             return;
         }
 
-        const parsedData = result.messages;
+        const removeTopLevelKeys = (dataObject, keysToRemove = []) => {
+            const cleanedData = structuredClone(dataObject);
+            for (const key of keysToRemove) {
+                delete cleanedData[key];
+            }
+            return cleanedData;
+        };
+
+        const keysToRemove = [
+            "timeInZoneMesgs", "timestampCorrelationMesgs", "deviceInfoMesgs",
+            "deviceSettingsMesgs", "eventMesgs", "fileCreatorMesgs",
+            "trainingSettingsMesgs", "userProfileMesgs", "zonesTargetMesgs"
+        ];
+        const parsedData = removeTopLevelKeys(result.messages, keysToRemove);
 
         if (!isPoolSwimming(parsedData)) {
             displayFlashMessage('This is not a pool swimming workout.', 'error');
@@ -131,34 +130,51 @@ document.getElementById('uploadForm')?.addEventListener('submit', (event) => {
             if (!finalData) return;
         }
 
+        onSuccess(finalData);
+    };
+
+    // Start reading the file (this kicks off async operation)
+    reader.readAsArrayBuffer(file);
+}
+
+document.getElementById('uploadForm')?.addEventListener('submit', (event) => {
+    event.preventDefault();
+
+    const fileInput = document.getElementById('fileInput');
+    const file = fileInput?.files?.[0];
+
+    if (!file) {
+        displayFlashMessage('Please select a file to upload.', 'error');
+        return;
+    }
+
+    parseFitFile(file, (finalData) => {
         sessionStorage.setItem('originalData', JSON.stringify(finalData));
         sessionStorage.setItem('modifiedData', JSON.stringify(finalData));
         renderEditPlot(finalData);
-    };
-
-    reader.readAsArrayBuffer(file);
+    });
 });
 
 // Fetch default data and render it when the page loads
 function loadDefaultData() {
-
-    fetch('/getDefaultData')
-        .then(response => response.json())
-        .then(data => {
-
-            sessionStorage.setItem('originalData', JSON.stringify(data));
-            sessionStorage.setItem('modifiedData', JSON.stringify(data));
-
-            // Assuming your new data structure has multiple blocks like 'lengths'
-            if (data.lengths) {
-                renderEditPlot(data);
-            } else {
-                console.error("No 'length' data found in the response");
+    fetch('static/data/example.fit')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
+            return response.blob();
+        })
+        .then(blob => {
+            const file = new File([blob], 'example.fit', { type: 'application/octet-stream' });
+            parseFitFile(file, (finalData) => {
+                sessionStorage.setItem('originalData', JSON.stringify(finalData));
+                sessionStorage.setItem('modifiedData', JSON.stringify(finalData));
+            });
+
         })
         .catch(error => {
-            console.error('Error fetching default data:', error);
-            displayFlashMessage('Error fetching default data.', 'error');
+            console.error('Error loading default FIT file:', error);
+            displayFlashMessage('Error loading default FIT file.', 'error');
         });
 }
 
