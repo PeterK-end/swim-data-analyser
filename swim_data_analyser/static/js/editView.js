@@ -582,11 +582,16 @@ function downloadFitFromJson(nestedData) {
                 // Convert time strings to Date objects
                 const convertedFields = convertTimeFieldsToDate(fields);
 
-                const mesg = {
-                    mesgNum: mesgNum,
-                    ...convertedFields,
-                };
-                mesgs.push(mesg);
+                // Only push if record is not empty
+                if (fields && Object.keys(fields).length > 0) {
+                    const mesg = {
+                        mesgNum: mesgNum,
+                        ...convertedFields,
+                    };
+
+                    mesgs.push(mesg);
+                }
+
                 // console.log("messages, decoded", mesg);
             } catch (err) {
                 console.warn(`Skipping unknown message: ${message}`, err.message);
