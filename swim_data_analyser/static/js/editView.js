@@ -481,15 +481,6 @@ document.getElementById('cancelDownload').addEventListener('click', function() {
     document.getElementById('downloadModal').style.display = 'none';
 });
 
-document.getElementById('downloadSelect').addEventListener('change', function() {
-    var fitWarning = document.getElementById('fitWarning');
-    if (this.value === 'fit') {
-        fitWarning.style.display = 'block';
-    } else {
-        fitWarning.style.display = 'none';
-    }
-});
-
 // Replace this function in your code
 function downloadFitFromJson(nestedData) {
 
@@ -563,8 +554,6 @@ function downloadFitFromJson(nestedData) {
     try {
         const flatMessages = convertNestedToFlatMessages(nestedData);
         const mesgs = [];
-        // const DOUGHNUTS_EARNED_KEY = 0;
-        // const HEART_RATE_KEY = 1;
 
         // Create the Developer Id message for the developer data fields.
         const developerDataIdMesg = {
@@ -592,7 +581,6 @@ function downloadFitFromJson(nestedData) {
                     mesgs.push(mesg);
                 }
 
-                // console.log("messages, decoded", mesg);
             } catch (err) {
                 console.warn(`Skipping unknown message: ${message}`, err.message);
             }
@@ -601,10 +589,7 @@ function downloadFitFromJson(nestedData) {
         const encoder = new Encoder();
 
         mesgs.forEach((mesg) => {
-            const mesgS = mesg;
-            console.log("hello");
-            console.log(mesgS);
-            encoder.writeMesg(mesgS);
+            encoder.writeMesg(mesg);
         });
 
         const uint8Array = encoder.close();
