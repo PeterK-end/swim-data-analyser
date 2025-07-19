@@ -1,4 +1,5 @@
 import Plotly from 'plotly.js-basic-dist-min'
+import { Encoder, Stream, Profile, Utils } from '@garmin/fitsdk';
 
 let selectedLabels = [];
 
@@ -17,27 +18,27 @@ function sumAttribute(attribute, entries) {
 export function loadMeta() {
     const data = JSON.parse(sessionStorage.getItem('modifiedData'));
 
-    if (!data || !data.lengths || !data.sessions) {
-        console.error("No 'modifiedData' found in sessionStorage.");
+    if (!data || !data.lengthMesgs || !data.sessionMesgs) {
+        console.error("No 'modifiedData' found in sessionStorage or data is complete.");
         return;
     }
 
-    const lengths = data.lengths;
-    const sessionData = data.sessions[0];
+    const lengths = data.lengthMesgs;
+    const sessionData = data.sessionMesgs[0];
 
     // Filter active lengths
-    const activeLengths = lengths.filter(entry => entry.event === 'length' && entry.length_type === 'active');
-    const activeTime = activeLengths.reduce((acc, length) => acc + length.total_elapsed_time, 0);
+    const activeLengths = lengths.filter(entry => entry.event === 'length' && entry.lengthType === 'active');
+    const activeTime = activeLengths.reduce((acc, length) => acc + length.totalElapsedTime, 0);
 
     // Recalculate session metadata
-    sessionData.total_elapsed_time = lengths.reduce((acc, entry) => acc + entry.total_elapsed_time, 0);
-    sessionData.total_distance = activeLengths.length * sessionData.pool_length; // Total distance is based on pool length and active lengths
-    sessionData.total_strokes = lengths.reduce((acc, entry) => {
-        const strokes = entry.total_strokes || 0; // Fallback to 0 if total_strokes is undefined or null
+    sessionData.totalElapsedTime = lengths.reduce((acc, entry) => acc + entry.totalElapsedTime, 0);
+    sessionData.total_distance = activeLengths.length * sessionData.poolLength; // Total distance is based on pool length and active lengths
+    sessionData.totalStrokes = lengths.reduce((acc, entry) => {
+        const strokes = entry.totalStrokes || 0; // Fallback to 0 if totalStrokes is undefined or null
         return acc + strokes;
     }, 0);
     sessionData.num_active_lengths = activeLengths.length;
-    sessionData.enhanced_avg_speed = (sessionData.total_distance/activeTime) *3.6
+    sessionData.enhanced_avgSpeed = (sessionData.totalDistance/activeTime) *3.6
     //TODO: update sessionData.enhanced_max_speed based on laps (or fastest lengths?)
 
     // Save the updated data back to sessionStorage
@@ -52,21 +53,21 @@ export function loadMeta() {
     const daytime = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
     // Pace calculation
-    const pace = (activeTime/metadata.total_distance)*100;
+    const pace = (activeTime/metadata.totalDistance)*100;
 
     // Calculate average strokes per active length
-    const avgStrokesPerLength = Math.floor(metadata.total_strokes / sessionData.num_active_lengths);
+    const avgStrokesPerLength = Math.floor(metadata.totalStrokes / sessionData.num_active_lengths);
 
     // Update the content dynamically with recalculated metadata
     document.getElementById('metadata-container').innerHTML = `
     <div class="metadata-flex">
     <div class="metadata-box">
       <strong>Pool Length:</strong>
-      <span id="poolLength">${metadata.pool_length}m</span>
+      <span id="poolLength">${metadata.poolLength}m</span>
     </div>
     <div class="metadata-box">
       <strong>Total Time:</strong>
-      <span id="totalTime">${formatTime(metadata.total_elapsed_time)}m</span>
+      <span id="totalTime">${formatTime(metadata.totalElapsedTime)}m</span>
     </div>
     <div class="metadata-box">
       <strong>Total Lengths:</strong>
@@ -74,7 +75,7 @@ export function loadMeta() {
     </div>
     <div class="metadata-box">
       <strong>Total Distance:</strong>
-      <span id="totalLength">${metadata.total_distance}m</span>
+      <span id="totalLength">${metadata.totalDistance}m</span>
     </div>
     <div class="metadata-box">
       <strong>Workout Date:</strong>
@@ -90,11 +91,11 @@ export function loadMeta() {
     </div>
     <div class="metadata-box">
       <strong>Avg. Heartrate</strong>
-      <span id="avgStrokes">${metadata.avg_heart_rate} bpm</span>
+      <span id="avgStrokes">${metadata.avgHeartRate} bpm</span>
     </div>
     <div class="metadata-box">
       <strong>Calories</strong>
-      <span id="avgStrokes">${metadata.total_calories} kcal</span>
+      <span id="avgStrokes">${metadata.totalCalories} kcal</span>
     </div>
   </div>
 `;
@@ -104,11 +105,11 @@ export function renderEditPlot(data) {
 
     // Update Metadata (e.g., for loading new plot)
     loadMeta();
-    //console.log("data_object", data);
+    console.log("data_object", data);
 
-    // Filter data to include only entries where event is 'length' and length_type is 'active'
-    const lengths = data.lengths;
-    const lengthData = lengths.filter(d => d.event === 'length' && d.length_type === 'active');
+    // Filter data to include only entries where event is 'length' and lengthType is 'active'
+    const lengths = data.lengthMesgs;
+    const lengthData = lengths.filter(d => d.event === 'length' && d.lengthType === 'active');
 
     // Define a fixed Viridis color map for swim strokes
     const fixedStrokeColors = {
@@ -122,23 +123,23 @@ export function renderEditPlot(data) {
     // Create plot data with the fixed colors for each swim stroke and hover text
     const plotData = [{
         x: lengthData.map((_, index) => index + 1),  // X-axis as the length index (1, 2, 3, etc.)
-        y: lengthData.map(d => d.total_elapsed_time || 0),  // Y-axis as 'total_elapsed_time', fallback to 0
+        y: lengthData.map(d => d.totalElapsedTime || 0),  // Y-axis as 'totalElapsedTime', fallback to 0
         type: 'bar',
-        text: lengthData.map(d => `Stroke: ${d.swim_stroke || 'Unknown'}<br>Time: ${d.total_elapsed_time} s`),  // Hover text
+        text: lengthData.map(d => `Stroke: ${d.swimStroke || 'Unknown'}<br>Time: ${d.totalElapsedTime} s`),  // Hover text
         hoverinfo: 'text',  // Show the hover text defined above
         textposition: 'none', // Prevent the text from being shown on the bars
         marker: {
             color: lengthData.map((d) => {
-                const stroke = d.swim_stroke || 'default';  // Get stroke, use default if missing
+                const stroke = d.swimStroke || 'default';  // Get stroke, use default if missing
                 const baseColor = fixedStrokeColors[stroke] || fixedStrokeColors['default'];
 
                 // Highlight selected lengths by making the color brighter (adjust brightness for selection)
-                return selectedLabels.includes(d.message_index.value) ? '#2A4D69' : baseColor;  // Highlight with Navy Teal
+                return selectedLabels.includes(d.messageIndex) ? '#2A4D69' : baseColor;  // Highlight with Navy Teal
             }),
-            opacity: lengthData.map((d) => selectedLabels.includes(d.message_index.value) ? 1 : 0.9),  // Full opacity if selected
+            opacity: lengthData.map((d) => selectedLabels.includes(d.messageIndex) ? 1 : 0.9),  // Full opacity if selected
             line: {
-                width: lengthData.map((d) => selectedLabels.includes(d.message_index.value) ? 2 : 1),  // Thicker border for selected
-                color: lengthData.map((d) => selectedLabels.includes(d.message_index.value) ? 'rgba(0, 0, 0, 1)' : 'rgba(0, 0, 0, 0.5)')  // Stronger border color for selected
+                width: lengthData.map((d) => selectedLabels.includes(d.messageIndex) ? 2 : 1),  // Thicker border for selected
+                color: lengthData.map((d) => selectedLabels.includes(d.messageIndex) ? 'rgba(0, 0, 0, 1)' : 'rgba(0, 0, 0, 0.5)')  // Stronger border color for selected
             }
         }
     }];
@@ -169,8 +170,9 @@ export function renderEditPlot(data) {
     // Handle clicking on a plot bar to toggle selection
     const plotElement = document.getElementById('editDataPlot');
     plotElement.on('plotly_click', function(event) {
+
         const displayedIndex = event.points[0].x - 1;  // Get the index from the x-axis label (0-based)
-        const messageIndexValue = lengthData[displayedIndex].message_index.value;
+        const messageIndexValue = lengthData[displayedIndex].messageIndex;
 
         // Toggle the selection state of the clicked bar (length)
         if (selectedLabels.includes(messageIndexValue)) {
@@ -186,7 +188,7 @@ export function renderEditPlot(data) {
 
 // Edit Buttons Listener for Merge
 document.getElementById('mergeBtn').addEventListener('click', function() {
-    // check selected Label condition
+    // check selected Label conditionmessageIndex
     if (selectedLabels.length < 2) {
         alert("Select at least two bars to merge.");
         return;
@@ -198,14 +200,14 @@ document.getElementById('mergeBtn').addEventListener('click', function() {
     // Get modified data from sessionStorage
     const modifiedData = JSON.parse(sessionStorage.getItem('modifiedData'));
 
-    if (!modifiedData || !modifiedData.lengths) {
+    if (!modifiedData || !modifiedData.lengthMesgs) {
         console.error("No 'modifiedData' found in sessionStorage.");
         return;
     }
 
-    // Extract the lengths of type 'active' that will be merged based on message_index.value
-    const lengthsToMerge = modifiedData.lengths.filter(entry =>
-        selectedLabels.includes(entry.message_index.value)
+    // Extract the lengths of type 'active' that will be merged based on messageIndex
+    const lengthsToMerge = modifiedData.lengthMesgs.filter(entry =>
+        selectedLabels.includes(entry.messageIndex)
     );
 
     if (lengthsToMerge.length < 2) {
@@ -216,24 +218,23 @@ document.getElementById('mergeBtn').addEventListener('click', function() {
     // Create a new merged entry based on selected lengths
     const newEntry = {
         ...lengthsToMerge[0],  // Copy all properties from first entry
-        total_elapsed_time: sumAttribute('total_elapsed_time', lengthsToMerge),
-        total_timer_time: sumAttribute('total_timer_time', lengthsToMerge),
-        total_strokes: sumAttribute('total_strokes', lengthsToMerge),
-        total_calories: sumAttribute('total_calories', lengthsToMerge),
-        avg_speed: sumAttribute('avg_speed', lengthsToMerge) / lengthsToMerge.length,
-        avg_swimming_cadence: sumAttribute('avg_swimming_cadence', lengthsToMerge) / lengthsToMerge.length,
-        message_index: { value: Math.min(...lengthsToMerge.map(entry => entry.message_index.value)) },
-        event_group: null
+        totalElapsedTime: sumAttribute('totalElapsedTime', lengthsToMerge),
+        totalTimerTime: sumAttribute('totalTimerTime', lengthsToMerge),
+        totalStrokes: sumAttribute('totalStrokes', lengthsToMerge),
+        totalCalories: sumAttribute('totalCalories', lengthsToMerge),
+        avgSpeed: sumAttribute('avgSpeed', lengthsToMerge) / lengthsToMerge.length,
+        avgSwimmingCadence: sumAttribute('avgSwimmingCadence', lengthsToMerge) / lengthsToMerge.length,
+        messageIndex: Math.min(...lengthsToMerge.map(entry => entry.messageIndex)),
     };
 
-    // Filter out the merged lengths from the data based on message_index.value and keep the first entry
-    const remainingLengths = modifiedData.lengths.filter(entry =>
-        !selectedLabels.slice(1).includes(entry.message_index.value)
+    // Filter out the merged lengths from the data based on messageIndex and keep the first entry
+    const remainingLengths = modifiedData.lengthMesgs.filter(entry =>
+        !selectedLabels.slice(1).includes(entry.messageIndex)
     );
 
     // Find index of first selected length to place merged entry
     const firstIndexLength = remainingLengths.findIndex(entry =>
-        entry.message_index.value === Math.min(...selectedLabels)
+        entry.messageIndex === Math.min(...selectedLabels)
     );
 
     if (firstIndexLength === -1) {
@@ -245,7 +246,7 @@ document.getElementById('mergeBtn').addEventListener('click', function() {
     remainingLengths.splice(firstIndexLength, 1, newEntry);
 
     // Update the sessionStorage with the new merged data
-    modifiedData.lengths = remainingLengths;
+    modifiedData.lengthMesgs = remainingLengths;
     sessionStorage.setItem('modifiedData', JSON.stringify(modifiedData));
 
     // Clear selected labels after merging
@@ -269,15 +270,15 @@ document.getElementById('confirmSplits').addEventListener('click', function() {
     // Get modified data from sessionStorage
     const modifiedData = JSON.parse(sessionStorage.getItem('modifiedData'));
 
-    if (!modifiedData || !modifiedData.lengths) {
+    if (!modifiedData || !modifiedData.lengthMesgs) {
         console.error("No 'modifiedData' found in sessionStorage.");
         return;
     }
 
-    // Find the length that matches the selected label (using message_index.value)
+    // Find the length that matches the selected label (using messageIndex)
     const labelToSplit = selectedLabels[0];
-    const lengthToSplitIndex = modifiedData.lengths.findIndex(entry =>
-        entry.message_index.value === labelToSplit
+    const lengthToSplitIndex = modifiedData.lengthMesgs.findIndex(entry =>
+        entry.messageIndex === labelToSplit
     );
 
     if (lengthToSplitIndex === -1) {
@@ -286,7 +287,7 @@ document.getElementById('confirmSplits').addEventListener('click', function() {
     }
 
     // Get the entry to be split
-    const entryToSplit = modifiedData.lengths[lengthToSplitIndex];
+    const entryToSplit = modifiedData.lengthMesgs[lengthToSplitIndex];
 
     // Create nSplit entries
     const splitEntries = [];
@@ -294,13 +295,12 @@ document.getElementById('confirmSplits').addEventListener('click', function() {
     for (let i = 0; i < nSplit; i++) {
         const splitEntry = {
             ...entryToSplit,
-            total_elapsed_time: entryToSplit.total_elapsed_time / nSplit,
-            total_timer_time: entryToSplit.total_timer_time / nSplit,
-            total_strokes: Math.floor(entryToSplit.total_strokes / nSplit),
-            total_calories: entryToSplit.total_calories / nSplit,
-            event_group: null,
-            message_index: {
-                value: entryToSplit.message_index.value + i * splitOffset
+            totalElapsedTime: entryToSplit.totalElapsedTime / nSplit,
+            totalTimerTime: entryToSplit.totalTimerTime / nSplit,
+            totalStrokes: Math.floor(entryToSplit.totalStrokes / nSplit),
+            totalCalories: entryToSplit.totalCalories / nSplit,
+            messageIndex: {
+                value: entryToSplit.messageIndex + i * splitOffset
             }
         };
 
@@ -308,7 +308,7 @@ document.getElementById('confirmSplits').addEventListener('click', function() {
     }
 
     // Replace the original entry with the generated split entries
-    modifiedData.lengths.splice(lengthToSplitIndex, 1, ...splitEntries);
+    modifiedData.lengthMesgs.splice(lengthToSplitIndex, 1, ...splitEntries);
 
     // Update sessionStorage with modified data
     sessionStorage.setItem('modifiedData', JSON.stringify(modifiedData));
@@ -333,9 +333,9 @@ document.getElementById('deleteBtn').addEventListener('click', function() {
     // Get the current modified data from sessionStorage
     const modifiedData = JSON.parse(sessionStorage.getItem('modifiedData'));
 
-    // Filter to only keep the 'length' entries where the messageIndex.value is not in selectedLabels
-    const remainingLengths = modifiedData.lengths.filter(entry => !selectedLabels.includes(entry.message_index.value));
-    modifiedData.lengths = remainingLengths;
+    // Filter to only keep the 'length' entries where the messageIndex is not in selectedLabels
+    const remainingLengths = modifiedData.lengthMesgs.filter(entry => !selectedLabels.includes(entry.messageIndex));
+    modifiedData.lengthMesgs = remainingLengths;
 
     // Update the modified data with the new length data
     sessionStorage.setItem('modifiedData', JSON.stringify(modifiedData));
@@ -390,17 +390,17 @@ document.getElementById('confirmStroke').addEventListener('click', function() {
     // Get the modified data from sessionStorage
     const modifiedData = JSON.parse(sessionStorage.getItem('modifiedData'));
 
-    if (!modifiedData || !modifiedData.lengths) {
+    if (!modifiedData || !modifiedData.lengthMesgs) {
         console.error("No 'modifiedData' found in sessionStorage.");
         return;
     }
 
-    // Update swim_stroke for lengths where message_index is in selectedLabels
-    modifiedData.lengths = modifiedData.lengths.map(entry => {
-        if (selectedLabels.includes(entry.message_index.value)) {
+    // Update swim_stroke for lengths where messageIndex is in selectedLabels
+    modifiedData.lengthMesgs = modifiedData.lengthMesgs.map(entry => {
+        if (selectedLabels.includes(entry.messageIndex)) {
             return { ...entry, swim_stroke: selectedStroke };  // Update stroke
         }
-        return entry;  // No changes if message_index not in selectedLabels
+        return entry;  // No changes if messageIndex not in selectedLabels
     });
 
     // Save the updated data back to sessionStorage
@@ -420,27 +420,27 @@ document.getElementById('confirmPoolSize').addEventListener('click', function() 
 
     // Get the current pool size from the metadata
     const newPoolSize = parseInt(document.getElementById('poolSizeSelect').value);
-    const currentPoolSize = modifiedData.sessions[0].pool_length;
+    const currentPoolSize = modifiedData.sessionMesgs[0].poolLength;
 
     // Hide the modal
     document.getElementById('poolSizeModal').style.display = 'none';
 
 
-    if (!modifiedData || !modifiedData.lengths) {
+    if (!modifiedData || !modifiedData.lengthMesgs) {
         console.error("No 'modifiedData' found in sessionStorage.");
         return;
     }
 
     // Adjust the relevant values in the lengths data
-    modifiedData.lengths = modifiedData.lengths.map(entry => {
+    modifiedData.lengthMesgs = modifiedData.lengthMesgs.map(entry => {
         const adjustmentFactor = currentPoolSize / newPoolSize ;
         return {
             ...entry,
-            total_distance: entry.total_distance * adjustmentFactor,
+            totalDistance: entry.totalDistance * adjustmentFactor,
         };
     });
     // Update the pool size in the modifiedData object
-    modifiedData.sessions[0].pool_length = newPoolSize;
+    modifiedData.sessionMesgs[0].poolLength = newPoolSize;
 
     // Update the sessionStorage with the modified data
     sessionStorage.setItem('modifiedData', JSON.stringify(modifiedData));
@@ -460,7 +460,7 @@ document.getElementById('undoBtn').addEventListener('click', function() {
     const data = JSON.parse(sessionStorage.getItem('modifiedData'));
 
     // Check if data exists before rendering
-    if (data && data.lengths) {
+    if (data && data.lengthMesgs) {
         renderEditPlot(data); // Render the plot with the length data
     } else {
         console.error("No 'length' data found in the original data.");
@@ -675,35 +675,8 @@ document.getElementById('confirmDownloadChoice').addEventListener('click', funct
         try {
             const modifiedData = JSON.parse(data); // Ensure data is parsed into an object
 
-            fetch('/encode_js_object_to_fit', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken // Add the CSRF token to the headers
-                },
-                body: JSON.stringify(modifiedData)
-            })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`Error: ${response.statusText}`);
-                    }
-                    return response.blob();
-                })
-                .then(blob => {
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.style.display = 'none';
-                    a.href = url;
-                    a.download = 'activity.fit';
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    document.body.removeChild(a);
-                })
-                .catch(error => {
-                    console.error('Error downloading FIT file:', error);
-                    alert('Failed to download FIT file.');
-                });
+            downloadFitFromJson(modifiedData)
+
         } catch (error) {
             console.error("Error preparing data for FIT download:", error);
             alert("Invalid data format for FIT download.");
