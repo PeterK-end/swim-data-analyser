@@ -1,4 +1,5 @@
-import FitParser from 'fit-file-parser';
+//import FitParser from 'fit-file-parser';
+import { Decoder, Stream, Profile, Utils } from '@garmin/fitsdk';
 import {renderEditPlot} from './editView.js';
 
 // Helper for communicating to the user
@@ -17,8 +18,8 @@ function displayFlashMessage(message, category) {
 // Function to check if the parsed data represents a pool swimming workout
 function isPoolSwimming(parsedData) {
     // Check if the sport is swimming and if there is pool length data
-    if (parsedData.sports[0]){
-        return parsedData.sports[0].sport === 'swimming' && parsedData.sports[0].sub_sport === 'lap_swimming';
+    if (parsedData.sportMesgs[0]){
+        return parsedData.sportMesgs[0].sport === 'swimming' && parsedData.sportMesgs[0].subSport === 'lapSwimming';
     } else {
         //can't check will fail later (probably) -> reason: some swim
         //workouts don't include this but can be parsed anyway
@@ -73,91 +74,69 @@ function reduceWorkoutSize(parsedData, maxQuotaKB, getSizeKB) {
     return finalData;
 }
 
-document.getElementById('uploadForm').addEventListener('submit', function(event) {
-    event.preventDefault(); // Prevent the default form submission
 
-    const formData = new FormData();
+document.getElementById('uploadForm')?.addEventListener('submit', (event) => {
+    event.preventDefault();
+
     const fileInput = document.getElementById('fileInput');
-    const file = fileInput.files[0];
+    const file = fileInput?.files?.[0];
 
     if (!file) {
         displayFlashMessage('Please select a file to upload.', 'error');
         return;
     }
 
-    // Check for valid file extension
-    const validExtensions = ['.fit'];
-    const fileExtension = file.name.slice((file.name.lastIndexOf(".") - 1 >>> 0) + 2).toLowerCase();
-
-    if (!validExtensions.includes(`.${fileExtension}`)) {
+    const extension = file.name.slice(((file.name.lastIndexOf('.') - 1) >>> 0) + 2).toLowerCase();
+    if (extension !== 'fit') {
         displayFlashMessage('Invalid file type. Please upload a .fit file.', 'error');
         return;
     }
 
-    formData.append('file', file);
-
-    // New parsing logic using fit-file-parser
     const reader = new FileReader();
 
-    reader.onload = function(event) {
-        const arrayBuffer = event.target.result;
+    reader.onload = function (e) {
+        const arrayBuffer = e.target.result;
+        const byteArray = new Uint8Array(arrayBuffer);
+        const stream = Stream.fromByteArray(byteArray);
+        const decoder = new Decoder(stream);
 
-        // Validate FIT file header before parsing
-        const headerView = new DataView(arrayBuffer, 0, 14); // Read the first 14 bytes
-        const headerSize = headerView.getUint8(0);
-        const fileSignature = String.fromCharCode(
-            headerView.getUint8(8),
-            headerView.getUint8(9),
-            headerView.getUint8(10),
-            headerView.getUint8(11)
-        );
-
-        // Check if the header is correct
-        if (headerSize !== 14 || fileSignature !== '.FIT') {
-            displayFlashMessage('Invalid FIT file header. Please upload a valid .fit file.', 'error');
-            return; // Stop further processing
+        if (!decoder.isFIT()) {
+            displayFlashMessage('Invalid FIT file.', 'error');
+            return;
         }
 
-        const fitParser = new FitParser({
-            force: true,
-            speedUnit: 'km/h',
-            lengthUnit: 'm',
-            temperatureUnit: 'celsius',
-            pressureUnit: 'bar',
-            elapsedRecordField: true,
-            mode: 'both',
-        });
+        const result = decoder.read();
 
-        fitParser.parse(arrayBuffer, function (error, parsedData) {
-            if (error || !parsedData) {
-                console.error('Error parsing FIT file:', error);
-                displayFlashMessage('Error parsing FIT file.', 'error');
-                return;
-            }
+        //console.log(result);
 
-            if (!isPoolSwimming(parsedData)) {
-                displayFlashMessage('The uploaded file is not a pool swimming workout.', 'error');
-                return;
-            }
+        if (!result || result.errors?.length) {
+            console.error('Error decoding FIT:', result.errors);
+            displayFlashMessage('Error decoding FIT file.', 'error');
+            return;
+        }
 
-            // Session storage is limited to 5MB
-            const maxQuotaKB = 2400; // Safety margin for sessionStorage
-            const getSizeKB = obj => new Blob([JSON.stringify(obj)]).size / 1024;
+        const parsedData = result.messages;
 
-            let finalData = parsedData;
+        if (!isPoolSwimming(parsedData)) {
+            displayFlashMessage('This is not a pool swimming workout.', 'error');
+            return;
+        }
 
-            if (getSizeKB(parsedData) > maxQuotaKB) {
-                finalData = reduceWorkoutSize(parsedData, maxQuotaKB, getSizeKB);
-            }
+        const maxQuotaKB = 2400;
+        const getSizeKB = obj => new Blob([JSON.stringify(obj)]).size / 1024;
 
-            // Save
-            sessionStorage.setItem('originalData', JSON.stringify(finalData));
-            sessionStorage.setItem('modifiedData', JSON.stringify(finalData));
-            renderEditPlot(finalData);
-        });
+        let finalData = parsedData;
+        if (getSizeKB(parsedData) > maxQuotaKB) {
+            finalData = reduceWorkoutSize(parsedData, maxQuotaKB, getSizeKB);
+            if (!finalData) return;
+        }
+
+        sessionStorage.setItem('originalData', JSON.stringify(finalData));
+        sessionStorage.setItem('modifiedData', JSON.stringify(finalData));
+        renderEditPlot(finalData);
     };
 
-    reader.readAsArrayBuffer(file); // Read the file as an ArrayBuffer
+    reader.readAsArrayBuffer(file);
 });
 
 // Fetch default data and render it when the page loads
