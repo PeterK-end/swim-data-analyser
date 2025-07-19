@@ -490,6 +490,135 @@ document.getElementById('downloadSelect').addEventListener('change', function() 
     }
 });
 
+// Replace this function in your code
+function downloadFitFromJson(nestedData) {
+
+    function convertTimeFieldsToDate(obj) {
+        const timeFields = [
+            "timestamp",
+            "timeCreated",
+            "startTime",
+            "endTime",
+            "localTimestamp",
+            "eventTimestamp",
+            "triggerTimestamp",
+            "systemTimestamp",
+        ];
+
+        const result = {};
+
+        for (const [key, value] of Object.entries(obj)) {
+            if (timeFields.includes(key) && typeof value === "string") {
+                const date = new Date(value);
+                if (!isNaN(date)) {
+                    result[key] = date;
+                } else {
+                    console.warn(`Invalid date for key "${key}": ${value}`);
+                    result[key] = value; // leave untouched if invalid
+                }
+            } else {
+                result[key] = value;
+            }
+        }
+
+        return result;
+    }
+
+    function convertNestedToFlatMessages(nestedJson) {
+        const flat = [];
+
+        for (const [messageName, messages] of Object.entries(nestedJson)) {
+            if (!Array.isArray(messages)) continue;
+            for (const fields of messages) {
+                flat.push({
+                    message: messageName,
+                    fields: fields,
+                });
+            }
+        }
+
+        return flat;
+    }
+
+    function getMesgNumByMessagesKey(messagesKey) {
+        const messages = Profile.messages;
+
+        if (typeof messages !== 'object') {
+            console.error("Profile.messages is not an object");
+            return null;
+        }
+
+        for (const key in messages) {
+            if (!messages.hasOwnProperty(key)) continue;
+
+            const definition = messages[key];
+            if (definition.messagesKey === messagesKey) {
+                return parseInt(key, 10); // message number is the key
+            }
+        }
+
+        return null; // not found
+    }
+
+    try {
+        const flatMessages = convertNestedToFlatMessages(nestedData);
+        const mesgs = [];
+        // const DOUGHNUTS_EARNED_KEY = 0;
+        // const HEART_RATE_KEY = 1;
+
+        // Create the Developer Id message for the developer data fields.
+        const developerDataIdMesg = {
+            mesgNum: Profile.MesgNum.DEVELOPER_DATA_ID,
+            applicationId: Array(16).fill(0), // In practice, this should be a UUID converted to a byte array
+            applicationVersion: 1,
+            developerDataIndex: 0,
+        };
+        mesgs.push(developerDataIdMesg);
+
+        for (const { message, fields } of flatMessages) {
+            try {
+                const mesgNum = getMesgNumByMessagesKey(message);
+
+                // Convert time strings to Date objects
+                const convertedFields = convertTimeFieldsToDate(fields);
+
+                const mesg = {
+                    mesgNum: mesgNum,
+                    ...convertedFields,
+                };
+                mesgs.push(mesg);
+                // console.log("messages, decoded", mesg);
+            } catch (err) {
+                console.warn(`Skipping unknown message: ${message}`, err.message);
+            }
+        }
+
+        const encoder = new Encoder();
+
+        mesgs.forEach((mesg) => {
+            const mesgS = mesg;
+            console.log("hello");
+            console.log(mesgS);
+            encoder.writeMesg(mesgS);
+        });
+
+        const uint8Array = encoder.close();
+        const blob = new Blob([uint8Array], { type: 'application/octet-stream' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'activity.fit';
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+    } catch (error) {
+        console.error('Encoding FIT failed:', error);
+        alert('Failed to encode FIT file.');
+    }
+}
+
 document.getElementById('confirmDownloadChoice').addEventListener('click', function() {
     const downloadOption = document.getElementById('downloadSelect').value;
 
