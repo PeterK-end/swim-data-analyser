@@ -221,9 +221,8 @@ document.getElementById('mergeBtn').addEventListener('click', function() {
         totalElapsedTime: sumAttribute('totalElapsedTime', lengthsToMerge),
         totalTimerTime: sumAttribute('totalTimerTime', lengthsToMerge),
         totalStrokes: sumAttribute('totalStrokes', lengthsToMerge),
-        totalCalories: sumAttribute('totalCalories', lengthsToMerge),
-        avgSpeed: sumAttribute('avgSpeed', lengthsToMerge) / lengthsToMerge.length,
-        avgSwimmingCadence: sumAttribute('avgSwimmingCadence', lengthsToMerge) / lengthsToMerge.length,
+        avgSpeed: modifiedData.sessionMesgs[0].poolLength / sumAttribute('totalTimerTime', lengthsToMerge),
+        avgSwimmingCadence: Math.round(sumAttribute('totalStrokes', lengthsToMerge) / (sumAttribute('totalTimerTime', lengthsToMerge)/60), 0),
         messageIndex: Math.min(...lengthsToMerge.map(entry => entry.messageIndex)),
     };
 
