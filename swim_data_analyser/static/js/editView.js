@@ -37,7 +37,7 @@ export function loadMeta() {
         const strokes = entry.totalStrokes || 0; // Fallback to 0 if totalStrokes is undefined or null
         return acc + strokes;
     }, 0);
-    sessionData.num_active_lengths = activeLengths.length;
+    sessionData.numActiveLengths = activeLengths.length;
     sessionData.enhanced_avgSpeed = (sessionData.totalDistance/activeTime) *3.6
     //TODO: update sessionData.enhanced_max_speed based on laps (or fastest lengths?)
 
@@ -56,7 +56,7 @@ export function loadMeta() {
     const pace = (activeTime/metadata.totalDistance)*100;
 
     // Calculate average strokes per active length
-    const avgStrokesPerLength = Math.floor(metadata.totalStrokes / sessionData.num_active_lengths);
+    const avgStrokesPerLength = Math.floor(metadata.totalStrokes / sessionData.numActiveLengths);
 
     // Update the content dynamically with recalculated metadata
     document.getElementById('metadata-container').innerHTML = `
