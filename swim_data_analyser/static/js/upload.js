@@ -164,8 +164,8 @@ function loadDefaultData() {
             parseFitFile(file, (finalData) => {
                 sessionStorage.setItem('originalData', JSON.stringify(finalData));
                 sessionStorage.setItem('modifiedData', JSON.stringify(finalData));
+                renderEditPlot(finalData);
             });
-
         })
         .catch(error => {
             console.error('Error loading default FIT file:', error);
