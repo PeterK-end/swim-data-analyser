@@ -15,6 +15,71 @@ function sumAttribute(attribute, entries) {
     return entries.reduce((total, entry) => total + (entry[attribute] || 0), 0);
 }
 
+// Update laps after changes to lengths
+function updateLaps() {
+    const data = JSON.parse(sessionStorage.getItem('modifiedData'));
+
+    if (!data || !data.lengthMesgs || !data.sessionMesgs || !data.lapMesgs) {
+        console.error("Missing data in sessionStorage.");
+        return;
+    }
+
+    const lengths = data.lengthMesgs;
+    const laps = data.lapMesgs;
+
+    laps.forEach(lap => {
+        const { firstLengthIndex, numLengths } = lap;
+
+        // ignore empty laps
+        if (firstLengthIndex == null || numLengths == null || numLengths === 0) {
+            return;
+        }
+
+        const lapLengths = lengths.filter(len =>
+            len.messageIndex >= firstLengthIndex &&
+            len.messageIndex < firstLengthIndex + numLengths
+        );
+
+        console.log(lapLengths);
+
+        if (lapLengths.length === 0) {
+            console.warn("No matching lengths found for lap:", lap);
+            return;
+        }
+
+        const sum = (attr) =>
+            lapLengths.reduce((total, len) => total + (len[attr] || 0), 0);
+
+        const totalElapsedTime = sum('totalElapsedTime');
+        const totalTimerTime = sum('totalTimerTime');
+        const totalStrokes = sum('totalStrokes');
+        const totalCalories = sum('totalCalories');
+        const totalCycles = totalStrokes; // Assuming 1 cycle = 1 stroke for swimming
+
+        const poolLength = data.sessionMesgs[0]?.poolLength || 25; // Default to 25m if not found
+        const totalDistance = lapLengths.length * poolLength;
+
+        // Recalculate average values
+        const avgCadence = totalTimerTime > 0 ? (totalStrokes / totalTimerTime) * 60 : 0;
+        const avgSpeed = totalTimerTime > 0 ? totalDistance / totalTimerTime : 0;
+
+        // Update lap fields
+        lap.totalElapsedTime = totalElapsedTime;
+        lap.totalTimerTime = totalTimerTime;
+        lap.totalStrokes = totalStrokes;
+        lap.totalCalories = totalCalories;
+        lap.totalCycles = totalCycles;
+        lap.totalDistance = totalDistance;
+        lap.numActiveLengths = lapLengths.length;
+        lap.numLengths = lapLengths.length;
+        lap.avgCadence = Math.round(avgCadence);
+        lap.avgSpeed = avgSpeed;
+        lap.enhancedAvgSpeed = avgSpeed;
+    });
+
+    sessionStorage.setItem('modifiedData', JSON.stringify(data));
+}
+
 export function loadMeta() {
     const data = JSON.parse(sessionStorage.getItem('modifiedData'));
 
@@ -195,7 +260,7 @@ document.getElementById('mergeBtn').addEventListener('click', function() {
     }
 
     // sort the labels to slice them later
-    selectedLabels.sort();
+    selectedLabels.sort((a, b) => a - b);
 
     // Get modified data from sessionStorage
     const modifiedData = JSON.parse(sessionStorage.getItem('modifiedData'));
@@ -247,6 +312,9 @@ document.getElementById('mergeBtn').addEventListener('click', function() {
     // Update the sessionStorage with the new merged data
     modifiedData.lengthMesgs = remainingLengths;
     sessionStorage.setItem('modifiedData', JSON.stringify(modifiedData));
+
+    // Update Lap Records
+    updateLaps();
 
     // Clear selected labels after merging
     selectedLabels = [];
@@ -315,6 +383,9 @@ document.getElementById('confirmSplits').addEventListener('click', function() {
     // Clear selected labels after splitting
     selectedLabels = [];
 
+    // Update Lap Records
+    updateLaps();
+
     document.getElementById('numberOfSplitsModal').style.display = 'none';
 
     // Re-render the plot with updated data
@@ -342,41 +413,12 @@ document.getElementById('deleteBtn').addEventListener('click', function() {
     // Clear the selected labels after deletion
     selectedLabels = [];
 
+    // Update Lap Records
+    updateLaps();
+
     // Render the updated plot
     renderEditPlot(modifiedData);
 });
-
-// Event listener for choosing poolsize/stroke options
-
-document.getElementById('changeStrokeBtn').addEventListener('click', function() {
-    document.getElementById('strokeModal').style.display = 'block';
-});
-
-document.getElementById('splitBtn').addEventListener('click', function() {
-    if (selectedLabels.length !== 1) {
-        alert("Select a single length to be split.");
-        return;
-    }
-    document.getElementById('numberOfSplitsModal').style.display = 'block';
-});
-
-
-document.getElementById('cancelStroke').addEventListener('click', function() {
-    document.getElementById('strokeModal').style.display = 'none';
-});
-
-document.getElementById('togglePoolSizeBtn').addEventListener('click', function() {
-    document.getElementById('poolSizeModal').style.display = 'block';
-});
-
-document.getElementById('cancelPoolSize').addEventListener('click', function() {
-    document.getElementById('poolSizeModal').style.display = 'none';
-});
-
-document.getElementById('cancelSplits').addEventListener('click', function() {
-    document.getElementById('numberOfSplitsModal').style.display = 'none';
-});
-
 
 // Confirm button inside the modal
 document.getElementById('confirmStroke').addEventListener('click', function() {
@@ -397,7 +439,7 @@ document.getElementById('confirmStroke').addEventListener('click', function() {
     // Update swim_stroke for lengths where messageIndex is in selectedLabels
     modifiedData.lengthMesgs = modifiedData.lengthMesgs.map(entry => {
         if (selectedLabels.includes(entry.messageIndex)) {
-            return { ...entry, swim_stroke: selectedStroke };  // Update stroke
+            return { ...entry, swimStroke: selectedStroke };  // Update stroke
         }
         return entry;  // No changes if messageIndex not in selectedLabels
     });
@@ -407,6 +449,9 @@ document.getElementById('confirmStroke').addEventListener('click', function() {
 
     // Reset selectedLabels
     selectedLabels = [];
+
+    // Update Lap Records
+    updateLaps();
 
     // Re-render the plot with updated data
     renderEditPlot(modifiedData);
@@ -464,6 +509,36 @@ document.getElementById('undoBtn').addEventListener('click', function() {
     } else {
         console.error("No 'length' data found in the original data.");
     }
+});
+
+// Event listener for choosing poolsize/stroke options
+document.getElementById('changeStrokeBtn').addEventListener('click', function() {
+    document.getElementById('strokeModal').style.display = 'block';
+});
+
+document.getElementById('splitBtn').addEventListener('click', function() {
+    if (selectedLabels.length !== 1) {
+        alert("Select a single length to be split.");
+        return;
+    }
+    document.getElementById('numberOfSplitsModal').style.display = 'block';
+});
+
+
+document.getElementById('cancelStroke').addEventListener('click', function() {
+    document.getElementById('strokeModal').style.display = 'none';
+});
+
+document.getElementById('togglePoolSizeBtn').addEventListener('click', function() {
+    document.getElementById('poolSizeModal').style.display = 'block';
+});
+
+document.getElementById('cancelPoolSize').addEventListener('click', function() {
+    document.getElementById('poolSizeModal').style.display = 'none';
+});
+
+document.getElementById('cancelSplits').addEventListener('click', function() {
+    document.getElementById('numberOfSplitsModal').style.display = 'none';
 });
 
 document.getElementById('exportBtn').addEventListener('click', function() {
