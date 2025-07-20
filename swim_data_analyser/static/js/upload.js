@@ -1,4 +1,3 @@
-//import FitParser from 'fit-file-parser';
 import { Decoder, Stream, Profile, Utils } from '@garmin/fitsdk';
 import {renderEditPlot} from './editView.js';
 
@@ -72,6 +71,7 @@ function reduceWorkoutSize(parsedData, maxQuotaKB, getSizeKB) {
     return finalData;
 }
 
+// Parsing with Garmin-SDK
 function parseFitFile(file, onSuccess) {
     const extension = file.name.slice(((file.name.lastIndexOf('.') - 1) >>> 0) + 2).toLowerCase();
 

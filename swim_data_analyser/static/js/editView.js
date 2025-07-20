@@ -481,7 +481,7 @@ document.getElementById('cancelDownload').addEventListener('click', function() {
     document.getElementById('downloadModal').style.display = 'none';
 });
 
-// Replace this function in your code
+// Encode the JS-Object to fit with Garmin-SDK
 function downloadFitFromJson(nestedData) {
 
     function convertTimeFieldsToDate(obj) {
