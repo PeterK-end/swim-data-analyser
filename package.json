@@ -1,7 +1,6 @@
 {
   "dependencies": {
     "@garmin/fitsdk": "^21.171.0",
-    "fit-file-parser": "^1.20.0",
     "plotly.js-basic-dist-min": "^2.35.2",
     "plotly.js-dist-min": "^2.35.2"
   },
