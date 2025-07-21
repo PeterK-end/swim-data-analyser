@@ -9,6 +9,7 @@ The goal is to provide full client-side parsing and handling of the data, ensuri
 The project uses Nix flakes to manage developement dependencies. You can follow the setup instructions provided in the section 'Setup' of this [tutorial](https://jupyenv.io/documentation/getting-started/).
 
 dev environment:
+
 ```
 nix develop
 ```
@@ -56,7 +57,7 @@ docker run -d --restart=unless-stopped -p 127.0.0.1:8000:8000 swim-data-analyser
 
 The project depends on some core libraries listed below:
 
-- parsing `.fit` files: https://github.com/jimmykane/fit-parser
-- encoding `.fit` file: https://pypi.org/project/fit-tool/ (requires serve side processing)
+
+- parsing and encoding of `.fit` files: https://github.com/garmin/fit-javascript-sdk
 - plots: https://github.com/plotly/plotly.js/
 - server and (future) backend: https://www.djangoproject.com/

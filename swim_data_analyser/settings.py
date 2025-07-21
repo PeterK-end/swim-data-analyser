@@ -27,6 +27,42 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+# PWA related variables
+PWA_APP_NAME = 'Swim Data Analyser'
+PWA_APP_DESCRIPTION = 'Analyse and manage your swim data'
+PWA_APP_THEME_COLOR = '#77529e'
+PWA_APP_BACKGROUND_COLOR = '#ffffff'
+PWA_APP_DISPLAY = 'standalone'
+PWA_APP_SCOPE = '/'
+PWA_APP_ORIENTATION = 'any'
+PWA_APP_START_URL = '/'
+PWA_APP_STATUS_BAR_COLOR = 'default'
+
+PWA_APP_ICONS = [
+    {
+        'src': '/static/icons/icon-192.png',
+        'sizes': '192x192',
+        'type': 'image/png'
+    },
+    {
+        'src': '/static/icons/icon-512.png',
+        'sizes': '512x512',
+        'type': 'image/png'
+    },
+    {
+        'src': '/static/favicon.svg',
+        'sizes': 'any',
+        'type': 'image/svg+xml'
+    }
+]
+
+PWA_APP_LANG = 'en-EN'
+
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'swim_data_analyser/static'),
+]
+
+PWA_SERVICE_WORKER_PATH = os.path.join(BASE_DIR, 'swim_data_analyser/static/js', 'service-worker.js')
 
 # Application definition
 
@@ -37,6 +73,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'pwa',
     'swim_data_analyser',
 ]
 

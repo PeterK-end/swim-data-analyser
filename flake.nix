@@ -11,6 +11,7 @@
       pkgs = nixpkgs.legacyPackages.${system};
       python-env = pkgs.python312.withPackages (pp: with pp; [
         django
+        django-pwa
         gunicorn # WSGI HTTP Server for UNIX, fast clients and sleepy applications
         dateutil
         (

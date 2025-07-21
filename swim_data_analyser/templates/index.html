@@ -1,4 +1,5 @@
 {% load static %}
+{% load pwa %}
 
 <!DOCTYPE html>
 <html lang="en">
@@ -10,6 +11,7 @@
     <title>Swim Data Analyser</title>
     <link rel="stylesheet" href="/static/css/styles.css">
     <meta name="csrf-token" content="{{ csrf_token }}">
+    {% progressive_web_app_meta %}
   </head>
   <body>
     <!-- Top bar -->
@@ -42,11 +44,11 @@
       <!-- Icon Selection for Edit and Analyse views -->
       <div class="view-selector">
 	<div class="view-option" id="editView">
-	  <img src="/static/graphics/edit-icon.svg" alt="Edit View" class="view-icon">
+	  <img src="/static/icons/edit-icon.svg" alt="Edit View" class="view-icon">
 	  <p>Edit</p>
 	</div>
 	<div class="view-option" id="analyseView">
-	  <img src="/static/graphics/analyse-icon.svg" alt="Analyse View" class="view-icon">
+	  <img src="/static/icons/analyse-icon.svg" alt="Analyse View" class="view-icon">
 	  <p>Analyse</p>
 	</div>
       </div>
