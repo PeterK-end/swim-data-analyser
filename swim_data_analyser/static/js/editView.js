@@ -40,8 +40,6 @@ function updateLaps() {
             len.messageIndex < firstLengthIndex + numLengths
         );
 
-        console.log(lapLengths);
-
         if (lapLengths.length === 0) {
             console.warn("No matching lengths found for lap:", lap);
             return;
@@ -170,7 +168,7 @@ export function renderEditPlot(data) {
 
     // Update Metadata (e.g., for loading new plot)
     loadMeta();
-    console.log("data_object", data);
+    // console.log("data_object", data);
 
     // Filter data to include only entries where event is 'length' and lengthType is 'active'
     const lengths = data.lengthMesgs;
