@@ -353,6 +353,10 @@ document.getElementById('confirmSplits').addEventListener('click', function() {
 
     // Get the entry to be split
     const entryToSplit = modifiedData.lengthMesgs[lengthToSplitIndex];
+    const newStrokes = Math.floor(Math.floor(entryToSplit.totalStrokes / nSplit));
+    const newTimerTime = entryToSplit.totalTimerTime / nSplit;
+    const poolLength = modifiedData.sessionMesgs[0].poolLength;
+
 
     // Create nSplit entries
     const splitEntries = [];
@@ -360,13 +364,13 @@ document.getElementById('confirmSplits').addEventListener('click', function() {
     for (let i = 0; i < nSplit; i++) {
         const splitEntry = {
             ...entryToSplit,
+            avgSpeed: poolLength / newTimerTime,
+            avgSwimmingCadence: newStrokes / newTimerTime,
             totalElapsedTime: entryToSplit.totalElapsedTime / nSplit,
-            totalTimerTime: entryToSplit.totalTimerTime / nSplit,
-            totalStrokes: Math.floor(entryToSplit.totalStrokes / nSplit),
+            totalTimerTime: newTimerTime,
+            totalStrokes: newStrokes,
             totalCalories: entryToSplit.totalCalories / nSplit,
-            messageIndex: {
-                value: entryToSplit.messageIndex + i * splitOffset
-            }
+            messageIndex: entryToSplit.messageIndex + i * splitOffset
         };
 
         splitEntries.push(splitEntry);
