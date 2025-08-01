@@ -95,13 +95,13 @@ export function loadMeta() {
 
     // Recalculate session metadata
     sessionData.totalElapsedTime = lengths.reduce((acc, entry) => acc + entry.totalElapsedTime, 0);
-    sessionData.total_distance = activeLengths.length * sessionData.poolLength; // Total distance is based on pool length and active lengths
+    sessionData.totalDistance = activeLengths.length * sessionData.poolLength; // Total distance is based on pool length and active lengths
     sessionData.totalStrokes = lengths.reduce((acc, entry) => {
         const strokes = entry.totalStrokes || 0; // Fallback to 0 if totalStrokes is undefined or null
         return acc + strokes;
     }, 0);
     sessionData.numActiveLengths = activeLengths.length;
-    sessionData.enhanced_avgSpeed = (sessionData.totalDistance/activeTime) *3.6
+    sessionData.enhancedAvgSpeed = (sessionData.totalDistance/activeTime) *3.6
     //TODO: update sessionData.enhanced_max_speed based on laps (or fastest lengths?)
 
     // Save the updated data back to sessionStorage
