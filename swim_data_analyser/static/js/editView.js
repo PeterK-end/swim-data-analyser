@@ -365,7 +365,7 @@ document.getElementById('confirmSplits').addEventListener('click', function() {
         const splitEntry = {
             ...entryToSplit,
             avgSpeed: poolLength / newTimerTime,
-            avgSwimmingCadence: newStrokes / newTimerTime,
+            avgSwimmingCadence: Math.round(newStrokes / (newTimerTime/60), 0),
             totalElapsedTime: entryToSplit.totalElapsedTime / nSplit,
             totalTimerTime: newTimerTime,
             totalStrokes: newStrokes,
