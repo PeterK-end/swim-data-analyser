@@ -465,28 +465,24 @@ document.getElementById('confirmPoolSize').addEventListener('click', function() 
     const modifiedData = JSON.parse(sessionStorage.getItem('modifiedData'));
 
     // Get the current pool size from the metadata
-    const newPoolSize = parseInt(document.getElementById('poolSizeSelect').value);
+    const newPoolSize = document.getElementById('poolSizeEntered').value;
     const currentPoolSize = modifiedData.sessionMesgs[0].poolLength;
 
     // Hide the modal
     document.getElementById('poolSizeModal').style.display = 'none';
 
-
-    if (!modifiedData || !modifiedData.lengthMesgs) {
-        console.error("No 'modifiedData' found in sessionStorage.");
-        return;
-    }
-
     // Adjust the relevant values in the lengths data
     modifiedData.lengthMesgs = modifiedData.lengthMesgs.map(entry => {
-        const adjustmentFactor = currentPoolSize / newPoolSize ;
         return {
             ...entry,
-            totalDistance: entry.totalDistance * adjustmentFactor,
+            avgSpeed: newPoolSize / entry.totalTimerTime,
         };
     });
     // Update the pool size in the modifiedData object
     modifiedData.sessionMesgs[0].poolLength = newPoolSize;
+
+    // Update Lap Records
+    updateLaps();
 
     // Update the sessionStorage with the modified data
     sessionStorage.setItem('modifiedData', JSON.stringify(modifiedData));

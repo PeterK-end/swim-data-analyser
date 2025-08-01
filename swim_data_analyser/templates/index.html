@@ -149,11 +149,9 @@
                 <!-- Pool Size Selection Modal -->
                 <div id="poolSizeModal" class="modal" style="display:none;">
                   <div class="modal-content">
-                    <h4>Select Pool Size</h4>
-                    <select id="poolSizeSelect">
-                      <option value="25">25 meters</option>
-                      <option value="50">50 meters</option>
-                    </select>
+                    <h4>Enter Pool Size</h4>
+                    <label for="poolSizeEntered">Enter pool size in meters (2-100):</label>
+                    <input type="number" id="poolSizeEntered" min="2" max="100" value="25" />
                   </div>
                   <div class="modal-footer">
                     <button id="cancelPoolSize" class="btn">Cancel</button>
