@@ -17,7 +17,7 @@ function displayFlashMessage(message, category) {
 // Function to check if the parsed data represents a pool swimming workout
 function isPoolSwimming(parsedData) {
     // Check if the sport is swimming and if there is pool length data
-    if (parsedData.sportMesgs[0]){
+    if (parsedData.sportMesgs && parsedData.sportMesgs[0]){
         return parsedData.sportMesgs[0].sport === 'swimming' && parsedData.sportMesgs[0].subSport === 'lapSwimming';
     } else {
         //can't check will fail later (probably) -> reason: some swim
