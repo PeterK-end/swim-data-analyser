@@ -46,7 +46,7 @@ function updateLaps() {
         }
 
         const sum = (attr) =>
-            lapLengths.reduce((total, len) => total + (len[attr] || 0), 0);
+              lapLengths.reduce((total, len) => total + (len[attr] || 0), 0);
 
         const totalElapsedTime = sum('totalElapsedTime');
         const totalTimerTime = sum('totalTimerTime');
@@ -165,86 +165,117 @@ export function loadMeta() {
 }
 
 export function renderEditPlot(data) {
-
-    // Update Metadata (e.g., for loading new plot)
+    // Update Metadata
     loadMeta();
-    // console.log("data_object", data);
+    // console.log(data);
 
-    // Filter data to include only entries where event is 'length' and lengthType is 'active'
-    const lengths = data.lengthMesgs;
-    const lengthData = lengths.filter(d => d.event === 'length' && d.lengthType === 'active');
-
-    // Define a fixed Viridis color map for swim strokes
     const fixedStrokeColors = {
         breaststroke: '#A8D8EA',
         freestyle: '#AA96DA',
         backstroke: '#FCBAD3',
         butterfly: '#FFFFD2',
-        default: '#fde725'        // Yellow
+        default: '#fde725'
     };
 
-    // Create plot data with the fixed colors for each swim stroke and hover text
+    const lengths = data.lengthMesgs;
+    const laps = data.lapMesgs.filter(d => d.numActiveLengths > 0);
+    const lengthData = lengths.filter(d => d.event === 'length' && d.lengthType === 'active');
+
+    const yValues = lengthData.map(d => d.totalElapsedTime || 0);
+    const maxY = Math.max(...yValues) + 2; // Add 2s for lap indicator height
+
+    // === LAP INDICATORS ===
+    const lapShapes = [];
+    const lapAnnotations = [];
+
+    laps.forEach((lap, i) => {
+        const lapStartIndex = lengthData.findIndex(l => l.messageIndex === lap.firstLengthIndex);
+        if (lapStartIndex === -1) return;
+
+        const x = lapStartIndex + 1;
+
+        lapShapes.push({
+            type: 'line',
+            x0: x,
+            x1: x,
+            y0: 0,
+            y1: maxY,
+            line: {
+                color: 'black',
+                width: 2,
+                dash: 'dot'
+            }
+        });
+
+        lapAnnotations.push({
+            x: x,
+            y: maxY,
+            text: `${i + 1}`,
+            showarrow: false,
+            yanchor: 'bottom',
+            font: {
+                color: 'black',
+                size: 12
+            }
+        });
+    });
+
     const plotData = [{
-        x: lengthData.map((_, index) => index + 1),  // X-axis as the length index (1, 2, 3, etc.)
-        y: lengthData.map(d => d.totalElapsedTime || 0),  // Y-axis as 'totalElapsedTime', fallback to 0
+        x: lengthData.map((_, index) => index + 1),
+        y: yValues,
         type: 'bar',
-        text: lengthData.map(d => `Stroke: ${d.swimStroke || 'Unknown'}<br>Time: ${d.totalElapsedTime} s`),  // Hover text
-        hoverinfo: 'text',  // Show the hover text defined above
-        textposition: 'none', // Prevent the text from being shown on the bars
+        text: lengthData.map(d => `Stroke: ${d.swimStroke || 'Unknown'}<br>Time: ${d.totalElapsedTime} s`),
+        hoverinfo: 'text',
+        textposition: 'none',
         marker: {
             color: lengthData.map((d) => {
-                const stroke = d.swimStroke || 'default';  // Get stroke, use default if missing
+                const stroke = d.swimStroke || 'default';
                 const baseColor = fixedStrokeColors[stroke] || fixedStrokeColors['default'];
-
-                // Highlight selected lengths by making the color brighter (adjust brightness for selection)
-                return selectedLabels.includes(d.messageIndex) ? '#2A4D69' : baseColor;  // Highlight with Navy Teal
+                return selectedLabels.includes(d.messageIndex) ? '#2A4D69' : baseColor;
             }),
-            opacity: lengthData.map((d) => selectedLabels.includes(d.messageIndex) ? 1 : 0.9),  // Full opacity if selected
+            opacity: lengthData.map((d) => selectedLabels.includes(d.messageIndex) ? 1 : 0.9),
             line: {
-                width: lengthData.map((d) => selectedLabels.includes(d.messageIndex) ? 2 : 1),  // Thicker border for selected
-                color: lengthData.map((d) => selectedLabels.includes(d.messageIndex) ? 'rgba(0, 0, 0, 1)' : 'rgba(0, 0, 0, 0.5)')  // Stronger border color for selected
+                width: lengthData.map((d) => selectedLabels.includes(d.messageIndex) ? 2 : 1),
+                color: lengthData.map((d) => selectedLabels.includes(d.messageIndex) ? 'rgba(0, 0, 0, 1)' : 'rgba(0, 0, 0, 0.5)')
             }
-        }
+        },
     }];
 
     const layout = {
         margin: {
-            l: 50,  // Left margin
-            r: 50,  // Right margin
-            t: 0,   // Top margin
-            b: 50   // Bottom margin
+            l: 50,
+            r: 50,
+            t: 0,
+            b: 50
         },
         xaxis: {
             title: 'Length',
             titlefont: { size: 14 },
-            tickfont: { size: 12 }
+            tickfont: { size: 12 },
         },
         yaxis: {
             title: 'Duration (seconds)',
             titlefont: { size: 14 },
             tickfont: { size: 12 }
         },
-        showlegend: false  // No need for a legend if color directly indicates stroke type
+        showlegend: false,
+        shapes: lapShapes,
+        annotations: lapAnnotations,
     };
 
-    // Render the plot
     Plotly.newPlot('editDataPlot', plotData, layout, { displayModeBar: false });
 
-    // Handle clicking on a plot bar to toggle selection
     const plotElement = document.getElementById('editDataPlot');
-    plotElement.on('plotly_click', function(event) {
-
-        const displayedIndex = event.points[0].x - 1;  // Get the index from the x-axis label (0-based)
+    plotElement.on('plotly_click', function (event) {
+        const displayedIndex = event.points[0].x - 1;
         const messageIndexValue = lengthData[displayedIndex].messageIndex;
 
-        // Toggle the selection state of the clicked bar (length)
         if (selectedLabels.includes(messageIndexValue)) {
             selectedLabels = selectedLabels.filter(l => l !== messageIndexValue);
         } else {
             selectedLabels.push(messageIndexValue);
         }
 
-        // Re-render the plot to update the highlighting
         renderEditPlot(data);
     });
 }
@@ -288,10 +319,11 @@ document.getElementById('mergeBtn').addEventListener('click', function() {
         avgSwimmingCadence: Math.round(sumAttribute('totalStrokes', lengthsToMerge) / (sumAttribute('totalTimerTime', lengthsToMerge)/60), 0),
         messageIndex: Math.min(...lengthsToMerge.map(entry => entry.messageIndex)),
     };
+    const toRemove = selectedLabels.slice(1);
 
     // Filter out the merged lengths from the data based on messageIndex and keep the first entry
     const remainingLengths = modifiedData.lengthMesgs.filter(entry =>
-        !selectedLabels.slice(1).includes(entry.messageIndex)
+        !toRemove.includes(entry.messageIndex)
     );
 
     // Find index of first selected length to place merged entry
@@ -306,6 +338,22 @@ document.getElementById('mergeBtn').addEventListener('click', function() {
 
     // Replace first length with merged entry
     remainingLengths.splice(firstIndexLength, 1, newEntry);
+
+    // Adjust laps if their firstLengthIndex was merged
+    modifiedData.lapMesgs.forEach(lap => {
+        // Check if the lap’s firstLengthIndex was among the removed lengths
+        if (toRemove.includes(lap.firstLengthIndex)) {
+            // Try to move lap start to the next messageIndex (e.g., increment by 1)
+            const nextMsgIndex = lap.firstLengthIndex + 1;
+            const nextExists = remainingLengths.some(l => l.messageIndex === nextMsgIndex);
+
+            if (nextExists) {
+                lap.firstLengthIndex = nextMsgIndex;
+            } else {
+                console.warn(`Cannot adjust lap start index for lap at index ${lap.firstLengthIndex} – next messageIndex does not exist.`);
+            }
+        }
+    });
 
     // Update the sessionStorage with the new merged data
     modifiedData.lengthMesgs = remainingLengths;
