@@ -113,6 +113,7 @@ export function loadMeta() {
     const fastestLength = activeLengths.reduce((best, l) =>
         (l.avgSpeed || 0) > (best.avgSpeed || 0) ? l : best, { avgSpeed: 0 });
     sessionData.enhancedMaxSpeed = fastestLength.avgSpeed || 0;
+    sessionData.avgStrokeDistance = sessionData.totalDistance/sessionData.totalStrokes;
 
     // Save the updated data back to sessionStorage
     sessionStorage.setItem('modifiedData', JSON.stringify(data));
@@ -140,12 +141,16 @@ export function loadMeta() {
     document.getElementById('metadata-container').innerHTML = `
     <div class="metadata-flex">
     <div class="metadata-box">
+      <strong>Workout Date:</strong>
+      <span id="workoutDate">${day} ${daytime}</span>
+    </div>
+    <div class="metadata-box">
       <strong>Pool Length:</strong>
       <span id="poolLength">${metadata.poolLength}m</span>
     </div>
     <div class="metadata-box">
       <strong>Total Time:</strong>
-      <span id="totalTime">${formatTime(metadata.totalElapsedTime)}m</span>
+      <span id="totalTime">${formatTime(metadata.totalElapsedTime)}</span>
     </div>
     <div class="metadata-box">
       <strong>Total Lengths:</strong>
@@ -165,6 +170,10 @@ export function loadMeta() {
     <div class="metadata-box">
       <strong>Avg. SPL:</strong>
       <span id="avgStrokes">${avgStrokesPerLength}/length</span>
+    </div>
+    <div class="metadata-box">
+      <strong>Avg. Distance/Stroke:</strong>
+      <span id="avgStrokeDistance">${metadata.avgStrokeDistance.toFixed(2)}m</span>
     </div>
     <div class="metadata-box">
       <strong>Avg. Heartrate</strong>
