@@ -94,15 +94,25 @@ export function loadMeta() {
     const activeTime = activeLengths.reduce((acc, length) => acc + length.totalElapsedTime, 0);
 
     // Recalculate session metadata
-    sessionData.totalElapsedTime = lengths.reduce((acc, entry) => acc + entry.totalElapsedTime, 0);
-    sessionData.totalDistance = activeLengths.length * sessionData.poolLength; // Total distance is based on pool length and active lengths
+    sessionData.totalDistance = activeLengths.length * sessionData.poolLength;
+    const restTime   = lengths.filter(l => l.lengthType === 'idle')
+          .reduce((acc, l) => acc + l.totalElapsedTime, 0);
+    sessionData.totalTimerTime   = activeTime;            // Moving Time
+    sessionData.totalElapsedTime = activeTime + restTime; // Elapsed Time
     sessionData.totalStrokes = lengths.reduce((acc, entry) => {
         const strokes = entry.totalStrokes || 0; // Fallback to 0 if totalStrokes is undefined or null
         return acc + strokes;
     }, 0);
     sessionData.numActiveLengths = activeLengths.length;
-    sessionData.enhancedAvgSpeed = (sessionData.totalDistance/activeTime) *3.6
-    //TODO: update sessionData.enhanced_max_speed based on laps (or fastest lengths?)
+
+    const speedMps = activeTime > 0 ? (sessionData.totalDistance / activeTime) : 0;
+    sessionData.avgSpeed = speedMps;
+    sessionData.enhancedAvgSpeed = speedMps;
+
+    // Find fastest active length (highest avgSpeed)
+    const fastestLength = activeLengths.reduce((best, l) =>
+        (l.avgSpeed || 0) > (best.avgSpeed || 0) ? l : best, { avgSpeed: 0 });
+    sessionData.enhancedMaxSpeed = fastestLength.avgSpeed || 0;
 
     // Save the updated data back to sessionStorage
     sessionStorage.setItem('modifiedData', JSON.stringify(data));
@@ -116,10 +126,15 @@ export function loadMeta() {
     const daytime = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
     // Pace calculation
-    const pace = (activeTime/metadata.totalDistance)*100;
+    const pace100mSec  = speedMps > 0 ? 100 / speedMps   : 0;
+    const pace100ydSec = speedMps > 0 ? 91.44 / speedMps : 0;
+    const isYards = sessionData.poolLengthUnit === 'statute';
+    const poolLabel = isYards ? 'yd' : 'm';
 
     // Calculate average strokes per active length
-    const avgStrokesPerLength = Math.floor(metadata.totalStrokes / sessionData.numActiveLengths);
+    const avgStrokesPerLength = sessionData.numActiveLengths > 0
+          ? Math.floor(metadata.totalStrokes / sessionData.numActiveLengths)
+          : 0;
 
     // Update the content dynamically with recalculated metadata
     document.getElementById('metadata-container').innerHTML = `
@@ -138,15 +153,14 @@ export function loadMeta() {
     </div>
     <div class="metadata-box">
       <strong>Total Distance:</strong>
-      <span id="totalLength">${metadata.totalDistance}m</span>
-    </div>
-    <div class="metadata-box">
-      <strong>Workout Date:</strong>
-      <span id="workoutDate">${day} ${daytime}</span>
+      <span id="totalLength">${metadata.totalDistance.toFixed(2)}m</span>
     </div>
     <div class="metadata-box">
       <strong>Avg. Pace:</strong>
-      <span id="avgPace">${formatTime(pace)}</span>
+      <span id="avgPace">${
+  isYards ? `${formatTime(pace100ydSec)}/100yd`
+          : `${formatTime(pace100mSec)}/100m`
+}</span>
     </div>
     <div class="metadata-box">
       <strong>Avg. SPL:</strong>
