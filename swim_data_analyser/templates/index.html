@@ -16,10 +16,10 @@
   <body>
     <!-- Top bar -->
     <header class="top-bar">
-      <a href="/" alt="Logo" class="top-bar-link">Home</a>
-      <a href="/about.html" alt="About" class="top-bar-link">About</a>
-      <a href="https://github.com/PeterK-end/swim-data-analyser" alt="Source Code" target="_blank">
-        <img src="/static/icons/git-logo.svg" class="logo">
+      <a href="/" alt="Logo" aria-label="Go to the landing page" class="top-bar-link">Home</a>
+      <a href="/about.html" alt="About" aria-label="Go to the about section" class="top-bar-link">About</a>
+      <a href="https://github.com/PeterK-end/swim-data-analyser" alt="Source Code" aria-label="Visit the sourcecode on GitHub" target="_blank">
+        <img src="/static/icons/git-logo.svg" alt="Git logo" class="logo">
       </a>
     </header>
 
@@ -35,7 +35,7 @@
 
       <!-- File upload section -->
       <div class="upload-container">
-	<label for="fileUpload">Load your FIT file:</label>
+	<label for="fileInput">Load your FIT file:</label>
 	<form id="uploadForm" enctype="multipart/form-data">
 	  <input type="file" id="fileInput" name="file">
           <button type="submit">Load</button>
@@ -62,7 +62,7 @@
 	  <div class="plot-object-container" id="editPlot">
             <div class="button-container">
               <!-- Buttons with icons and text -->
-              <button title="Split" id="splitBtn" class="icon-btn">
+              <button title="Split" id="splitBtn" aria-label="Split selected lanes" class="icon-btn">
                 <!-- split icon by Free Icons (https://free-icons.github.io/free-icons/) -->
                 <svg xmlns="http://www.w3.org/2000/svg" height="1em" fill="currentColor" viewBox="0 0 512 512">
                   <path
@@ -70,7 +70,7 @@
                     />
                 </svg>
               </button>
-              <button title="Merge" Id="mergeBtn" class="icon-btn">
+              <button title="Merge" Id="mergeBtn" aria-label="Merge selected lanes" class="icon-btn">
                 <!-- merge icon by Free Icons (https://free-icons.github.io/free-icons/) -->
                 <svg xmlns="http://www.w3.org/2000/svg" height="1em" fill="currentColor" viewBox="0 0 512 512">
                   <path
@@ -78,13 +78,13 @@
                     />
                 </svg>
               </button>
-              <button title="Delete" id="deleteBtn" class="icon-btn">
+              <button title="Delete" id="deleteBtn" aria-label="Delete selected lane" class="icon-btn">
                 <!-- trash-xmark icon by Free Icons (https://free-icons.github.io/free-icons/) -->
                 <svg xmlns="http://www.w3.org/2000/svg" height="1em" fill="currentColor" viewBox="0 0 512 512">
                   <path d="M 196 40 L 181 64 L 196 40 L 181 64 L 331 64 L 331 64 L 316 40 L 316 40 Q 311 32 302 32 L 210 32 L 210 32 Q 201 32 196 40 L 196 40 Z M 343 23 L 369 64 L 343 23 L 369 64 L 416 64 L 464 64 Q 479 65 480 80 Q 479 95 464 96 L 446 96 L 446 96 L 420 453 L 420 453 Q 418 478 400 495 Q 382 511 356 512 L 156 512 L 156 512 Q 130 511 112 495 Q 94 478 92 453 L 66 96 L 66 96 L 48 96 L 48 96 Q 33 95 32 80 Q 33 65 48 64 L 64 64 L 143 64 L 169 23 L 169 23 Q 184 1 210 0 L 302 0 L 302 0 Q 328 1 343 23 L 343 23 Z M 98 96 L 124 450 L 98 96 L 124 450 Q 125 463 134 471 Q 143 480 156 480 L 356 480 L 356 480 Q 369 480 378 471 Q 387 463 388 450 L 414 96 L 414 96 L 98 96 L 98 96 Z M 181 213 Q 192 203 203 213 L 256 265 L 256 265 L 309 213 L 309 213 Q 320 203 331 213 Q 341 224 331 235 L 279 288 L 279 288 L 331 341 L 331 341 Q 341 352 331 363 Q 320 373 309 363 L 256 311 L 256 311 L 203 363 L 203 363 Q 192 373 181 363 Q 171 352 181 341 L 233 288 L 233 288 L 181 235 L 181 235 Q 171 224 181 213 L 181 213 Z" />
                 </svg>
               </button>
-              <button title="Change Stroke" id="changeStrokeBtn" class="icon-btn">
+              <button title="Change Stroke" id="changeStrokeBtn" aria-label="Change stroke of selected lane" class="icon-btn">
                 <!-- person-swimming icon by Free Icons (https://free-icons.github.io/free-icons/) -->
                 <svg xmlns="http://www.w3.org/2000/svg" height="1em" fill="currentColor" viewBox="0 0 512 512">
                   <path
@@ -92,12 +92,12 @@
                     />
                 </svg>
               </button>
-              <button title="Toggel Pool Size" id="togglePoolSizeBtn" class="icon-btn">
+              <button title="Toggel Pool Size" id="togglePoolSizeBtn" aria-label="Change the pool size to entered value" class="icon-btn">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 256">
                   <path d="M 32 192 Q 32 206 41 215 L 41 215 L 41 215 Q 50 224 64 224 L 576 224 L 576 224 Q 590 224 599 215 Q 608 206 608 192 L 608 64 L 608 64 Q 608 50 599 41 Q 590 32 576 32 L 528 32 L 528 32 L 528 96 L 528 96 Q 527 111 512 112 Q 497 111 496 96 L 496 32 L 496 32 L 432 32 L 432 32 L 432 96 L 432 96 Q 431 111 416 112 Q 401 111 400 96 L 400 32 L 400 32 L 336 32 L 336 32 L 336 96 L 336 96 Q 335 111 320 112 Q 305 111 304 96 L 304 32 L 304 32 L 240 32 L 240 32 L 240 96 L 240 96 Q 239 111 224 112 Q 209 111 208 96 L 208 32 L 208 32 L 144 32 L 144 32 L 144 96 L 144 96 Q 143 111 128 112 Q 113 111 112 96 L 112 32 L 112 32 L 64 32 L 64 32 Q 50 32 41 41 Q 32 50 32 64 L 32 192 L 32 192 Z M 64 256 Q 37 255 19 237 L 19 237 L 19 237 Q 1 219 0 192 L 0 64 L 0 64 Q 1 37 19 19 Q 37 1 64 0 L 576 0 L 576 0 Q 603 1 621 19 Q 639 37 640 64 L 640 192 L 640 192 Q 639 219 621 237 Q 603 255 576 256 L 64 256 L 64 256 Z" />
                 </svg>
               </button>
-              <button title="Undo All" id="undoBtn" class="icon-btn">
+              <button title="Undo All" id="undoBtn" aria-label="Undo all edit operations" class="icon-btn">
                 <!-- arrow-rotate-left icon by Free Icons (https://free-icons.github.io/free-icons/) -->
                 <svg xmlns="http://www.w3.org/2000/svg" height="1em" fill="currentColor" viewBox="0 0 512 512">
                   <path
@@ -110,7 +110,7 @@
               <div class="spacer"></div>
 
               <!-- Right-aligned export button -->
-              <button class="icon-btn" id="exportBtn">
+              <button class="icon-btn" aria-label="Export the edited file in chosen format" id="exportBtn">
                 <!-- Icon for export -->
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 448">
                   <path d="M 16 448 Q 1 447 0 432 Q 1 417 16 416 L 368 416 L 368 416 Q 383 417 384 432 Q 383 447 368 448 L 16 448 L 16 448 Z M 203 347 Q 192 357 181 347 L 53 219 L 53 219 Q 43 208 53 197 Q 64 187 75 197 L 176 297 L 176 297 L 176 192 L 176 192 L 176 16 L 176 16 Q 177 1 192 0 Q 207 1 208 16 L 208 192 L 208 192 L 208 297 L 208 297 L 309 197 L 309 197 Q 320 187 331 197 Q 341 208 331 219 L 203 347 L 203 347 Z" />
