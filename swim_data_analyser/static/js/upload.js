@@ -1,3 +1,4 @@
+import JSZip from "jszip";
 import { Decoder, Stream, Profile, Utils } from '@garmin/fitsdk';
 import {renderEditPlot} from './editView.js';
 
@@ -75,11 +76,47 @@ function reduceWorkoutSize(parsedData, maxQuotaKB, getSizeKB) {
 function parseFitFile(file, onSuccess) {
     const extension = file.name.slice(((file.name.lastIndexOf('.') - 1) >>> 0) + 2).toLowerCase();
 
-    if (extension !== 'fit') {
-        displayFlashMessage('Invalid file type. Please upload a .fit file.', 'error');
+    // Special case: ZIP input (Garmin Connect "Export file")
+    if (extension === "zip") {
+        const reader = new FileReader();
+        reader.onload = async function (e) {
+            try {
+                const zip = await JSZip.loadAsync(e.target.result);
+                const fitFiles = Object.values(zip.files).filter(f => f.name.toLowerCase().endsWith(".fit"));
+
+                if (fitFiles.length === 0) {
+                    displayFlashMessage("No .fit file found inside zip.", "error");
+                    return;
+                }
+
+                if (fitFiles.length > 1) {
+                    displayFlashMessage(`Multiple .fit files found, using ${fitFiles[0].name}`, "warning");
+                }
+
+                const fitBlob = await fitFiles[0].async("blob");
+                const fitFile = new File([fitBlob], fitFiles[0].name, { type: "application/octet-stream" });
+
+                // Continue as if the user uploaded this .fit file directly
+                runFitDecoding(fitFile, onSuccess);
+            } catch (err) {
+                console.error("Error reading zip file:", err);
+                displayFlashMessage("Invalid or corrupted zip file.", "error");
+            }
+        };
+        reader.readAsArrayBuffer(file);
         return;
     }
 
+    // Normal case: FIT input
+    if (extension === "fit") {
+        runFitDecoding(file, onSuccess);
+    } else {
+        displayFlashMessage("Invalid file type. Please upload a .fit or .zip file.", "error");
+    }
+}
+
+// helper: runs the decoding pipeline, always on a FIT file
+function runFitDecoding(file, onSuccess) {
     const reader = new FileReader();
 
     reader.onload = function (e) {
@@ -89,15 +126,15 @@ function parseFitFile(file, onSuccess) {
         const decoder = new Decoder(stream);
 
         if (!decoder.isFIT()) {
-            displayFlashMessage('Invalid FIT file.', 'error');
+            displayFlashMessage("Invalid FIT file.", "error");
             return;
         }
 
         const result = decoder.read();
 
         if (!result || result.errors?.length) {
-            console.error('Error decoding FIT:', result.errors);
-            displayFlashMessage('Error decoding FIT file.', 'error');
+            console.error("Error decoding FIT:", result.errors);
+            displayFlashMessage("Error decoding FIT file.", "error");
             return;
         }
 
@@ -112,7 +149,7 @@ function parseFitFile(file, onSuccess) {
         const parsedData = result.messages;
 
         if (!isPoolSwimming(parsedData)) {
-            displayFlashMessage('This is not a pool swimming workout.', 'error');
+            displayFlashMessage("This is not a pool swimming workout.", "error");
             return;
         }
 
