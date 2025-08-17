@@ -158,7 +158,7 @@ export function loadMeta() {
     </div>
     <div class="metadata-box">
       <strong>Total Distance:</strong>
-      <span id="totalLength">${metadata.totalDistance.toFixed(2)}m</span>
+      <span id="totalLength">${Math.round(metadata.totalDistance)}m</span>
     </div>
     <div class="metadata-box">
       <strong>Avg. Pace:</strong>
