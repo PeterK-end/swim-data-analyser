@@ -165,6 +165,8 @@ function runFitDecoding(file, onSuccess) {
         // store name for export (always a .fit name at this point)
         sessionStorage.setItem("originalFileName", file.name);
 
+        displayFlashMessage("File successfully parsed.", "success");
+
         onSuccess(finalData);
     };
 
