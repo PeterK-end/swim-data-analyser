@@ -735,12 +735,15 @@ function downloadFitFromJson(nestedData) {
             encoder.writeMesg(mesg);
         });
 
+        // Retrieve stored original name
+        const baseName = sessionStorage.getItem("originalFileName") || "activity.fit";
+
         const uint8Array = encoder.close();
         const blob = new Blob([uint8Array], { type: 'application/octet-stream' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'activity.fit';
+        a.download = baseName;
         a.style.display = 'none';
         document.body.appendChild(a);
         a.click();
@@ -785,9 +788,14 @@ document.getElementById('confirmDownloadChoice').addEventListener('click', funct
             const blob = new Blob([data], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
 
+            // Retrieve stored original name
+            const original = sessionStorage.getItem("originalFileName") || "activity.json";
+            // Replace extension with .json
+            const baseName = original.replace(/\.[^.]+$/, "") + ".json";
+
             const link = document.createElement('a');
             link.href = url;
-            link.download = 'workout-data.json';
+            link.download = baseName;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);

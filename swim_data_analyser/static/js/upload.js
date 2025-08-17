@@ -162,10 +162,12 @@ function runFitDecoding(file, onSuccess) {
             if (!finalData) return;
         }
 
+        // store name for export (always a .fit name at this point)
+        sessionStorage.setItem("originalFileName", file.name);
+
         onSuccess(finalData);
     };
 
-    // Start reading the file (this kicks off async operation)
     reader.readAsArrayBuffer(file);
 }
 
