@@ -157,6 +157,7 @@ function runFitDecoding(file, onSuccess) {
         const getSizeKB = obj => new Blob([JSON.stringify(obj)]).size / 1024;
 
         let finalData = parsedData;
+
         if (getSizeKB(parsedData) > maxQuotaKB) {
             finalData = reduceWorkoutSize(parsedData, maxQuotaKB, getSizeKB);
             if (!finalData) return;
@@ -165,7 +166,9 @@ function runFitDecoding(file, onSuccess) {
         // store name for export (always a .fit name at this point)
         sessionStorage.setItem("originalFileName", file.name);
 
-        displayFlashMessage("File successfully parsed.", "success");
+        if (file.name !== "example.fit"){
+            displayFlashMessage("File successfully parsed.", "success");
+        }
 
         onSuccess(finalData);
     };
