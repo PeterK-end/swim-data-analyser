@@ -261,8 +261,7 @@ export function renderHeartratePlot(data) {
         hovertext: lengthData.map(length => {
             if (length.lengthType === "active") {
                 activeLengthCount++;
-                const duration = (new Date(length.endTime) - new Date(length.startTime)) / 1000;
-                return `Length: ${activeLengthCount}<br>Stroke: ${length.swimStroke || 'Unknown'}<br>Duration: ${duration}s`;
+                return `Length: ${activeLengthCount}<br>Stroke: ${length.swimStroke || 'Unknown'}<br>Duration: ${length.totalElapsedTime}s`;
             }
             return `Rest`;
         }),
