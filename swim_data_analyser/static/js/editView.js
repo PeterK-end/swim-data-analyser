@@ -563,11 +563,11 @@ document.getElementById('confirmPoolSize').addEventListener('click', function() 
     // Update the pool size in the modifiedData object
     modifiedData.sessionMesgs[0].poolLength = newPoolSize;
 
-    // Update Lap Records
-    updateLaps();
-
     // Update the sessionStorage with the modified data
     sessionStorage.setItem('modifiedData', JSON.stringify(modifiedData));
+
+    // Update Lap Records
+    updateLaps();
 
     // Re-render the plot with the updated pool size and data
     renderEditPlot(modifiedData);
