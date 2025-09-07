@@ -27,17 +27,28 @@ function updateLaps() {
     const lengths = data.lengthMesgs;
     const laps = data.lapMesgs;
 
-    laps.forEach(lap => {
-        const { firstLengthIndex, numLengths } = lap;
+    laps.forEach((lap, i) => {
+        const { firstLengthIndex } = lap;
 
         // ignore empty laps
-        if (firstLengthIndex == null || numLengths == null || numLengths === 0) {
+        if (firstLengthIndex == null) {
+            return;
+        }
+
+        // Determine last length index for this lap
+        const nextLap = laps[i + 1];
+        const lastLengthIndex = nextLap
+            ? nextLap.firstLengthIndex - 1
+            : lengths[lengths.length - 1]?.messageIndex; // until end if last lap
+
+        if (lastLengthIndex == null || lastLengthIndex < firstLengthIndex) {
+            console.warn("Invalid length range for lap:", lap);
             return;
         }
 
         const lapLengths = lengths.filter(len =>
             len.messageIndex >= firstLengthIndex &&
-            len.messageIndex < firstLengthIndex + numLengths
+            len.messageIndex <= lastLengthIndex
         );
 
         if (lapLengths.length === 0) {
@@ -46,7 +57,7 @@ function updateLaps() {
         }
 
         const sum = (attr) =>
-              lapLengths.reduce((total, len) => total + (len[attr] || 0), 0);
+            lapLengths.reduce((total, len) => total + (len[attr] || 0), 0);
 
         const totalElapsedTime = sum('totalElapsedTime');
         const totalTimerTime = sum('totalTimerTime');
