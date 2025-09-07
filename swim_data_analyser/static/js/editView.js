@@ -536,7 +536,7 @@ document.getElementById('confirmPoolSize').addEventListener('click', function() 
     const modifiedData = JSON.parse(sessionStorage.getItem('modifiedData'));
 
     // Get the current pool size from the metadata
-    const newPoolSize = parseInt(document.getElementById('poolSizeEntered').value);
+    const newPoolSize = parseFloat(document.getElementById('poolSizeEntered').value);
     const currentPoolSize = modifiedData.sessionMesgs[0].poolLength;
 
     // Hide the modal
