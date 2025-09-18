@@ -201,7 +201,7 @@ export function loadMeta() {
 export function renderEditPlot(data) {
     // Update Metadata
     loadMeta();
-    // console.log(data);
+    console.log(data);
 
     const fixedStrokeColors = {
         breaststroke: '#A8D8EA',
@@ -710,17 +710,32 @@ function downloadFitFromJson(nestedData) {
         const mesgs = [];
 
         // Create the Developer Id message for the developer data fields.
-        const developerDataIdMesg = {
-            mesgNum: Profile.MesgNum.DEVELOPER_DATA_ID,
-            applicationId: Array(16).fill(0), // In practice, this should be a UUID converted to a byte array
-            applicationVersion: 1,
-            developerDataIndex: 0,
-        };
-        mesgs.push(developerDataIdMesg);
+        // const developerDataIdMesg = {
+        //     mesgNum: Profile.MesgNum.DEVELOPER_DATA_ID,
+        //     applicationId: Array(16).fill(0), // In practice, this should be a UUID converted to a byte array
+        //     applicationVersion: 1,
+        //     developerDataIndex: 0,
+        // };
+        // mesgs.push(developerDataIdMesg);
+
+        const nummies = [// 0, 49, 207,
+                         // 34, 18,
+                         // 216, 101, 21, 23, 2, 3,
+            132, // HR Brakes 20309514743_ACTIVITY_original.fit
+            // 26, 27,
+            // 72,
+            // 216,
+            313 // splitSummaryMesgs Brakes 20341213225.zip
+
+        ];
 
         for (const { message, fields } of flatMessages) {
             try {
                 const mesgNum = getMesgNumByMessagesKey(message);
+
+                if (nummies.includes(mesgNum)) {
+                    continue;
+                }
 
                 // Convert time strings to Date objects
                 const convertedFields = convertTimeFieldsToDate(fields);
@@ -745,6 +760,8 @@ function downloadFitFromJson(nestedData) {
         mesgs.forEach((mesg) => {
             encoder.writeMesg(mesg);
         });
+
+        console.log(mesgs);
 
         // Retrieve stored original name
         const baseName = sessionStorage.getItem("originalFileName") || "activity.fit";
