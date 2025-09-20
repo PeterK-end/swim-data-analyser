@@ -109,8 +109,8 @@ export function loadMeta() {
     sessionData.totalDistance = activeLengths.length * sessionData.poolLength;
     const restTime   = lengths.filter(l => l.lengthType === 'idle')
           .reduce((acc, l) => acc + l.totalElapsedTime, 0);
-    sessionData.totalTimerTime   = activeTime;            // Moving Time
-    sessionData.totalElapsedTime = activeTime + restTime; // Elapsed Time
+    sessionData.totalTimerTime   = activeTime + restTime;
+    sessionData.totalMovingTime = activeTime; // is not used by Garmin Connect
     sessionData.totalStrokes = lengths.reduce((acc, entry) => {
         const strokes = entry.totalStrokes || 0; // Fallback to 0 if totalStrokes is undefined or null
         return acc + strokes;
@@ -439,7 +439,6 @@ document.getElementById('confirmSplits').addEventListener('click', function() {
     const newStrokes = Math.floor(Math.floor(entryToSplit.totalStrokes / nSplit));
     const newTimerTime = entryToSplit.totalTimerTime / nSplit;
     const poolLength = modifiedData.sessionMesgs[0].poolLength;
-
 
     // Create nSplit entries
     const splitEntries = [];
