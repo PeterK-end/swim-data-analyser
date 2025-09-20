@@ -48,11 +48,12 @@ function updateLaps() {
 
         const lapLengths = lengths.filter(len =>
             len.messageIndex >= firstLengthIndex &&
-            len.messageIndex <= lastLengthIndex
+            len.messageIndex <= lastLengthIndex &&
+            len.lengthType === 'active'
         );
 
+        // rest lap
         if (lapLengths.length === 0) {
-            console.warn("No matching lengths found for lap:", lap);
             return;
         }
 
@@ -108,8 +109,8 @@ export function loadMeta() {
     sessionData.totalDistance = activeLengths.length * sessionData.poolLength;
     const restTime   = lengths.filter(l => l.lengthType === 'idle')
           .reduce((acc, l) => acc + l.totalElapsedTime, 0);
-    sessionData.totalTimerTime   = activeTime;            // Moving Time
-    sessionData.totalElapsedTime = activeTime + restTime; // Elapsed Time
+    sessionData.totalTimerTime   = activeTime + restTime;
+    sessionData.totalMovingTime = activeTime; // is not used by Garmin Connect
     sessionData.totalStrokes = lengths.reduce((acc, entry) => {
         const strokes = entry.totalStrokes || 0; // Fallback to 0 if totalStrokes is undefined or null
         return acc + strokes;
@@ -201,7 +202,7 @@ export function loadMeta() {
 export function renderEditPlot(data) {
     // Update Metadata
     loadMeta();
-    // console.log(data);
+    console.log(data);
 
     const fixedStrokeColors = {
         breaststroke: '#A8D8EA',
@@ -438,7 +439,6 @@ document.getElementById('confirmSplits').addEventListener('click', function() {
     const newStrokes = Math.floor(Math.floor(entryToSplit.totalStrokes / nSplit));
     const newTimerTime = entryToSplit.totalTimerTime / nSplit;
     const poolLength = modifiedData.sessionMesgs[0].poolLength;
-
 
     // Create nSplit entries
     const splitEntries = [];
@@ -710,17 +710,28 @@ function downloadFitFromJson(nestedData) {
         const mesgs = [];
 
         // Create the Developer Id message for the developer data fields.
-        const developerDataIdMesg = {
-            mesgNum: Profile.MesgNum.DEVELOPER_DATA_ID,
-            applicationId: Array(16).fill(0), // In practice, this should be a UUID converted to a byte array
-            applicationVersion: 1,
-            developerDataIndex: 0,
-        };
-        mesgs.push(developerDataIdMesg);
+        // const developerDataIdMesg = {
+        //     mesgNum: Profile.MesgNum.DEVELOPER_DATA_ID,
+        //     applicationId: Array(16).fill(0), // In practice, this should be a UUID converted to a byte array
+        //     applicationVersion: 1,
+        //     developerDataIndex: 0,
+        // };
+        // mesgs.push(developerDataIdMesg);
+
+        // some messages don't get encoded proper into json by SDK and
+        // corrupt file for Garmin Connect upload
+        const brokenMesgTypes = [
+            132, // hrMesgs from external HRM brakes 20309514743_ACTIVITY_original.fit (https://github.com/PeterK-end/swim-data-analyser/issues/6#issuecomment-3266622877)
+            313  // splitSummaryMesgs Brakes 20341213225.zip
+        ];
 
         for (const { message, fields } of flatMessages) {
             try {
                 const mesgNum = getMesgNumByMessagesKey(message);
+
+                if (brokenMesgTypes.includes(mesgNum)) {
+                    continue;
+                }
 
                 // Convert time strings to Date objects
                 const convertedFields = convertTimeFieldsToDate(fields);
@@ -745,6 +756,8 @@ function downloadFitFromJson(nestedData) {
         mesgs.forEach((mesg) => {
             encoder.writeMesg(mesg);
         });
+
+        console.log(mesgs);
 
         // Retrieve stored original name
         const baseName = sessionStorage.getItem("originalFileName") || "activity.fit";
