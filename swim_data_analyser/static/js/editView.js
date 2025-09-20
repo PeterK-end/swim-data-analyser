@@ -718,22 +718,18 @@ function downloadFitFromJson(nestedData) {
         // };
         // mesgs.push(developerDataIdMesg);
 
-        const nummies = [// 0, 49, 207,
-                         // 34, 18,
-                         // 216, 101, 21, 23, 2, 3,
-            132, // HR Brakes 20309514743_ACTIVITY_original.fit
-            // 26, 27,
-            // 72,
-            // 216,
-            313 // splitSummaryMesgs Brakes 20341213225.zip
-
+        // some messages don't get encoded proper into json by SDK and
+        // corrupt file for Garmin Connect upload
+        const brokenMesgTypes = [
+            132, // hrMesgs from external HRM brakes 20309514743_ACTIVITY_original.fit (https://github.com/PeterK-end/swim-data-analyser/issues/6#issuecomment-3266622877)
+            313  // splitSummaryMesgs Brakes 20341213225.zip
         ];
 
         for (const { message, fields } of flatMessages) {
             try {
                 const mesgNum = getMesgNumByMessagesKey(message);
 
-                if (nummies.includes(mesgNum)) {
+                if (brokenMesgTypes.includes(mesgNum)) {
                     continue;
                 }
 
