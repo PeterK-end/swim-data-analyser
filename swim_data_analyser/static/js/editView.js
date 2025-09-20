@@ -48,11 +48,12 @@ function updateLaps() {
 
         const lapLengths = lengths.filter(len =>
             len.messageIndex >= firstLengthIndex &&
-            len.messageIndex <= lastLengthIndex
+            len.messageIndex <= lastLengthIndex &&
+            len.lengthType === 'active'
         );
 
+        // rest lap
         if (lapLengths.length === 0) {
-            console.warn("No matching lengths found for lap:", lap);
             return;
         }
 
