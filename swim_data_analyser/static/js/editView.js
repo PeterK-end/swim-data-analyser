@@ -48,7 +48,7 @@ function updateLaps() {
 
         const lapLengths = lengths.filter(len =>
             len.messageIndex >= firstLengthIndex &&
-            len.messageIndex <= lastLengthIndex &&
+            len.messageIndex <= lastLengthIndex + 0.99 && // 0.99 to account for inserted length at the end e.g. 16.02
             len.lengthType === 'active'
         );
 
