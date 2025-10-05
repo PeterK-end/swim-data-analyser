@@ -202,7 +202,7 @@ export function loadMeta() {
 export function renderEditPlot(data) {
     // Update Metadata
     loadMeta();
-    console.log(data);
+    // console.log(data);
 
     const fixedStrokeColors = {
         breaststroke: '#A8D8EA',
