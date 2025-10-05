@@ -760,7 +760,8 @@ function downloadFitFromJson(nestedData) {
         console.log(mesgs);
 
         // Retrieve stored original name
-        const baseName = sessionStorage.getItem("originalFileName") || "activity.fit";
+        const original = sessionStorage.getItem("originalFileName") || "activity.fit";
+        const baseName = original.replace(/\.[^.]+$/, "") + "_NEW.fit";
 
         const uint8Array = encoder.close();
         const blob = new Blob([uint8Array], { type: 'application/octet-stream' });
@@ -815,7 +816,7 @@ document.getElementById('confirmDownloadChoice').addEventListener('click', funct
             // Retrieve stored original name
             const original = sessionStorage.getItem("originalFileName") || "activity.json";
             // Replace extension with .json
-            const baseName = original.replace(/\.[^.]+$/, "") + ".json";
+            const baseName = original.replace(/\.[^.]+$/, "") + "_NEW.json";
 
             const link = document.createElement('a');
             link.href = url;
