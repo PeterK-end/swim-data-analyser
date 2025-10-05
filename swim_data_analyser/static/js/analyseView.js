@@ -1,10 +1,24 @@
 import Plotly from 'plotly.js-basic-dist-min'
 
-// Helper function for formatting seconds to minute:sec
-function formatTime(seconds){
-    const totalMinutes = Math.floor(seconds / 60);
-    const totalSeconds = Math.floor(seconds % 60).toString().padStart(2, '0');
-    return `${totalMinutes}:${totalSeconds.toString().padStart(2, '0')}`;
+// Helper function for formatting seconds
+function formatTime(secs, prec = 2) {
+  if (typeof secs !== 'number' || secs < 0) return '0:00';
+
+  const factor = Math.pow(10, prec);
+  const rounded = Math.round(secs * factor) / factor;
+
+  const minutes = Math.floor(rounded / 60);
+  const remainder = rounded - minutes * 60;
+  const wholeSec = Math.floor(remainder);
+  const secStr = String(wholeSec).padStart(2, '0');
+
+  const hasFraction = prec > 0 && (rounded % 1 !== 0);
+  if (!hasFraction) return `${minutes}:${secStr}`;
+
+  const fraction = Math.round((remainder - wholeSec) * factor);
+  const fracStr = String(fraction).padStart(prec, '0');
+
+  return `${minutes}:${secStr}.${fracStr}`;
 }
 
 function ordinalSuffixOf(i) {
@@ -100,8 +114,8 @@ export function renderSummary() {
             <td>${stroke.charAt(0).toUpperCase() + stroke.slice(1)}</td>
             <td>${strokeData.totalLengths}</td>
             <td>${distance}m</td>
-            <td>${formatTime(strokeData.totalTime)}</td>
-            <td>${formatTime(pace)}</td>
+            <td>${formatTime(strokeData.totalTime, 0)}</td>
+            <td>${formatTime(pace, 0)}</td>
             <td>${strokeData.avg_spm.toFixed(2)}</td>
             <td>${strokeData.avg_spl.toFixed(2)}</td>
             </tr>
@@ -122,7 +136,7 @@ export function renderSummary() {
         <td>Sub Total</td>
         <td></td>
         <td></td>
-        <td>${formatTime(totalTime)}</td>
+        <td>${formatTime(totalTime, 0)}</td>
         <td></td>
         <td></td>
         <td></td>
@@ -131,7 +145,7 @@ export function renderSummary() {
         <td>Rest</td>
         <td></td>
         <td></td>
-        <td>${formatTime(totalRest)}</td>
+        <td>${formatTime(totalRest, 0)}</td>
         <td></td>
         <td></td>
         <td></td>
@@ -144,8 +158,8 @@ export function renderSummary() {
         <td>Total</td>
         <td>${totalLengths}</td>
         <td>${totalDistance}m</td>
-        <td>${formatTime(totalTime + totalRest)}</td>
-        <td>${formatTime(totalPace)}</td>
+        <td>${formatTime(totalTime + totalRest, 0)}</td>
+        <td>${formatTime(totalPace, 0)}</td>
         <td>${(strokeCount > 0) ? (totalSPM / strokeCount).toFixed(2) : '0.00'}</td>
         <td>${(strokeCount > 0) ? (totalSPL / strokeCount).toFixed(2) : '0.00'}</td>
     </tr>
@@ -530,8 +544,8 @@ export function renderIntervalSummaryTable() {
             <td>${lengthCounter}</td>
             <td>${distance}</td>
             <td>${length.swimStroke.charAt(0).toUpperCase() + length.swimStroke.slice(1)}</td>
-            <td>${formatTime(time)}</td>
-            <td>${formatTime(pace)}</td>
+            <td>${formatTime(time, 1)}</td>
+            <td>${formatTime(pace, 0)}</td>
             <td>${spm}</td>
             <td>${spl}</td>
         </tr>
@@ -552,7 +566,7 @@ export function renderIntervalSummaryTable() {
             <td>Rest</td>
             <td></td>
             <td></td>
-            <td>${formatTime(intervalRest)}</td>
+            <td>${formatTime(intervalRest, 1)}</td>
             <td></td>
             <td></td>
             <td></td>
@@ -580,8 +594,8 @@ export function renderIntervalSummaryTable() {
         <td>${ordinalSuffixOf(intervalIndex + 1)} Interval</td>
         <td>${intervalDistance}</td>
         <td>${intervalStroke}</td>
-        <td>${formatTime(intervalTime)}</td>
-        <td>${formatTime(intervalPace)}</td>
+        <td>${formatTime(intervalTime, 1)}</td>
+        <td>${formatTime(intervalPace, 0)}</td>
         <td>${intervalSPM.toFixed(2)}</td>
         <td>${intervalSPL.toFixed(2)}</td>
     </tr>
