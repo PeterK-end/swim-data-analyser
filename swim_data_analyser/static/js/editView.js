@@ -10,12 +10,34 @@ function formatTime(seconds){
     return `${totalMinutes}:${totalSeconds.toString().padStart(2, '0')}`;
 }
 
-// Utility function to sum specific attributes of objects in an array
+// Helper function to sum specific attributes of objects in an array
 function sumAttribute(attribute, entries) {
     return entries.reduce((total, entry) => total + (entry[attribute] || 0), 0);
 }
 
-// Update laps after changes to lengths
+function renumberMessageIndices(modifiedData) {
+    const oldToNew = {}; // or Map<number, number[]>
+
+    // renumber and build mapping to old one
+    modifiedData.lengthMesgs.forEach((entry, i) => {
+        if (!oldToNew[entry.messageIndex]) {
+            oldToNew[entry.messageIndex] = [];
+        }
+        oldToNew[entry.messageIndex].push(i);
+        entry.messageIndex = i;
+    });
+
+    // Update lap references (pick the first new index if multiple)
+    modifiedData.lapMesgs.forEach(lap => {
+        if (lap.firstLengthIndex != null && oldToNew[lap.firstLengthIndex]) {
+            lap.firstLengthIndex = oldToNew[lap.firstLengthIndex][0];
+        }
+    });
+
+    return modifiedData;
+}
+
+// Helper function to update laps after changes to lengths
 function updateLaps() {
     const data = JSON.parse(sessionStorage.getItem('modifiedData'));
 
@@ -26,6 +48,7 @@ function updateLaps() {
 
     const lengths = data.lengthMesgs;
     const laps = data.lapMesgs;
+    const updatedLaps = [];
 
     laps.forEach((lap, i) => {
         const { firstLengthIndex } = lap;
@@ -33,6 +56,12 @@ function updateLaps() {
         // ignore empty laps
         if (firstLengthIndex == null) {
             return;
+        }
+
+        // Don't modify pause laps (push as is)
+        if (lap.numActiveLengths ===0){
+            updatedLaps.push(lap);
+            return
         }
 
         // Determine last length index for this lap
@@ -48,11 +77,11 @@ function updateLaps() {
 
         const lapLengths = lengths.filter(len =>
             len.messageIndex >= firstLengthIndex &&
-            len.messageIndex <= lastLengthIndex + 0.99 && // 0.99 to account for inserted length at the end e.g. 16.02
+            len.messageIndex <= lastLengthIndex &&
             len.lengthType === 'active'
         );
 
-        // rest lap
+        // delete empty laps (no active lengths)
         if (lapLengths.length === 0) {
             return;
         }
@@ -85,7 +114,12 @@ function updateLaps() {
         lap.avgCadence = Math.round(avgCadence);
         lap.avgSpeed = avgSpeed;
         lap.enhancedAvgSpeed = avgSpeed;
+
+        updatedLaps.push(lap);
     });
+
+    // Replace laps with cleaned, updated list
+    data.lapMesgs = updatedLaps;
 
     sessionStorage.setItem('modifiedData', JSON.stringify(data));
 }
@@ -327,7 +361,7 @@ document.getElementById('mergeBtn').addEventListener('click', function() {
     selectedLabels.sort((a, b) => a - b);
 
     // Get modified data from sessionStorage
-    const modifiedData = JSON.parse(sessionStorage.getItem('modifiedData'));
+    let modifiedData = JSON.parse(sessionStorage.getItem('modifiedData'));
 
     if (!modifiedData || !modifiedData.lengthMesgs) {
         console.error("No 'modifiedData' found in sessionStorage.");
@@ -374,24 +408,9 @@ document.getElementById('mergeBtn').addEventListener('click', function() {
     // Replace first length with merged entry
     remainingLengths.splice(firstIndexLength, 1, newEntry);
 
-    // Adjust laps if their firstLengthIndex was merged
-    modifiedData.lapMesgs.forEach(lap => {
-        // Check if the lap’s firstLengthIndex was among the removed lengths
-        if (toRemove.includes(lap.firstLengthIndex)) {
-            // Try to move lap start to the next messageIndex (e.g., increment by 1)
-            const nextMsgIndex = lap.firstLengthIndex + 1;
-            const nextExists = remainingLengths.some(l => l.messageIndex === nextMsgIndex);
-
-            if (nextExists) {
-                lap.firstLengthIndex = nextMsgIndex;
-            } else {
-                console.warn(`Cannot adjust lap start index for lap at index ${lap.firstLengthIndex} – next messageIndex does not exist.`);
-            }
-        }
-    });
-
     // Update the sessionStorage with the new merged data
     modifiedData.lengthMesgs = remainingLengths;
+    renumberMessageIndices(modifiedData);
     sessionStorage.setItem('modifiedData', JSON.stringify(modifiedData));
 
     // Update Lap Records
@@ -407,7 +426,6 @@ document.getElementById('mergeBtn').addEventListener('click', function() {
 document.getElementById('confirmSplits').addEventListener('click', function() {
 
     const nSplit = document.getElementById('numberOfSplitsInput').value;
-    const splitOffset = nSplit/1000;
 
     // Validate the number of splits
     if (isNaN(nSplit) || nSplit < 2 || nSplit > 10) {
@@ -416,7 +434,7 @@ document.getElementById('confirmSplits').addEventListener('click', function() {
     }
 
     // Get modified data from sessionStorage
-    const modifiedData = JSON.parse(sessionStorage.getItem('modifiedData'));
+    let modifiedData = JSON.parse(sessionStorage.getItem('modifiedData'));
 
     if (!modifiedData || !modifiedData.lengthMesgs) {
         console.error("No 'modifiedData' found in sessionStorage.");
@@ -452,7 +470,6 @@ document.getElementById('confirmSplits').addEventListener('click', function() {
             totalTimerTime: newTimerTime,
             totalStrokes: newStrokes,
             totalCalories: entryToSplit.totalCalories / nSplit,
-            messageIndex: entryToSplit.messageIndex + i * splitOffset
         };
 
         splitEntries.push(splitEntry);
@@ -462,6 +479,7 @@ document.getElementById('confirmSplits').addEventListener('click', function() {
     modifiedData.lengthMesgs.splice(lengthToSplitIndex, 1, ...splitEntries);
 
     // Update sessionStorage with modified data
+    renumberMessageIndices(modifiedData);
     sessionStorage.setItem('modifiedData', JSON.stringify(modifiedData));
 
     // Clear selected labels after splitting
@@ -485,13 +503,14 @@ document.getElementById('deleteBtn').addEventListener('click', function() {
     }
 
     // Get the current modified data from sessionStorage
-    const modifiedData = JSON.parse(sessionStorage.getItem('modifiedData'));
+    let modifiedData = JSON.parse(sessionStorage.getItem('modifiedData'));
 
     // Filter to only keep the 'length' entries where the messageIndex is not in selectedLabels
     const remainingLengths = modifiedData.lengthMesgs.filter(entry => !selectedLabels.includes(entry.messageIndex));
     modifiedData.lengthMesgs = remainingLengths;
 
     // Update the modified data with the new length data
+    renumberMessageIndices(modifiedData);
     sessionStorage.setItem('modifiedData', JSON.stringify(modifiedData));
 
     // Clear the selected labels after deletion
@@ -582,6 +601,7 @@ document.getElementById('undoBtn').addEventListener('click', function() {
 
     // Retrieve and parse the modified data
     const data = JSON.parse(sessionStorage.getItem('modifiedData'));
+    renumberMessageIndices(data);
 
     // Check if data exists before rendering
     if (data && data.lengthMesgs) {
