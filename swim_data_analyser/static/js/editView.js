@@ -293,7 +293,7 @@ export function renderEditPlot(data) {
         x: lengthData.map((_, index) => index + 1),
         y: yValues,
         type: 'bar',
-        text: lengthData.map(d => `Stroke: ${d.swimStroke || 'Unknown'}<br>Time: ${d.totalElapsedTime} s`),
+        text:  lengthData.map((l, index) => `Length: ${index+1}<br>Stroke: ${l.swimStroke || 'Unknown'}<br>Time: ${l.totalElapsedTime} s`),
         hoverinfo: 'text',
         textposition: 'none',
         marker: {
@@ -321,11 +321,13 @@ export function renderEditPlot(data) {
             title: 'Length',
             titlefont: { size: 14 },
             tickfont: { size: 12 },
+            tick0: 1,
+            dtick: 2,
         },
         yaxis: {
             title: 'Duration (seconds)',
             titlefont: { size: 14 },
-            tickfont: { size: 12 }
+            tickfont: { size: 12 },
         },
         showlegend: false,
         shapes: lapShapes,
