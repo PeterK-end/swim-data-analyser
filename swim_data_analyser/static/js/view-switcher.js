@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const data = JSON.parse(sessionStorage.getItem('modifiedData'));
             AnalyseView.renderSummary();
+            AnalyseView.renderBestTimes(data);
             AnalyseView.renderHeartratePlot(data);
             AnalyseView.renderPacePlot(data);
             AnalyseView.renderStrokeRateStrokeCountPlot(data);
