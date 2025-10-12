@@ -456,7 +456,6 @@ document.getElementById('confirmSplits').addEventListener('click', function() {
 
     // Get the entry to be split
     const entryToSplit = modifiedData.lengthMesgs[lengthToSplitIndex];
-    const newStrokes = Math.floor(Math.floor(entryToSplit.totalStrokes / nSplit));
     const newStrokes = Math.floor(entryToSplit.totalStrokes / nSplit);
     const newTimerTime = entryToSplit.totalTimerTime / nSplit;
     const poolLength = modifiedData.sessionMesgs[0].poolLength;
