@@ -707,29 +707,20 @@ function downloadFitFromJson(nestedData) {
         return flat;
     }
 
-    function getMesgNumByMessagesKey(messagesKey) {
-        const messages = Profile.messages;
+     function resolveMesgNum(msgKey) {
+        // ① Try profile lookup (named messages)
+        const numFromProfile = getMesgNumByMessagesKey(msgKey);
+        if (numFromProfile != null) return numFromProfile;
 
-        if (typeof messages !== 'object') {
-            console.error("Profile.messages is not an object");
-            return null;
-        }
-
-        for (const key in messages) {
-            if (!messages.hasOwnProperty(key)) continue;
-
-            const definition = messages[key];
-            if (definition.messagesKey === messagesKey) {
-                return parseInt(key, 10); // message number is the key
-            }
-        }
-
-        return null; // not found
+        // ② Fallback: raw numeric key (may be a string)
+        const raw = Number(msgKey);
+        return Number.isInteger(raw) && raw >= 0 ? raw : null;
     }
 
+
     try {
-        const flatMessages = convertNestedToFlatMessages(nestedData);
-        const mesgs = [];
+        // const flatMessages = convertNestedToFlatMessages(nestedData);
+        // const mesgs = [];
 
         // Create the Developer Id message for the developer data fields.
         // const developerDataIdMesg = {
@@ -742,50 +733,109 @@ function downloadFitFromJson(nestedData) {
 
         // some messages don't get encoded proper into json by SDK and
         // corrupt file for Garmin Connect upload
-        const brokenMesgTypes = [
-            132, // hrMesgs from external HRM brakes 20309514743_ACTIVITY_original.fit (https://github.com/PeterK-end/swim-data-analyser/issues/6#issuecomment-3266622877)
-            313  // splitSummaryMesgs Brakes 20341213225.zip
-        ];
+        // const brokenMesgTypes = [
+        //     132, // hrMesgs from external HRM brakes 20309514743_ACTIVITY_original.fit (https://github.com/PeterK-end/swim-data-analyser/issues/6#issuecomment-3266622877)
+        //     313,  // splitSummaryMesgs Brakes 20341213225.zip
+        //     22, 79, 104, 113
+        // ];
 
-        for (const { message, fields } of flatMessages) {
-            try {
-                const mesgNum = getMesgNumByMessagesKey(message);
+        // for (const { message, fields } of flatMessages) {
+        //     try {
+        //         const mesgNum = resolveMesgNum(message);
 
-                if (brokenMesgTypes.includes(mesgNum)) {
-                    continue;
-                }
+        //         if (brokenMesgTypes.includes(mesgNum)) {
+        //             continue;
+        //         }
 
-                // Convert time strings to Date objects
-                const convertedFields = convertTimeFieldsToDate(fields);
+        //         // Convert time strings to Date objects
+        //         const convertedFields = convertTimeFieldsToDate(fields);
 
-                // Only push if record is not empty
-                if (fields && Object.keys(fields).length > 0) {
-                    const mesg = {
-                        mesgNum: mesgNum,
-                        ...convertedFields,
-                    };
+        //         // Only push if record is not empty
+        //         if (fields && Object.keys(fields).length > 0) {
+        //             const mesg = {
+        //                 mesgNum: mesgNum,
+        //                 ...convertedFields,
+        //             };
 
-                    mesgs.push(mesg);
-                }
+        //             mesgs.push(mesg);
+        //         }
 
-            } catch (err) {
-                console.warn(`Skipping unknown message: ${message}`, err.message);
+        //     } catch (err) {
+        //         console.warn(`Skipping unknown message: ${message}`, err.message);
+        //     }
+        // }
+        // Add unknown messages and fields to the Profile, so that they can be (re)encoded
+        function onMesgDefinition(mesgDefinition) {
+            const mesgNum = mesgDefinition.globalMessageNumber;
+
+            let mesgProfile = Profile.messages[mesgDefinition.globalMessageNumber];
+
+            if (mesgProfile == null) {
+                mesgProfile = {
+                    num: mesgNum,
+                    name: `mesg${mesgNum}`,
+                    messagesKey: `mesg${mesgNum}Mesgs`,
+                    fields: {
+                    },
+                };
+
+                Profile.messages[mesgDefinition.globalMessageNumber] = mesgProfile;
             }
-        }
 
-        const encoder = new Encoder();
+            mesgDefinition.fieldDefinitions.forEach((fieldDefinition) => {
+                const fieldProfile = mesgProfile.fields[fieldDefinition.fieldDefinitionNumber];
 
-        mesgs.forEach((mesg) => {
-            encoder.writeMesg(mesg);
+                if (fieldProfile == null) {
+                    mesgProfile.fields[fieldDefinition.fieldDefinitionNumber] =  {
+                        num: fieldDefinition.fieldDefinitionNumber,
+                        name: `field${fieldDefinition.fieldDefinitionNumber}`,
+                        type: Utils.BaseTypeToFieldType[fieldDefinition.baseType],
+                        baseType: Utils.BaseTypeToFieldType[fieldDefinition.baseType],
+                        array: fieldDefinition.size / fieldDefinition.baseTypeSize > 1,
+                        scale: 1,
+                        offset: 0,
+                        units: "",
+                        bits: [],
+                        components: [],
+                        isAccumulated: false,
+                        hasComponents: false,
+                        subFields: [],
+                    };
+                }
+            });
+        };
+
+        const allMessages = JSON.parse(sessionStorage.getItem('allMessages'));
+        console.log(allMessages);
+        const mesgDefinitions = JSON.parse(sessionStorage.getItem('mesgDefinitions'));
+        const fieldDescriptions = JSON.parse(sessionStorage.getItem('fieldDescriptions'));
+
+        mesgDefinitions.forEach((mesgDefinition) => {
+            onMesgDefinition(mesgDefinition);
         });
 
-        console.log(mesgs);
+
+        const encoder = new Encoder({ fieldDescriptions, });
+
+        try {
+            allMessages.forEach(encoder.writeMesg.bind(encoder));
+        }
+        catch (error) {
+            console.error(`${error.name}: ${error.message} \n${JSON.stringify(error.cause, null, 3)}`);
+        }
+
+        const uint8Array = encoder.close();
+
+        // mesgs.forEach((mesg) => {
+        //     console.log(mesg);
+        //     encoder.writeMesg(mesg);
+        // });
 
         // Retrieve stored original name
         const original = sessionStorage.getItem("originalFileName") || "activity.fit";
         const baseName = original.replace(/\.[^.]+$/, "") + "_NEW.fit";
 
-        const uint8Array = encoder.close();
+        // const uint8Array = encoder.close();
         const blob = new Blob([uint8Array], { type: 'application/octet-stream' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -801,6 +851,27 @@ function downloadFitFromJson(nestedData) {
         alert('Failed to encode FIT file.');
     }
 }
+
+function getMesgNumByMessagesKey(messagesKey) {
+    const messages = Profile.messages;
+
+    if (typeof messages !== 'object') {
+        console.error("Profile.messages is not an object");
+        return null;
+    }
+
+    for (const key in messages) {
+        if (!messages.hasOwnProperty(key)) continue;
+
+        const definition = messages[key];
+        if (definition.messagesKey === messagesKey) {
+            return parseInt(key, 10); // message number is the key
+        }
+    }
+
+    return null; // not found
+}
+
 
 document.getElementById('confirmDownloadChoice').addEventListener('click', function() {
     const downloadOption = document.getElementById('downloadSelect').value;

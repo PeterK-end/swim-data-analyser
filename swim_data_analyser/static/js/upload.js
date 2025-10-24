@@ -1,5 +1,5 @@
 import JSZip from "jszip";
-import { Decoder, Stream, Profile, Utils } from '@garmin/fitsdk';
+import { Decoder, Encoder, Stream, Profile, Utils } from '@garmin/fitsdk';
 import {renderEditPlot} from './editView.js';
 
 // Helper for communicating to the user
@@ -123,20 +123,53 @@ function runFitDecoding(file, onSuccess) {
         const arrayBuffer = e.target.result;
         const byteArray = new Uint8Array(arrayBuffer);
         const stream = Stream.fromByteArray(byteArray);
-        const decoder = new Decoder(stream);
+        const decode = new Decoder(stream);
 
-        if (!decoder.isFIT()) {
+        const allMessages = [];
+        const mesgDefinitions = [];
+        const fieldDescriptions = {};
+
+        if (!decode.isFIT()) {
             displayFlashMessage("Invalid FIT file.", "error");
             return;
         }
 
-        const result = decoder.read();
+        const { messages, errors, } = decode.read({
+            expandComponents: false,
+            mergeHeartRates: false,
+            expandSubFields: false,
+            converDateTimesToDates: false,
+            mesgListener: (mesgNum, mesg) => {
+                mesg.mesgNum = mesgNum;
+                allMessages.push(mesg);
+            },
+            mesgDefinitionListener: (mesgDefinition) => {
+                onMesgDefinition(mesgDefinition);
+                mesgDefinitions.push(mesgDefinition);
+            },
+            fieldDescriptionListener: (key, developerDataIdMesg, fieldDescriptionMesg) => {
+                fieldDescriptions[key] = { developerDataIdMesg, fieldDescriptionMesg, };
+            },
+        });
 
-        if (!result || result.errors?.length) {
+        console.log(allMessages);
+
+        sessionStorage.setItem('allMessages', JSON.stringify(allMessages));
+        sessionStorage.setItem('mesgDefinitions',JSON.stringify( mesgDefinitions ));
+        sessionStorage.setItem('fieldDescriptions', JSON.stringify(fieldDescriptions));
+
+
+        if (!messages || errors?.length) {
             console.error("Error decoding FIT:", result.errors);
             displayFlashMessage("Error decoding FIT file.", "error");
             return;
         }
+
+        // Any errors while decoding the file?
+        errors.forEach((error) => {
+            console.error(error.name, error.message, JSON.stringify(error?.cause, null, 2));
+        });
+
 
         // const removeTopLevelKeys = (dataObject, keysToRemove = []) => {
         //     const cleanedData = structuredClone(dataObject);
@@ -146,7 +179,48 @@ function runFitDecoding(file, onSuccess) {
         //     return cleanedData;
         // };
 
-        const parsedData = result.messages;
+        const parsedData = messages;
+
+        // Add unknown messages and fields to the Profile
+        function onMesgDefinition(mesgDefinition) {
+            const mesgNum = mesgDefinition.globalMessageNumber;
+
+            let mesgProfile = Profile.messages[mesgDefinition.globalMessageNumber];
+
+            if (mesgProfile == null) {
+                mesgProfile = {
+                    num: mesgNum,
+                    name: `mesg${mesgNum}`,
+                    messagesKey: `mesg${mesgNum}Mesgs`,
+                    fields: {
+                    },
+                };
+
+                Profile.messages[mesgDefinition.globalMessageNumber] = mesgProfile;
+            }
+
+            mesgDefinition.fieldDefinitions.forEach((fieldDefinition) => {
+                const fieldProfile = mesgProfile.fields[fieldDefinition.fieldDefinitionNumber];
+
+                if (fieldProfile == null) {
+                    mesgProfile.fields[fieldDefinition.fieldDefinitionNumber] =  {
+                        num: fieldDefinition.fieldDefinitionNumber,
+                        name: `field${fieldDefinition.fieldDefinitionNumber}`,
+                        type: Utils.BaseTypeToFieldType[fieldDefinition.baseType],
+                        baseType: Utils.BaseTypeToFieldType[fieldDefinition.baseType],
+                        array: fieldDefinition.size / fieldDefinition.baseTypeSize > 1,
+                        scale: 1,
+                        offset: 0,
+                        units: "",
+                        bits: [],
+                        components: [],
+                        isAccumulated: false,
+                        hasComponents: false,
+                        subFields: [],
+                    };
+                }
+            });
+        };
 
         if (!isPoolSwimming(parsedData)) {
             displayFlashMessage("This is not a pool swimming workout.", "error");
@@ -161,13 +235,6 @@ function runFitDecoding(file, onSuccess) {
         if (getSizeKB(parsedData) > maxQuotaKB) {
             finalData = reduceWorkoutSize(parsedData, maxQuotaKB, getSizeKB);
             if (!finalData) return;
-        }
-
-        // store name for export (always a .fit name at this point)
-        sessionStorage.setItem("originalFileName", file.name);
-
-        if (file.name !== "example.fit"){
-            displayFlashMessage("File successfully parsed.", "success");
         }
 
         onSuccess(finalData);
