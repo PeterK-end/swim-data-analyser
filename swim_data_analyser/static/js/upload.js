@@ -1,6 +1,7 @@
 import JSZip from "jszip";
-import { Decoder, Stream, Profile, Utils } from '@garmin/fitsdk';
-import {renderEditPlot} from './editView.js';
+import { Decoder, Encoder, Stream, Profile, Utils } from '@garmin/fitsdk';
+import { renderEditPlot } from './editView.js';
+import { getItem, saveItem } from './storage.js';
 
 // Helper for communicating to the user
 function displayFlashMessage(message, category) {
@@ -17,87 +18,32 @@ function displayFlashMessage(message, category) {
 
 // Function to check if the parsed data represents a pool swimming workout
 function isPoolSwimming(parsedData) {
-    // Check if the sport is swimming and if there is pool length data
-    if (parsedData.sportMesgs && parsedData.sportMesgs[0]){
-        return parsedData.sportMesgs[0].sport === 'swimming' && parsedData.sportMesgs[0].subSport === 'lapSwimming';
+    if (parsedData.sportMesgs && parsedData.sportMesgs[0]) {
+        return parsedData.sportMesgs[0].sport === 'swimming' &&
+               parsedData.sportMesgs[0].subSport === 'lapSwimming';
     } else {
-        //can't check will fail later (probably) -> reason: some swim
-        //workouts don't include this but can be parsed anyway
+        // can't check, will fail later (probably)
         return true;
     }
 }
 
-// Try to fit the workout into session memory with 5MB limit
-function reduceWorkoutSize(parsedData, maxQuotaKB, getSizeKB) {
-    const keepIntervals = [2, 3, 4, 5, 6]; // Try these in order
-
-    let finalData = null;
-    let finalInterval = null;
-
-    const reducedData = structuredClone(parsedData);
-
-    if (getSizeKB(reducedData) < maxQuotaKB) {
-        displayFlashMessage("File successfully parsed.");
-        console.log("Removed laps without active lengths.");
-        return reducedData;
-    }
-
-    for (const interval of keepIntervals) {
-
-        if (Array.isArray(reducedData.recordMesgs)) {
-            reducedData.recordMesgs = reducedData.recordMesgs.filter((_, i) => i % interval === 0);
-        }
-
-        const sizeKB = getSizeKB(reducedData);
-        console.log(`Attempt with every ${interval}th record: ${sizeKB.toFixed(2)} KB`);
-
-        if (sizeKB <= maxQuotaKB) {
-            finalData = reducedData;
-            finalInterval = interval;
-            break;
-        }
-    }
-
-    if (!finalData) {
-        console.error('Unable to store FIT file: exceeds browser storage limits.');
-        displayFlashMessage('The FIT file is too large to store in browser memory.', 'error');
-        return;
-    }
-
-    const msg = finalInterval === 1
-          ? 'File successfully parsed.'
-          : `Large file detected — keeping every ${finalInterval}th heartrate record for performance.`;
-
-    displayFlashMessage(msg, 'success');
-    return finalData;
-}
-
 // Parsing with Garmin-SDK
 function parseFitFile(file, onSuccess) {
-    const extension = file.name.slice(((file.name.lastIndexOf('.') - 1) >>> 0) + 2).toLowerCase();
+    const extension = file.name.split('.').pop().toLowerCase();
 
-    // Special case: ZIP input (Garmin Connect "Export file")
     if (extension === "zip") {
         const reader = new FileReader();
         reader.onload = async function (e) {
             try {
                 const zip = await JSZip.loadAsync(e.target.result);
                 const fitFiles = Object.values(zip.files).filter(f => f.name.toLowerCase().endsWith(".fit"));
-
                 if (fitFiles.length === 0) {
                     displayFlashMessage("No .fit file found inside zip.", "error");
                     return;
                 }
-
-                if (fitFiles.length > 1) {
-                    displayFlashMessage(`Multiple .fit files found, using ${fitFiles[0].name}`, "warning");
-                }
-
                 const fitBlob = await fitFiles[0].async("blob");
                 const fitFile = new File([fitBlob], fitFiles[0].name, { type: "application/octet-stream" });
-
-                // Continue as if the user uploaded this .fit file directly
-                runFitDecoding(fitFile, onSuccess);
+                await runFitDecoding(fitFile, onSuccess);
             } catch (err) {
                 console.error("Error reading zip file:", err);
                 displayFlashMessage("Invalid or corrupted zip file.", "error");
@@ -107,7 +53,6 @@ function parseFitFile(file, onSuccess) {
         return;
     }
 
-    // Normal case: FIT input
     if (extension === "fit") {
         runFitDecoding(file, onSuccess);
     } else {
@@ -116,69 +61,103 @@ function parseFitFile(file, onSuccess) {
 }
 
 // helper: runs the decoding pipeline, always on a FIT file
-function runFitDecoding(file, onSuccess) {
+async function runFitDecoding(file, onSuccess) {
     const reader = new FileReader();
 
-    reader.onload = function (e) {
+    reader.onload = async function (e) {
         const arrayBuffer = e.target.result;
         const byteArray = new Uint8Array(arrayBuffer);
         const stream = Stream.fromByteArray(byteArray);
-        const decoder = new Decoder(stream);
+        const decode = new Decoder(stream);
 
-        if (!decoder.isFIT()) {
+        const mesgDefinitions = [];
+        const fieldDescriptions = {};
+
+        if (!decode.isFIT()) {
             displayFlashMessage("Invalid FIT file.", "error");
             return;
         }
 
-        const result = decoder.read();
+        const { messages, errors } = decode.read({
+            expandComponents: false,
+            mergeHeartRates: false,
+            expandSubFields: false,
+            converDateTimesToDates: false,
+            mesgDefinitionListener: (mesgDefinition) => {
+                onMesgDefinition(mesgDefinition);
+                mesgDefinitions.push(mesgDefinition);
+            },
+            fieldDescriptionListener: (key, developerDataIdMesg, fieldDescriptionMesg) => {
+                fieldDescriptions[key] = { developerDataIdMesg, fieldDescriptionMesg };
+            },
+        });
 
-        if (!result || result.errors?.length) {
-            console.error("Error decoding FIT:", result.errors);
+        // Save parsed structures to IndexedDB
+        await saveItem('mesgDefinitions', mesgDefinitions);
+        await saveItem('fieldDescriptions', fieldDescriptions);
+        await saveItem('originalFileName', file.name);
+
+        if (!messages || errors?.length) {
             displayFlashMessage("Error decoding FIT file.", "error");
             return;
         }
 
-        // const removeTopLevelKeys = (dataObject, keysToRemove = []) => {
-        //     const cleanedData = structuredClone(dataObject);
-        //     for (const key of keysToRemove) {
-        //         delete cleanedData[key];
-        //     }
-        //     return cleanedData;
-        // };
+        errors.forEach((error) => {
+            console.error(error.name, error.message, JSON.stringify(error?.cause, null, 2));
+        });
 
-        const parsedData = result.messages;
+        const parsedData = messages;
+
+        function onMesgDefinition(mesgDefinition) {
+            const mesgNum = mesgDefinition.globalMessageNumber;
+            let mesgProfile = Profile.messages[mesgDefinition.globalMessageNumber];
+            if (mesgProfile == null) {
+                mesgProfile = {
+                    num: mesgNum,
+                    name: `mesg${mesgNum}`,
+                    messagesKey: `mesg${mesgNum}Mesgs`,
+                    fields: {},
+                };
+                Profile.messages[mesgDefinition.globalMessageNumber] = mesgProfile;
+            }
+
+            mesgDefinition.fieldDefinitions.forEach((fieldDefinition) => {
+                if (!mesgProfile.fields[fieldDefinition.fieldDefinitionNumber]) {
+                    mesgProfile.fields[fieldDefinition.fieldDefinitionNumber] = {
+                        num: fieldDefinition.fieldDefinitionNumber,
+                        name: `field${fieldDefinition.fieldDefinitionNumber}`,
+                        type: Utils.BaseTypeToFieldType[fieldDefinition.baseType],
+                        baseType: Utils.BaseTypeToFieldType[fieldDefinition.baseType],
+                        array: fieldDefinition.size / fieldDefinition.baseTypeSize > 1,
+                        scale: 1,
+                        offset: 0,
+                        units: "",
+                        bits: [],
+                        components: [],
+                        isAccumulated: false,
+                        hasComponents: false,
+                        subFields: [],
+                    };
+                }
+            });
+        }
 
         if (!isPoolSwimming(parsedData)) {
             displayFlashMessage("This is not a pool swimming workout.", "error");
             return;
         }
 
-        const maxQuotaKB = 2400;
-        const getSizeKB = obj => new Blob([JSON.stringify(obj)]).size / 1024;
-
-        let finalData = parsedData;
-
-        if (getSizeKB(parsedData) > maxQuotaKB) {
-            finalData = reduceWorkoutSize(parsedData, maxQuotaKB, getSizeKB);
-            if (!finalData) return;
-        }
-
-        // store name for export (always a .fit name at this point)
-        sessionStorage.setItem("originalFileName", file.name);
-
-        if (file.name !== "example.fit"){
-            displayFlashMessage("File successfully parsed.", "success");
-        }
-
-        onSuccess(finalData);
+        await saveItem('originalData', parsedData);
+        await saveItem('modifiedData', parsedData);
+        onSuccess(parsedData);
     };
 
     reader.readAsArrayBuffer(file);
 }
 
-document.getElementById('uploadForm')?.addEventListener('submit', (event) => {
+// Upload form handler
+document.getElementById('uploadForm')?.addEventListener('submit', async (event) => {
     event.preventDefault();
-
     const fileInput = document.getElementById('fileInput');
     const file = fileInput?.files?.[0];
 
@@ -187,51 +166,43 @@ document.getElementById('uploadForm')?.addEventListener('submit', (event) => {
         return;
     }
 
-    parseFitFile(file, (finalData) => {
-        sessionStorage.setItem('originalData', JSON.stringify(finalData));
-        sessionStorage.setItem('modifiedData', JSON.stringify(finalData));
+    parseFitFile(file, async (finalData) => {
+        await saveItem('originalData', finalData);
+        await saveItem('modifiedData', finalData);
         renderEditPlot(finalData);
     });
 });
 
-// Fetch default data and render it when the page loads
-function loadDefaultData() {
-    fetch('static/data/example.fit')
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.blob();
-        })
-        .then(blob => {
-            const file = new File([blob], 'example.fit', { type: 'application/octet-stream' });
-            parseFitFile(file, (finalData) => {
-                sessionStorage.setItem('originalData', JSON.stringify(finalData));
-                sessionStorage.setItem('modifiedData', JSON.stringify(finalData));
-                renderEditPlot(finalData);
-            });
-        })
-        .catch(error => {
-            console.error('Error loading default FIT file:', error);
-            displayFlashMessage('Error loading default FIT file.', 'error');
+// Load default data on startup
+async function loadDefaultData() {
+    try {
+        const response = await fetch('static/data/example.fit');
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const blob = await response.blob();
+        const file = new File([blob], 'example.fit', { type: 'application/octet-stream' });
+        parseFitFile(file, async (finalData) => {
+            await saveItem('originalData', finalData);
+            await saveItem('modifiedData', finalData);
+            renderEditPlot(finalData);
         });
+    } catch (error) {
+        console.error('Error loading default FIT file:', error);
+        displayFlashMessage('Error loading default FIT file.', 'error');
+    }
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    const modifiedData = sessionStorage.getItem('modifiedData');
+// Initialize on DOM ready
+document.addEventListener('DOMContentLoaded', async function () {
+    const modifiedData = await getItem('modifiedData');
 
-    // Check if 'modifiedData' is null or an empty string
-    if (!modifiedData || modifiedData === 'null' || modifiedData === '') {
-        // Fetch the default data if no file was uploaded
-        loadDefaultData();
+    if (!modifiedData) {
+        await loadDefaultData();
     } else {
-        // Render the plot with the existing 'data'
         try {
-            const data = JSON.parse(modifiedData);
-            renderEditPlot(data); // Use existing data if available
+            renderEditPlot(modifiedData);
         } catch (error) {
-            console.error('Error parsing modifiedData:', error);
-            loadDefaultData(); // If parsing fails, load default data
+            console.error('Error rendering stored data:', error);
+            await loadDefaultData();
         }
     }
 });

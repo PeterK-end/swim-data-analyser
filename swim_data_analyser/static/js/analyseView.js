@@ -1,4 +1,5 @@
 import Plotly from 'plotly.js-basic-dist-min'
+import { getItem, saveItem } from './storage.js';
 
 // Helper function for formatting seconds
 function formatTime(secs, prec = 2) {
@@ -29,9 +30,9 @@ function ordinalSuffixOf(i) {
     return i + "th";
 }
 
-export function renderSummary() {
-    // Retrieve the modified data from session storage
-    const data = JSON.parse(sessionStorage.getItem('modifiedData'));
+export async function renderSummary() {
+    // Retrieve the modified data from IndexDB
+    const data = await getItem('modifiedData');
     const lengthData = data.lengthMesgs;
     const activeLengths = data.lengthMesgs.filter(d => d.event === 'length' && d.lengthType === 'active');
     const sessionData = data.sessionMesgs[0];
@@ -593,8 +594,8 @@ ${d.totalStrokes}`),  // Hover text
     }
 }
 
-export function renderIntervalSummaryTable() {
-    const data = JSON.parse(sessionStorage.getItem('modifiedData'));
+export async function renderIntervalSummaryTable() {
+    const data = await getItem('modifiedData');
     const lengthData = data.lengthMesgs;
     const activeLengths = lengthData.filter(d => d.event === 'length' && d.lengthType === 'active');
     const activeLapsData = data.lapMesgs.filter(d => d.numActiveLengths > 0);

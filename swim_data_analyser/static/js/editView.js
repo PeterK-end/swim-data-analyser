@@ -1,5 +1,6 @@
 import Plotly from 'plotly.js-basic-dist-min'
 import { Encoder, Stream, Profile, Utils } from '@garmin/fitsdk';
+import { getItem, saveItem } from './storage.js';
 
 let selectedLabels = [];
 
@@ -38,11 +39,11 @@ function renumberMessageIndices(modifiedData) {
 }
 
 // Helper function to update laps after changes to lengths
-function updateLaps() {
-    const data = JSON.parse(sessionStorage.getItem('modifiedData'));
+async function updateLaps() {
+    const data = await getItem('modifiedData');
 
     if (!data || !data.lengthMesgs || !data.sessionMesgs || !data.lapMesgs) {
-        console.error("Missing data in sessionStorage.");
+        console.error("Missing data in IndexedDB.");
         return;
     }
 
@@ -121,14 +122,15 @@ function updateLaps() {
     // Replace laps with cleaned, updated list
     data.lapMesgs = updatedLaps;
 
-    sessionStorage.setItem('modifiedData', JSON.stringify(data));
+    await saveItem('modifiedData', data);
 }
 
-export function loadMeta() {
-    const data = JSON.parse(sessionStorage.getItem('modifiedData'));
+export async function loadMeta() {
+    const data = await getItem('modifiedData');
+
 
     if (!data || !data.lengthMesgs || !data.sessionMesgs) {
-        console.error("No 'modifiedData' found in sessionStorage or data is complete.");
+        console.error("No 'modifiedData' found in IndexedDB or data is complete.");
         return;
     }
 
@@ -161,8 +163,8 @@ export function loadMeta() {
     sessionData.enhancedMaxSpeed = fastestLength.avgSpeed || 0;
     sessionData.avgStrokeDistance = sessionData.totalDistance/sessionData.totalStrokes;
 
-    // Save the updated data back to sessionStorage
-    sessionStorage.setItem('modifiedData', JSON.stringify(data));
+    // Save the updated data back to db
+    await saveItem('modifiedData', data);
 
     // Extract metadata for display
     const metadata = sessionData;
@@ -352,7 +354,7 @@ export function renderEditPlot(data) {
 }
 
 // Edit Buttons Listener for Merge
-document.getElementById('mergeBtn').addEventListener('click', function() {
+document.getElementById('mergeBtn').addEventListener('click', async function() {
     // check selected Label conditionmessageIndex
     if (selectedLabels.length < 2) {
         alert("Select at least two bars to merge.");
@@ -362,11 +364,11 @@ document.getElementById('mergeBtn').addEventListener('click', function() {
     // sort the labels to slice them later
     selectedLabels.sort((a, b) => a - b);
 
-    // Get modified data from sessionStorage
-    let modifiedData = JSON.parse(sessionStorage.getItem('modifiedData'));
+    // Get modified data from db
+    let modifiedData = await getItem('modifiedData');
 
     if (!modifiedData || !modifiedData.lengthMesgs) {
-        console.error("No 'modifiedData' found in sessionStorage.");
+        console.error("No 'modifiedData' found in IndexedDB.");
         return;
     }
 
@@ -410,10 +412,10 @@ document.getElementById('mergeBtn').addEventListener('click', function() {
     // Replace first length with merged entry
     remainingLengths.splice(firstIndexLength, 1, newEntry);
 
-    // Update the sessionStorage with the new merged data
+    // Update the IndexedDB with the new merged data
     modifiedData.lengthMesgs = remainingLengths;
     renumberMessageIndices(modifiedData);
-    sessionStorage.setItem('modifiedData', JSON.stringify(modifiedData));
+    await saveItem('modifiedData', modifiedData);
 
     // Update Lap Records
     updateLaps();
@@ -425,7 +427,7 @@ document.getElementById('mergeBtn').addEventListener('click', function() {
     renderEditPlot(modifiedData);
 });
 
-document.getElementById('confirmSplits').addEventListener('click', function() {
+document.getElementById('confirmSplits').addEventListener('click', async function() {
 
     const nSplit = document.getElementById('numberOfSplitsInput').value;
 
@@ -435,11 +437,11 @@ document.getElementById('confirmSplits').addEventListener('click', function() {
         return; // Exit early
     }
 
-    // Get modified data from sessionStorage
-    let modifiedData = JSON.parse(sessionStorage.getItem('modifiedData'));
+    // Get modified data from IndexedDB
+    let modifiedData = await getItem('modifiedData');
 
     if (!modifiedData || !modifiedData.lengthMesgs) {
-        console.error("No 'modifiedData' found in sessionStorage.");
+        console.error("No 'modifiedData' found in IndexedDB.");
         return;
     }
 
@@ -480,9 +482,9 @@ document.getElementById('confirmSplits').addEventListener('click', function() {
     // Replace the original entry with the generated split entries
     modifiedData.lengthMesgs.splice(lengthToSplitIndex, 1, ...splitEntries);
 
-    // Update sessionStorage with modified data
+    // Update IndexedDB with modified data
     renumberMessageIndices(modifiedData);
-    sessionStorage.setItem('modifiedData', JSON.stringify(modifiedData));
+    await saveItem('modifiedData', modifiedData);
 
     // Clear selected labels after splitting
     selectedLabels = [];
@@ -496,7 +498,7 @@ document.getElementById('confirmSplits').addEventListener('click', function() {
     renderEditPlot(modifiedData);
 });
 
-document.getElementById('deleteBtn').addEventListener('click', function() {
+document.getElementById('deleteBtn').addEventListener('click', async function() {
 
     // Ensure at least one label is selected for deletion
     if (selectedLabels.length < 1) {
@@ -504,8 +506,8 @@ document.getElementById('deleteBtn').addEventListener('click', function() {
         return;
     }
 
-    // Get the current modified data from sessionStorage
-    let modifiedData = JSON.parse(sessionStorage.getItem('modifiedData'));
+    // Get the current modified data from IndexedDB
+    let modifiedData = await getItem('modifiedData');
 
     // Filter to only keep the 'length' entries where the messageIndex is not in selectedLabels
     const remainingLengths = modifiedData.lengthMesgs.filter(entry => !selectedLabels.includes(entry.messageIndex));
@@ -513,7 +515,7 @@ document.getElementById('deleteBtn').addEventListener('click', function() {
 
     // Update the modified data with the new length data
     renumberMessageIndices(modifiedData);
-    sessionStorage.setItem('modifiedData', JSON.stringify(modifiedData));
+    await saveItem('modifiedData', modifiedData);
 
     // Clear the selected labels after deletion
     selectedLabels = [];
@@ -526,18 +528,19 @@ document.getElementById('deleteBtn').addEventListener('click', function() {
 });
 
 // Confirm button inside the modal
-document.getElementById('confirmStroke').addEventListener('click', function() {
+document.getElementById('confirmStroke').addEventListener('click', async function() {
     // Get the selected stroke from the modal
     const selectedStroke = document.getElementById('strokeSelect').value;
 
     // Hide the modal
     document.getElementById('strokeModal').style.display = 'none';
 
-    // Get the modified data from sessionStorage
-    const modifiedData = JSON.parse(sessionStorage.getItem('modifiedData'));
+    // Get the modified data from IndexedDB
+    const modifiedData = await getItem('modifiedData');
+
 
     if (!modifiedData || !modifiedData.lengthMesgs) {
-        console.error("No 'modifiedData' found in sessionStorage.");
+        console.error("No 'modifiedData' found in IndexedDB.");
         return;
     }
 
@@ -549,8 +552,8 @@ document.getElementById('confirmStroke').addEventListener('click', function() {
         return entry;  // No changes if messageIndex not in selectedLabels
     });
 
-    // Save the updated data back to sessionStorage
-    sessionStorage.setItem('modifiedData', JSON.stringify(modifiedData));
+    // Save the updated data back to IndexedDB
+    await saveItem('modifiedData', modifiedData);
 
     // Reset selectedLabels
     selectedLabels = [];
@@ -562,10 +565,11 @@ document.getElementById('confirmStroke').addEventListener('click', function() {
     renderEditPlot(modifiedData);
 });
 
-document.getElementById('confirmPoolSize').addEventListener('click', function() {
+document.getElementById('confirmPoolSize').addEventListener('click', async function() {
 
-    // Get the modified data from sessionStorage
-    const modifiedData = JSON.parse(sessionStorage.getItem('modifiedData'));
+    // Get the modified data from IndexedDB
+    const modifiedData = await getItem('modifiedData');
+
 
     // Get the current pool size from the metadata
     const newPoolSize = parseFloat(document.getElementById('poolSizeEntered').value);
@@ -584,8 +588,8 @@ document.getElementById('confirmPoolSize').addEventListener('click', function() 
     // Update the pool size in the modifiedData object
     modifiedData.sessionMesgs[0].poolLength = newPoolSize;
 
-    // Update the sessionStorage with the modified data
-    sessionStorage.setItem('modifiedData', JSON.stringify(modifiedData));
+    // Update the IndexedDB with the modified data
+    await saveItem('modifiedData', modifiedData);
 
     // Update Lap Records
     updateLaps();
@@ -594,15 +598,16 @@ document.getElementById('confirmPoolSize').addEventListener('click', function() 
     renderEditPlot(modifiedData);
 });
 
-document.getElementById('undoBtn').addEventListener('click', function() {
+document.getElementById('undoBtn').addEventListener('click', async function() {
     // Reset selected labels
     selectedLabels = [];
 
     // Restore modifiedData from originalData
-    sessionStorage.setItem('modifiedData', sessionStorage.getItem('originalData'));
+    const originalData = await getItem('originalData');
+    await saveItem('modifiedData', originalData);
 
     // Retrieve and parse the modified data
-    const data = JSON.parse(sessionStorage.getItem('modifiedData'));
+    const data = await getItem('modifiedData');
     renumberMessageIndices(data);
 
     // Check if data exists before rendering
@@ -626,7 +631,6 @@ document.getElementById('splitBtn').addEventListener('click', function() {
     document.getElementById('numberOfSplitsModal').style.display = 'block';
 });
 
-
 document.getElementById('cancelStroke').addEventListener('click', function() {
     document.getElementById('strokeModal').style.display = 'none';
 });
@@ -644,12 +648,6 @@ document.getElementById('cancelSplits').addEventListener('click', function() {
 });
 
 document.getElementById('exportBtn').addEventListener('click', function() {
-
-});
-
-// Download
-
-document.getElementById('exportBtn').addEventListener('click', function() {
     document.getElementById('downloadModal').style.display = 'block';
 });
 
@@ -657,218 +655,145 @@ document.getElementById('cancelDownload').addEventListener('click', function() {
     document.getElementById('downloadModal').style.display = 'none';
 });
 
-// Encode the JS-Object to fit with Garmin-SDK
-function downloadFitFromJson(nestedData) {
+// Rebuilds message definitions in the Profile for unknown messages
+function ensureProfileDefinitions(mesgDefinitions) {
+    function onMesgDefinition(mesgDefinition) {
+        const mesgNum = mesgDefinition.globalMessageNumber;
+        let mesgProfile = Profile.messages[mesgNum];
 
-    function convertTimeFieldsToDate(obj) {
-        const timeFields = [
-            "timestamp",
-            "timeCreated",
-            "startTime",
-            "endTime",
-            "localTimestamp",
-            "eventTimestamp",
-            "triggerTimestamp",
-            "systemTimestamp",
-        ];
+        if (!mesgProfile) {
+            mesgProfile = {
+                num: mesgNum,
+                name: `mesg${mesgNum}`,
+                messagesKey: `mesg${mesgNum}Mesgs`,
+                fields: {},
+            };
+            Profile.messages[mesgNum] = mesgProfile;
+        }
 
-        const result = {};
-
-        for (const [key, value] of Object.entries(obj)) {
-            if (timeFields.includes(key) && typeof value === "string") {
-                const date = new Date(value);
-                if (!isNaN(date)) {
-                    result[key] = date;
-                } else {
-                    console.warn(`Invalid date for key "${key}": ${value}`);
-                    result[key] = value; // leave untouched if invalid
-                }
-            } else {
-                result[key] = value;
+        mesgDefinition.fieldDefinitions.forEach((fieldDefinition) => {
+            const fieldProfile = mesgProfile.fields[fieldDefinition.fieldDefinitionNumber];
+            if (!fieldProfile) {
+                mesgProfile.fields[fieldDefinition.fieldDefinitionNumber] = {
+                    num: fieldDefinition.fieldDefinitionNumber,
+                    name: `field${fieldDefinition.fieldDefinitionNumber}`,
+                    type: Utils.BaseTypeToFieldType[fieldDefinition.baseType],
+                    baseType: Utils.BaseTypeToFieldType[fieldDefinition.baseType],
+                    scale: 1,
+                    offset: 0,
+                    units: "",
+                    bits: [],
+                    components: [],
+                    isAccumulated: false,
+                    hasComponents: false,
+                    subFields: [],
+                };
             }
-        }
-
-        return result;
-    }
-
-    function convertNestedToFlatMessages(nestedJson) {
-        const flat = [];
-
-        for (const [messageName, messages] of Object.entries(nestedJson)) {
-            if (!Array.isArray(messages)) continue;
-            for (const fields of messages) {
-                flat.push({
-                    message: messageName,
-                    fields: fields,
-                });
-            }
-        }
-
-        return flat;
-    }
-
-    function getMesgNumByMessagesKey(messagesKey) {
-        const messages = Profile.messages;
-
-        if (typeof messages !== 'object') {
-            console.error("Profile.messages is not an object");
-            return null;
-        }
-
-        for (const key in messages) {
-            if (!messages.hasOwnProperty(key)) continue;
-
-            const definition = messages[key];
-            if (definition.messagesKey === messagesKey) {
-                return parseInt(key, 10); // message number is the key
-            }
-        }
-
-        return null; // not found
-    }
-
-    try {
-        const flatMessages = convertNestedToFlatMessages(nestedData);
-        const mesgs = [];
-
-        // Create the Developer Id message for the developer data fields.
-        // const developerDataIdMesg = {
-        //     mesgNum: Profile.MesgNum.DEVELOPER_DATA_ID,
-        //     applicationId: Array(16).fill(0), // In practice, this should be a UUID converted to a byte array
-        //     applicationVersion: 1,
-        //     developerDataIndex: 0,
-        // };
-        // mesgs.push(developerDataIdMesg);
-
-        // some messages don't get encoded proper into json by SDK and
-        // corrupt file for Garmin Connect upload
-        const brokenMesgTypes = [
-            132, // hrMesgs from external HRM brakes 20309514743_ACTIVITY_original.fit (https://github.com/PeterK-end/swim-data-analyser/issues/6#issuecomment-3266622877)
-            313  // splitSummaryMesgs Brakes 20341213225.zip
-        ];
-
-        for (const { message, fields } of flatMessages) {
-            try {
-                const mesgNum = getMesgNumByMessagesKey(message);
-
-                if (brokenMesgTypes.includes(mesgNum)) {
-                    continue;
-                }
-
-                // Convert time strings to Date objects
-                const convertedFields = convertTimeFieldsToDate(fields);
-
-                // Only push if record is not empty
-                if (fields && Object.keys(fields).length > 0) {
-                    const mesg = {
-                        mesgNum: mesgNum,
-                        ...convertedFields,
-                    };
-
-                    mesgs.push(mesg);
-                }
-
-            } catch (err) {
-                console.warn(`Skipping unknown message: ${message}`, err.message);
-            }
-        }
-
-        const encoder = new Encoder();
-
-        mesgs.forEach((mesg) => {
-            encoder.writeMesg(mesg);
         });
+    }
+    mesgDefinitions.forEach(onMesgDefinition);
+}
 
-        console.log(mesgs);
+// Converts modifiedData into a flat message list for export
+function prepareExportData(modifiedData) {
+    const messageGroups = Object.entries(modifiedData)
+        .filter(([key, val]) => Array.isArray(val) && key.endsWith('Mesgs'));
+    const allMessages = [];
 
-        // Retrieve stored original name
-        const original = sessionStorage.getItem("originalFileName") || "activity.fit";
+    for (const [messageName, messages] of messageGroups) {
+        const mesgNum = getMesgNumByMessagesKey(messageName);
+        if (mesgNum == null) continue;
+        for (const fields of messages) allMessages.push({ mesgNum, ...fields });
+    }
+    return allMessages;
+}
+
+// FIT export handler
+async function downloadFitFromJson() {
+    try {
+        const modifiedData = await getItem('modifiedData');
+        const mesgDefinitions = await getItem('mesgDefinitions');
+        const fieldDescriptions = await getItem('fieldDescriptions');
+        if (!modifiedData) return alert("No modified data found in IndexedDB.");
+
+        ensureProfileDefinitions(mesgDefinitions);
+        const allMessages = prepareExportData(modifiedData);
+
+        const encoder = new Encoder({ fieldDescriptions });
+        allMessages.forEach((msg) => encoder.writeMesg(msg));
+        const uint8Array = encoder.close();
+
+        const original = (await getItem('originalFileName')) || "activity.fit";
         const baseName = original.replace(/\.[^.]+$/, "") + "_NEW.fit";
 
-        const uint8Array = encoder.close();
         const blob = new Blob([uint8Array], { type: 'application/octet-stream' });
-        const url = window.URL.createObjectURL(blob);
+        const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = baseName;
-        a.style.display = 'none';
         document.body.appendChild(a);
         a.click();
-        window.URL.revokeObjectURL(url);
+        URL.revokeObjectURL(url);
         document.body.removeChild(a);
     } catch (error) {
-        console.error('Encoding FIT failed:', error);
-        alert('Failed to encode FIT file.');
+        console.error("Encoding FIT failed:", error);
+        alert("Failed to encode FIT file.");
     }
 }
 
-document.getElementById('confirmDownloadChoice').addEventListener('click', function() {
-    const downloadOption = document.getElementById('downloadSelect').value;
+// JSON export handler
+async function downloadJson() {
+    try {
+        const modifiedData = await getItem('modifiedData');
+        const mesgDefinitions = await getItem('mesgDefinitions');
+        const fieldDescriptions = await getItem('fieldDescriptions');
+        if (!modifiedData) return alert("No data available to download.");
 
-    // Hide the modal
+        ensureProfileDefinitions(mesgDefinitions);
+        const allMessages = prepareExportData(modifiedData);
+
+        const jsonExport = { messages: allMessages, mesgDefinitions, fieldDescriptions };
+        const jsonString = JSON.stringify(jsonExport, null, 2);
+
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+
+        const original = (await getItem('originalFileName')) || "activity.json";
+        const baseName = original.replace(/\.[^.]+$/, "") + "_NEW.json";
+
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = baseName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error("Error generating JSON file:", error);
+        alert("Failed to generate JSON file.");
+    }
+}
+
+// Resolves message number from Profile key
+function getMesgNumByMessagesKey(messagesKey) {
+    const messages = Profile.messages;
+    if (typeof messages !== 'object') return null;
+    for (const key in messages) {
+        const definition = messages[key];
+        if (definition.messagesKey === messagesKey) return parseInt(key, 10);
+    }
+    return null;
+}
+
+// Handles download modal confirmation
+document.getElementById('confirmDownloadChoice').addEventListener('click', async function() {
+    const downloadOption = document.getElementById('downloadSelect').value;
     document.getElementById('downloadModal').style.display = 'none';
 
-    // Helper function to get the CSRF token from cookies
-    function getCookie(name) {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.startsWith(name + '=')) {
-                return cookie.substring(name.length + 1);
-            }
-        }
-        return null;
-    }
-
-    const csrfToken = getCookie('csrftoken'); // Retrieve the CSRF token from cookies
-
     if (downloadOption === "json") {
-        const data = sessionStorage.getItem('modifiedData');
-
-        if (!data) {
-            console.error("No 'modifiedData' found in sessionStorage.");
-            alert("No data available to download.");
-            return;
-        }
-
-        try {
-            const blob = new Blob([data], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-
-            // Retrieve stored original name
-            const original = sessionStorage.getItem("originalFileName") || "activity.json";
-            // Replace extension with .json
-            const baseName = original.replace(/\.[^.]+$/, "") + "_NEW.json";
-
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = baseName;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url); // Revoke the object URL after download
-        } catch (error) {
-            console.error("Error generating JSON file:", error);
-            alert("Failed to generate JSON file.");
-        }
+        await downloadJson();
     } else if (downloadOption === "fit") {
-        const data = sessionStorage.getItem('modifiedData');
-
-        if (!data) {
-            console.error("No 'modifiedData' found in sessionStorage.");
-            alert("No data available to download.");
-            return;
-        }
-
-        try {
-            const modifiedData = JSON.parse(data); // Ensure data is parsed into an object
-
-            downloadFitFromJson(modifiedData)
-
-        } catch (error) {
-            console.error("Error preparing data for FIT download:", error);
-            alert("Invalid data format for FIT download.");
-        }
+        await downloadFitFromJson();
     } else {
         alert("Please select a valid download option.");
     }
