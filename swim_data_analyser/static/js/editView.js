@@ -655,289 +655,145 @@ document.getElementById('cancelDownload').addEventListener('click', function() {
     document.getElementById('downloadModal').style.display = 'none';
 });
 
-// Encode the JS-Object to fit with Garmin-SDK
-function downloadFitFromJson(nestedData) {
+// Rebuilds message definitions in the Profile for unknown messages
+function ensureProfileDefinitions(mesgDefinitions) {
+    function onMesgDefinition(mesgDefinition) {
+        const mesgNum = mesgDefinition.globalMessageNumber;
+        let mesgProfile = Profile.messages[mesgNum];
 
-    function convertTimeFieldsToDate(obj) {
-        const timeFields = [
-            "timestamp",
-            "timeCreated",
-            "startTime",
-            "endTime",
-            "localTimestamp",
-            "eventTimestamp",
-            "triggerTimestamp",
-            "systemTimestamp",
-        ];
-
-        const result = {};
-
-        for (const [key, value] of Object.entries(obj)) {
-            if (timeFields.includes(key) && typeof value === "string") {
-                const date = new Date(value);
-                if (!isNaN(date)) {
-                    result[key] = date;
-                } else {
-                    console.warn(`Invalid date for key "${key}": ${value}`);
-                    result[key] = value; // leave untouched if invalid
-                }
-            } else {
-                result[key] = value;
-            }
+        if (!mesgProfile) {
+            mesgProfile = {
+                num: mesgNum,
+                name: `mesg${mesgNum}`,
+                messagesKey: `mesg${mesgNum}Mesgs`,
+                fields: {},
+            };
+            Profile.messages[mesgNum] = mesgProfile;
         }
 
-        return result;
-    }
-
-    function convertNestedToFlatMessages(nestedJson) {
-        const flat = [];
-
-        for (const [messageName, messages] of Object.entries(nestedJson)) {
-            if (!Array.isArray(messages)) continue;
-            for (const fields of messages) {
-                flat.push({
-                    message: messageName,
-                    fields: fields,
-                });
-            }
-        }
-
-        return flat;
-    }
-
-     function resolveMesgNum(msgKey) {
-        // ① Try profile lookup (named messages)
-        const numFromProfile = getMesgNumByMessagesKey(msgKey);
-        if (numFromProfile != null) return numFromProfile;
-
-        // ② Fallback: raw numeric key (may be a string)
-        const raw = Number(msgKey);
-        return Number.isInteger(raw) && raw >= 0 ? raw : null;
-    }
-
-
-    try {
-        // const flatMessages = convertNestedToFlatMessages(nestedData);
-        // const mesgs = [];
-
-        // Create the Developer Id message for the developer data fields.
-        // const developerDataIdMesg = {
-        //     mesgNum: Profile.MesgNum.DEVELOPER_DATA_ID,
-        //     applicationId: Array(16).fill(0), // In practice, this should be a UUID converted to a byte array
-        //     applicationVersion: 1,
-        //     developerDataIndex: 0,
-        // };
-        // mesgs.push(developerDataIdMesg);
-
-        // some messages don't get encoded proper into json by SDK and
-        // corrupt file for Garmin Connect upload
-        // const brokenMesgTypes = [
-        //     132, // hrMesgs from external HRM brakes 20309514743_ACTIVITY_original.fit (https://github.com/PeterK-end/swim-data-analyser/issues/6#issuecomment-3266622877)
-        //     313,  // splitSummaryMesgs Brakes 20341213225.zip
-        //     22, 79, 104, 113
-        // ];
-
-        // for (const { message, fields } of flatMessages) {
-        //     try {
-        //         const mesgNum = resolveMesgNum(message);
-
-        //         if (brokenMesgTypes.includes(mesgNum)) {
-        //             continue;
-        //         }
-
-        //         // Convert time strings to Date objects
-        //         const convertedFields = convertTimeFieldsToDate(fields);
-
-        //         // Only push if record is not empty
-        //         if (fields && Object.keys(fields).length > 0) {
-        //             const mesg = {
-        //                 mesgNum: mesgNum,
-        //                 ...convertedFields,
-        //             };
-
-        //             mesgs.push(mesg);
-        //         }
-
-        //     } catch (err) {
-        //         console.warn(`Skipping unknown message: ${message}`, err.message);
-        //     }
-        // }
-        // Add unknown messages and fields to the Profile, so that they can be (re)encoded
-        function onMesgDefinition(mesgDefinition) {
-            const mesgNum = mesgDefinition.globalMessageNumber;
-
-            let mesgProfile = Profile.messages[mesgDefinition.globalMessageNumber];
-
-            if (mesgProfile == null) {
-                mesgProfile = {
-                    num: mesgNum,
-                    name: `mesg${mesgNum}`,
-                    messagesKey: `mesg${mesgNum}Mesgs`,
-                    fields: {
-                    },
+        mesgDefinition.fieldDefinitions.forEach((fieldDefinition) => {
+            const fieldProfile = mesgProfile.fields[fieldDefinition.fieldDefinitionNumber];
+            if (!fieldProfile) {
+                mesgProfile.fields[fieldDefinition.fieldDefinitionNumber] = {
+                    num: fieldDefinition.fieldDefinitionNumber,
+                    name: `field${fieldDefinition.fieldDefinitionNumber}`,
+                    type: Utils.BaseTypeToFieldType[fieldDefinition.baseType],
+                    baseType: Utils.BaseTypeToFieldType[fieldDefinition.baseType],
+                    scale: 1,
+                    offset: 0,
+                    units: "",
+                    bits: [],
+                    components: [],
+                    isAccumulated: false,
+                    hasComponents: false,
+                    subFields: [],
                 };
-
-                Profile.messages[mesgDefinition.globalMessageNumber] = mesgProfile;
             }
-
-            mesgDefinition.fieldDefinitions.forEach((fieldDefinition) => {
-                const fieldProfile = mesgProfile.fields[fieldDefinition.fieldDefinitionNumber];
-
-                if (fieldProfile == null) {
-                    mesgProfile.fields[fieldDefinition.fieldDefinitionNumber] =  {
-                        num: fieldDefinition.fieldDefinitionNumber,
-                        name: `field${fieldDefinition.fieldDefinitionNumber}`,
-                        type: Utils.BaseTypeToFieldType[fieldDefinition.baseType],
-                        baseType: Utils.BaseTypeToFieldType[fieldDefinition.baseType],
-                        array: fieldDefinition.size / fieldDefinition.baseTypeSize > 1,
-                        scale: 1,
-                        offset: 0,
-                        units: "",
-                        bits: [],
-                        components: [],
-                        isAccumulated: false,
-                        hasComponents: false,
-                        subFields: [],
-                    };
-                }
-            });
-        };
-
-        const allMessages = JSON.parse(sessionStorage.getItem('allMessages'));
-        console.log(allMessages);
-        const mesgDefinitions = JSON.parse(sessionStorage.getItem('mesgDefinitions'));
-        const fieldDescriptions = JSON.parse(sessionStorage.getItem('fieldDescriptions'));
-
-        mesgDefinitions.forEach((mesgDefinition) => {
-            onMesgDefinition(mesgDefinition);
         });
+    }
+    mesgDefinitions.forEach(onMesgDefinition);
+}
 
+// Converts modifiedData into a flat message list for export
+function prepareExportData(modifiedData) {
+    const messageGroups = Object.entries(modifiedData)
+        .filter(([key, val]) => Array.isArray(val) && key.endsWith('Mesgs'));
+    const allMessages = [];
 
-        const encoder = new Encoder({ fieldDescriptions, });
+    for (const [messageName, messages] of messageGroups) {
+        const mesgNum = getMesgNumByMessagesKey(messageName);
+        if (mesgNum == null) continue;
+        for (const fields of messages) allMessages.push({ mesgNum, ...fields });
+    }
+    return allMessages;
+}
 
-        try {
-            allMessages.forEach(encoder.writeMesg.bind(encoder));
-        }
-        catch (error) {
-            console.error(`${error.name}: ${error.message} \n${JSON.stringify(error.cause, null, 3)}`);
-        }
+// FIT export handler
+async function downloadFitFromJson() {
+    try {
+        const modifiedData = await getItem('modifiedData');
+        const mesgDefinitions = await getItem('mesgDefinitions');
+        const fieldDescriptions = await getItem('fieldDescriptions');
+        if (!modifiedData) return alert("No modified data found in IndexedDB.");
 
+        ensureProfileDefinitions(mesgDefinitions);
+        const allMessages = prepareExportData(modifiedData);
+
+        const encoder = new Encoder({ fieldDescriptions });
+        allMessages.forEach((msg) => encoder.writeMesg(msg));
         const uint8Array = encoder.close();
 
-        // mesgs.forEach((mesg) => {
-        //     console.log(mesg);
-        //     encoder.writeMesg(mesg);
-        // });
-
-        // Retrieve stored original name
-        const original = sessionStorage.getItem("originalFileName") || "activity.fit";
+        const original = (await getItem('originalFileName')) || "activity.fit";
         const baseName = original.replace(/\.[^.]+$/, "") + "_NEW.fit";
 
-        // const uint8Array = encoder.close();
         const blob = new Blob([uint8Array], { type: 'application/octet-stream' });
-        const url = window.URL.createObjectURL(blob);
+        const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = baseName;
-        a.style.display = 'none';
         document.body.appendChild(a);
         a.click();
-        window.URL.revokeObjectURL(url);
+        URL.revokeObjectURL(url);
         document.body.removeChild(a);
     } catch (error) {
-        console.error('Encoding FIT failed:', error);
-        alert('Failed to encode FIT file.');
+        console.error("Encoding FIT failed:", error);
+        alert("Failed to encode FIT file.");
     }
 }
 
+// JSON export handler
+async function downloadJson() {
+    try {
+        const modifiedData = await getItem('modifiedData');
+        const mesgDefinitions = await getItem('mesgDefinitions');
+        const fieldDescriptions = await getItem('fieldDescriptions');
+        if (!modifiedData) return alert("No data available to download.");
+
+        ensureProfileDefinitions(mesgDefinitions);
+        const allMessages = prepareExportData(modifiedData);
+
+        const jsonExport = { messages: allMessages, mesgDefinitions, fieldDescriptions };
+        const jsonString = JSON.stringify(jsonExport, null, 2);
+
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+
+        const original = (await getItem('originalFileName')) || "activity.json";
+        const baseName = original.replace(/\.[^.]+$/, "") + "_NEW.json";
+
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = baseName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error("Error generating JSON file:", error);
+        alert("Failed to generate JSON file.");
+    }
+}
+
+// Resolves message number from Profile key
 function getMesgNumByMessagesKey(messagesKey) {
     const messages = Profile.messages;
-
-    if (typeof messages !== 'object') {
-        console.error("Profile.messages is not an object");
-        return null;
-    }
-
+    if (typeof messages !== 'object') return null;
     for (const key in messages) {
-        if (!messages.hasOwnProperty(key)) continue;
-
         const definition = messages[key];
-        if (definition.messagesKey === messagesKey) {
-            return parseInt(key, 10); // message number is the key
-        }
+        if (definition.messagesKey === messagesKey) return parseInt(key, 10);
     }
-
-    return null; // not found
+    return null;
 }
 
-
-document.getElementById('confirmDownloadChoice').addEventListener('click', function() {
+// Handles download modal confirmation
+document.getElementById('confirmDownloadChoice').addEventListener('click', async function() {
     const downloadOption = document.getElementById('downloadSelect').value;
-
-    // Hide the modal
     document.getElementById('downloadModal').style.display = 'none';
 
-    // Helper function to get the CSRF token from cookies
-    function getCookie(name) {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.startsWith(name + '=')) {
-                return cookie.substring(name.length + 1);
-            }
-        }
-        return null;
-    }
-
-    const csrfToken = getCookie('csrftoken'); // Retrieve the CSRF token from cookies
-
     if (downloadOption === "json") {
-        const data = sessionStorage.getItem('modifiedData');
-
-        if (!data) {
-            console.error("No 'modifiedData' found in sessionStorage.");
-            alert("No data available to download.");
-            return;
-        }
-
-        try {
-            const blob = new Blob([data], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-
-            // Retrieve stored original name
-            const original = sessionStorage.getItem("originalFileName") || "activity.json";
-            // Replace extension with .json
-            const baseName = original.replace(/\.[^.]+$/, "") + "_NEW.json";
-
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = baseName;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url); // Revoke the object URL after download
-        } catch (error) {
-            console.error("Error generating JSON file:", error);
-            alert("Failed to generate JSON file.");
-        }
+        await downloadJson();
     } else if (downloadOption === "fit") {
-        const data = sessionStorage.getItem('modifiedData');
-
-        if (!data) {
-            console.error("No 'modifiedData' found in sessionStorage.");
-            alert("No data available to download.");
-            return;
-        }
-
-        try {
-            const modifiedData = JSON.parse(data); // Ensure data is parsed into an object
-
-            downloadFitFromJson(modifiedData)
-
-        } catch (error) {
-            console.error("Error preparing data for FIT download:", error);
-            alert("Invalid data format for FIT download.");
-        }
+        await downloadFitFromJson();
     } else {
         alert("Please select a valid download option.");
     }
