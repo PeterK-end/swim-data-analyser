@@ -1,4 +1,5 @@
 import * as AnalyseView from './analyseView.js';
+import { getItem, saveItem } from './storage.js';
 
 // JavaScript to handle view switching
 document.addEventListener('DOMContentLoaded', function () {
@@ -8,7 +9,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const analyseContent = document.getElementById('analyseContent');
 
     // Function to switch views
-    function switchView(view) {
+    async function switchView(view) {
         if (view === 'edit') {
             editContent.style.display = 'block';
             analyseContent.style.display = 'none';
@@ -20,7 +21,7 @@ document.addEventListener('DOMContentLoaded', function () {
             analyseView.classList.add('highlighted');
             editView.classList.remove('highlighted');
 
-            const data = JSON.parse(sessionStorage.getItem('modifiedData'));
+            const data = await getItem('modifiedData');
             AnalyseView.renderSummary();
             AnalyseView.renderBestTimes(data);
             AnalyseView.renderHeartratePlot(data);

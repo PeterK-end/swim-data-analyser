@@ -1,5 +1,6 @@
 import Plotly from 'plotly.js-basic-dist-min'
 import { Encoder, Stream, Profile, Utils } from '@garmin/fitsdk';
+import { getItem, saveItem } from './storage.js';
 
 let selectedLabels = [];
 
@@ -38,11 +39,11 @@ function renumberMessageIndices(modifiedData) {
 }
 
 // Helper function to update laps after changes to lengths
-function updateLaps() {
-    const data = JSON.parse(sessionStorage.getItem('modifiedData'));
+async function updateLaps() {
+    const data = await getItem('modifiedData');
 
     if (!data || !data.lengthMesgs || !data.sessionMesgs || !data.lapMesgs) {
-        console.error("Missing data in sessionStorage.");
+        console.error("Missing data in IndexedDB.");
         return;
     }
 
@@ -121,14 +122,15 @@ function updateLaps() {
     // Replace laps with cleaned, updated list
     data.lapMesgs = updatedLaps;
 
-    sessionStorage.setItem('modifiedData', JSON.stringify(data));
+    await saveItem('modifiedData', data);
 }
 
-export function loadMeta() {
-    const data = JSON.parse(sessionStorage.getItem('modifiedData'));
+export async function loadMeta() {
+    const data = await getItem('modifiedData');
+
 
     if (!data || !data.lengthMesgs || !data.sessionMesgs) {
-        console.error("No 'modifiedData' found in sessionStorage or data is complete.");
+        console.error("No 'modifiedData' found in IndexedDB or data is complete.");
         return;
     }
 
@@ -161,8 +163,8 @@ export function loadMeta() {
     sessionData.enhancedMaxSpeed = fastestLength.avgSpeed || 0;
     sessionData.avgStrokeDistance = sessionData.totalDistance/sessionData.totalStrokes;
 
-    // Save the updated data back to sessionStorage
-    sessionStorage.setItem('modifiedData', JSON.stringify(data));
+    // Save the updated data back to db
+    await saveItem('modifiedData', data);
 
     // Extract metadata for display
     const metadata = sessionData;
@@ -352,7 +354,7 @@ export function renderEditPlot(data) {
 }
 
 // Edit Buttons Listener for Merge
-document.getElementById('mergeBtn').addEventListener('click', function() {
+document.getElementById('mergeBtn').addEventListener('click', async function() {
     // check selected Label conditionmessageIndex
     if (selectedLabels.length < 2) {
         alert("Select at least two bars to merge.");
@@ -362,11 +364,11 @@ document.getElementById('mergeBtn').addEventListener('click', function() {
     // sort the labels to slice them later
     selectedLabels.sort((a, b) => a - b);
 
-    // Get modified data from sessionStorage
-    let modifiedData = JSON.parse(sessionStorage.getItem('modifiedData'));
+    // Get modified data from db
+    let modifiedData = await getItem('modifiedData');
 
     if (!modifiedData || !modifiedData.lengthMesgs) {
-        console.error("No 'modifiedData' found in sessionStorage.");
+        console.error("No 'modifiedData' found in IndexedDB.");
         return;
     }
 
@@ -410,10 +412,10 @@ document.getElementById('mergeBtn').addEventListener('click', function() {
     // Replace first length with merged entry
     remainingLengths.splice(firstIndexLength, 1, newEntry);
 
-    // Update the sessionStorage with the new merged data
+    // Update the IndexedDB with the new merged data
     modifiedData.lengthMesgs = remainingLengths;
     renumberMessageIndices(modifiedData);
-    sessionStorage.setItem('modifiedData', JSON.stringify(modifiedData));
+    await saveItem('modifiedData', modifiedData);
 
     // Update Lap Records
     updateLaps();
@@ -425,7 +427,7 @@ document.getElementById('mergeBtn').addEventListener('click', function() {
     renderEditPlot(modifiedData);
 });
 
-document.getElementById('confirmSplits').addEventListener('click', function() {
+document.getElementById('confirmSplits').addEventListener('click', async function() {
 
     const nSplit = document.getElementById('numberOfSplitsInput').value;
 
@@ -435,11 +437,11 @@ document.getElementById('confirmSplits').addEventListener('click', function() {
         return; // Exit early
     }
 
-    // Get modified data from sessionStorage
-    let modifiedData = JSON.parse(sessionStorage.getItem('modifiedData'));
+    // Get modified data from IndexedDB
+    let modifiedData = await getItem('modifiedData');
 
     if (!modifiedData || !modifiedData.lengthMesgs) {
-        console.error("No 'modifiedData' found in sessionStorage.");
+        console.error("No 'modifiedData' found in IndexedDB.");
         return;
     }
 
@@ -480,9 +482,9 @@ document.getElementById('confirmSplits').addEventListener('click', function() {
     // Replace the original entry with the generated split entries
     modifiedData.lengthMesgs.splice(lengthToSplitIndex, 1, ...splitEntries);
 
-    // Update sessionStorage with modified data
+    // Update IndexedDB with modified data
     renumberMessageIndices(modifiedData);
-    sessionStorage.setItem('modifiedData', JSON.stringify(modifiedData));
+    await saveItem('modifiedData', modifiedData);
 
     // Clear selected labels after splitting
     selectedLabels = [];
@@ -496,7 +498,7 @@ document.getElementById('confirmSplits').addEventListener('click', function() {
     renderEditPlot(modifiedData);
 });
 
-document.getElementById('deleteBtn').addEventListener('click', function() {
+document.getElementById('deleteBtn').addEventListener('click', async function() {
 
     // Ensure at least one label is selected for deletion
     if (selectedLabels.length < 1) {
@@ -504,8 +506,8 @@ document.getElementById('deleteBtn').addEventListener('click', function() {
         return;
     }
 
-    // Get the current modified data from sessionStorage
-    let modifiedData = JSON.parse(sessionStorage.getItem('modifiedData'));
+    // Get the current modified data from IndexedDB
+    let modifiedData = await getItem('modifiedData');
 
     // Filter to only keep the 'length' entries where the messageIndex is not in selectedLabels
     const remainingLengths = modifiedData.lengthMesgs.filter(entry => !selectedLabels.includes(entry.messageIndex));
@@ -513,7 +515,7 @@ document.getElementById('deleteBtn').addEventListener('click', function() {
 
     // Update the modified data with the new length data
     renumberMessageIndices(modifiedData);
-    sessionStorage.setItem('modifiedData', JSON.stringify(modifiedData));
+    await saveItem('modifiedData', modifiedData);
 
     // Clear the selected labels after deletion
     selectedLabels = [];
@@ -526,18 +528,19 @@ document.getElementById('deleteBtn').addEventListener('click', function() {
 });
 
 // Confirm button inside the modal
-document.getElementById('confirmStroke').addEventListener('click', function() {
+document.getElementById('confirmStroke').addEventListener('click', async function() {
     // Get the selected stroke from the modal
     const selectedStroke = document.getElementById('strokeSelect').value;
 
     // Hide the modal
     document.getElementById('strokeModal').style.display = 'none';
 
-    // Get the modified data from sessionStorage
-    const modifiedData = JSON.parse(sessionStorage.getItem('modifiedData'));
+    // Get the modified data from IndexedDB
+    const modifiedData = await getItem('modifiedData');
+
 
     if (!modifiedData || !modifiedData.lengthMesgs) {
-        console.error("No 'modifiedData' found in sessionStorage.");
+        console.error("No 'modifiedData' found in IndexedDB.");
         return;
     }
 
@@ -549,8 +552,8 @@ document.getElementById('confirmStroke').addEventListener('click', function() {
         return entry;  // No changes if messageIndex not in selectedLabels
     });
 
-    // Save the updated data back to sessionStorage
-    sessionStorage.setItem('modifiedData', JSON.stringify(modifiedData));
+    // Save the updated data back to IndexedDB
+    await saveItem('modifiedData', modifiedData);
 
     // Reset selectedLabels
     selectedLabels = [];
@@ -562,10 +565,11 @@ document.getElementById('confirmStroke').addEventListener('click', function() {
     renderEditPlot(modifiedData);
 });
 
-document.getElementById('confirmPoolSize').addEventListener('click', function() {
+document.getElementById('confirmPoolSize').addEventListener('click', async function() {
 
-    // Get the modified data from sessionStorage
-    const modifiedData = JSON.parse(sessionStorage.getItem('modifiedData'));
+    // Get the modified data from IndexedDB
+    const modifiedData = await getItem('modifiedData');
+
 
     // Get the current pool size from the metadata
     const newPoolSize = parseFloat(document.getElementById('poolSizeEntered').value);
@@ -584,8 +588,8 @@ document.getElementById('confirmPoolSize').addEventListener('click', function() 
     // Update the pool size in the modifiedData object
     modifiedData.sessionMesgs[0].poolLength = newPoolSize;
 
-    // Update the sessionStorage with the modified data
-    sessionStorage.setItem('modifiedData', JSON.stringify(modifiedData));
+    // Update the IndexedDB with the modified data
+    await saveItem('modifiedData', modifiedData);
 
     // Update Lap Records
     updateLaps();
@@ -594,15 +598,16 @@ document.getElementById('confirmPoolSize').addEventListener('click', function() 
     renderEditPlot(modifiedData);
 });
 
-document.getElementById('undoBtn').addEventListener('click', function() {
+document.getElementById('undoBtn').addEventListener('click', async function() {
     // Reset selected labels
     selectedLabels = [];
 
     // Restore modifiedData from originalData
-    sessionStorage.setItem('modifiedData', sessionStorage.getItem('originalData'));
+    const originalData = await getItem('originalData');
+    await saveItem('modifiedData', originalData);
 
     // Retrieve and parse the modified data
-    const data = JSON.parse(sessionStorage.getItem('modifiedData'));
+    const data = await getItem('modifiedData');
     renumberMessageIndices(data);
 
     // Check if data exists before rendering
@@ -626,7 +631,6 @@ document.getElementById('splitBtn').addEventListener('click', function() {
     document.getElementById('numberOfSplitsModal').style.display = 'block';
 });
 
-
 document.getElementById('cancelStroke').addEventListener('click', function() {
     document.getElementById('strokeModal').style.display = 'none';
 });
@@ -642,12 +646,6 @@ document.getElementById('cancelPoolSize').addEventListener('click', function() {
 document.getElementById('cancelSplits').addEventListener('click', function() {
     document.getElementById('numberOfSplitsModal').style.display = 'none';
 });
-
-document.getElementById('exportBtn').addEventListener('click', function() {
-
-});
-
-// Download
 
 document.getElementById('exportBtn').addEventListener('click', function() {
     document.getElementById('downloadModal').style.display = 'block';
