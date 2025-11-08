@@ -1,0 +1,28 @@
+name: Bug report
+description: Report a problem with Swim Data Analyser
+labels: ["bug"]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Version used
+      description: The version is located in the footer of the page, e.g. v0.6.0-16-g3c6a37e. For reference, please state the version you used.
+      placeholder: v0.6.0-16-g3c6a37e
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Briefly describe the issue
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional context
+      description: Add logs, screenshots, or data files if helpful.
+    validations:
+      required: false
