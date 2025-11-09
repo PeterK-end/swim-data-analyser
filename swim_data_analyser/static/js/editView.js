@@ -38,89 +38,85 @@ function renumberMessageIndices(modifiedData) {
     return modifiedData;
 }
 
-// Helper function to update laps after changes to lengths
 async function updateLaps() {
     const data = await getItem('modifiedData');
-
-    if (!data || !data.lengthMesgs || !data.sessionMesgs || !data.lapMesgs) {
+    if (!data || !data.lengthMesgs || !data.sessionMesgs) {
         console.error("Missing data in IndexedDB.");
         return;
     }
 
     const lengths = data.lengthMesgs;
     const laps = data.lapMesgs;
-    const updatedLaps = [];
+    const poolLen = data.sessionMesgs[0]?.poolLength ?? 25;
 
-    laps.forEach((lap, i) => {
-        const { firstLengthIndex } = lap;
+    // Identify original active laps
+    const activeLapSlots = laps
+          .map((lap, idx) => ({ lap, idx }))
+          .filter(x => x.lap.numActiveLengths > 0);
 
-        // ignore empty laps
-        if (firstLengthIndex == null) {
-            return;
+    const newComputedLaps = [];
+
+    let currentLap = { firstIdx: null, lengths: [] };
+
+    for (let i = 0; i < lengths.length; i++) {
+        const entry = lengths[i];
+        if (entry.event !== 'length') continue;
+
+        // Collect only active lengths
+        if (entry.lengthType === 'active') {
+            if (currentLap.firstIdx == null) currentLap.firstIdx = entry.messageIndex;
+            currentLap.lengths.push(entry);
         }
 
-        // Don't modify pause laps (push as is)
-        if (lap.numActiveLengths ===0){
-            updatedLaps.push(lap);
-            return
+        const isLast = i === lengths.length - 1;
+        const isEndOfLap = entry.lengthType === 'idle' || isLast;
+
+        if (isEndOfLap && currentLap.lengths.length > 0) {
+            const lapLengths = currentLap.lengths;
+
+            const sum = (k) => lapLengths.reduce((s, x) => s + (x[k] || 0), 0);
+
+            const totalElapsedTime = sum('totalElapsedTime');
+            const totalTimerTime   = sum('totalTimerTime');
+            const totalStrokes     = sum('totalStrokes');
+            const totalCalories    = sum('totalCalories');
+            const totalDistance    = lapLengths.length * poolLen;
+            const avgSpeed         = totalTimerTime > 0 ? totalDistance / totalTimerTime : 0;
+            const avgCadence       = totalTimerTime > 0 ? (totalStrokes / totalTimerTime) * 60 : 0;
+
+            newComputedLaps.push({
+                firstLengthIndex: currentLap.firstIdx,
+                numActiveLengths: lapLengths.length,
+                numLengths: lapLengths.length,
+                totalElapsedTime,
+                totalTimerTime,
+                totalStrokes,
+                totalCycles: totalStrokes,
+                totalCalories,
+                totalDistance,
+                avgCadence: Math.round(avgCadence),
+                avgSpeed,
+                enhancedAvgSpeed: avgSpeed
+            });
+
+            currentLap = { firstIdx: null, lengths: [] };
         }
+    }
 
-        // Determine last length index for this lap
-        const nextLap = laps[i + 1];
-        const lastLengthIndex = nextLap
-            ? nextLap.firstLengthIndex - 1
-            : lengths[lengths.length - 1]?.messageIndex; // until end if last lap
+    // apply computed laps back into the correct original lap entries
+    for (let i = 0; i < newComputedLaps.length; i++) {
+        const slot = activeLapSlots[i];
+        if (!slot) continue;
 
-        if (lastLengthIndex == null || lastLengthIndex < firstLengthIndex) {
-            console.warn("Invalid length range for lap:", lap);
-            return;
-        }
+        const oldLap = slot.lap;
+        const updated = newComputedLaps[i];
 
-        const lapLengths = lengths.filter(len =>
-            len.messageIndex >= firstLengthIndex &&
-            len.messageIndex <= lastLengthIndex &&
-            len.lengthType === 'active'
-        );
-
-        // delete empty laps (no active lengths)
-        if (lapLengths.length === 0) {
-            return;
-        }
-
-        const sum = (attr) =>
-            lapLengths.reduce((total, len) => total + (len[attr] || 0), 0);
-
-        const totalElapsedTime = sum('totalElapsedTime');
-        const totalTimerTime = sum('totalTimerTime');
-        const totalStrokes = sum('totalStrokes');
-        const totalCalories = sum('totalCalories');
-        const totalCycles = totalStrokes; // Assuming 1 cycle = 1 stroke for swimming
-
-        const poolLength = data.sessionMesgs[0]?.poolLength || 25; // Default to 25m if not found
-        const totalDistance = lapLengths.length * poolLength;
-
-        // Recalculate average values
-        const avgCadence = totalTimerTime > 0 ? (totalStrokes / totalTimerTime) * 60 : 0;
-        const avgSpeed = totalTimerTime > 0 ? totalDistance / totalTimerTime : 0;
-
-        // Update lap fields
-        lap.totalElapsedTime = totalElapsedTime;
-        lap.totalTimerTime = totalTimerTime;
-        lap.totalStrokes = totalStrokes;
-        lap.totalCalories = totalCalories;
-        lap.totalCycles = totalCycles;
-        lap.totalDistance = totalDistance;
-        lap.numActiveLengths = lapLengths.length;
-        lap.numLengths = lapLengths.length;
-        lap.avgCadence = Math.round(avgCadence);
-        lap.avgSpeed = avgSpeed;
-        lap.enhancedAvgSpeed = avgSpeed;
-
-        updatedLaps.push(lap);
-    });
-
-    // Replace laps with cleaned, updated list
-    data.lapMesgs = updatedLaps;
+        // Merge computed fields ONTO the original lap → preserving hidden FIT metadata
+        data.lapMesgs[slot.idx] = {
+            ...oldLap,
+            ...updated
+        };
+    }
 
     await saveItem('modifiedData', data);
 }
@@ -238,7 +234,7 @@ export async function loadMeta() {
 export function renderEditPlot(data) {
     // Update Metadata
     loadMeta();
-    // console.log(data);
+    console.log(data);
 
     const fixedStrokeColors = {
         breaststroke: '#A8D8EA',
@@ -414,11 +410,11 @@ document.getElementById('mergeBtn').addEventListener('click', async function() {
 
     // Update the IndexedDB with the new merged data
     modifiedData.lengthMesgs = remainingLengths;
-    renumberMessageIndices(modifiedData);
-    await saveItem('modifiedData', modifiedData);
 
-    // Update Lap Records
-    updateLaps();
+    renumberMessageIndices(modifiedData);
+
+    await saveItem('modifiedData', modifiedData);
+    await updateLaps();
 
     // Clear selected labels after merging
     selectedLabels = [];
@@ -485,12 +481,11 @@ document.getElementById('confirmSplits').addEventListener('click', async functio
     // Update IndexedDB with modified data
     renumberMessageIndices(modifiedData);
     await saveItem('modifiedData', modifiedData);
+    // Update Lap Records
+    await updateLaps();
 
     // Clear selected labels after splitting
     selectedLabels = [];
-
-    // Update Lap Records
-    updateLaps();
 
     document.getElementById('numberOfSplitsModal').style.display = 'none';
 
@@ -516,12 +511,11 @@ document.getElementById('deleteBtn').addEventListener('click', async function() 
     // Update the modified data with the new length data
     renumberMessageIndices(modifiedData);
     await saveItem('modifiedData', modifiedData);
+    // Update Lap Records
+    await updateLaps();
 
     // Clear the selected labels after deletion
     selectedLabels = [];
-
-    // Update Lap Records
-    updateLaps();
 
     // Render the updated plot
     renderEditPlot(modifiedData);
@@ -554,12 +548,11 @@ document.getElementById('confirmStroke').addEventListener('click', async functio
 
     // Save the updated data back to IndexedDB
     await saveItem('modifiedData', modifiedData);
+    // Update Lap Records
+    await updateLaps();
 
     // Reset selectedLabels
     selectedLabels = [];
-
-    // Update Lap Records
-    updateLaps();
 
     // Re-render the plot with updated data
     renderEditPlot(modifiedData);
