@@ -309,10 +309,10 @@ export function renderBestTimes(data) {
         .sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
 
     const poolLen = data.sessionMesgs[0].poolLength;
+    const allowedDistances = new Set([50, 100, 200, 400, 800, 1500, 3000, 5000, 10000]);
 
     const best = {}; // best[stroke][distance] = {time, count, lengths[]}
 
-    const allowedDistances = new Set([50, 100, 200, 500, 1000, 1500, 3000, 5000, 10000]);
 
     let curStroke = null;
     let curLengths = [];
@@ -358,8 +358,8 @@ export function renderBestTimes(data) {
         document.getElementById('bestTimesTable').innerHTML = `
         <div class="no-best-times-message" style="text-align:center; font-style:italic; color:#555; padding:1em;">
             <p>No valid intervals found for a pool length of ${poolLen} m.</p>
-            <p>The pool length must divide evenly into one of the predefined interval distances: 50, 100, 200, 500, 1000, 1500, 3000, 5000, or 10000 m.</p>
-        </div>`
+            <p>The pool length must divide evenly into one of: 50, 100, 200, 400, 800, 1500, 3000, 5000, or 10000 m.</p>
+        </div>`;
         return;
     }
 
