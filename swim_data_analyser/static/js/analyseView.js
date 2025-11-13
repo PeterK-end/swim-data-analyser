@@ -303,80 +303,89 @@ export function renderHeartratePlot(data) {
     Plotly.newPlot('heartratePlot', [heartrateData, hoverMarkers], layout, { displayModeBar: false });
 }
 
-export function renderBestTimes(data) {
+export async function renderBestTimes() {
+    const data = await getItem('modifiedData');
     const active = data.lengthMesgs
-        .filter(l => l.event === 'length' && l.lengthType === 'active')
-        .sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+          .filter(l => l.event === 'length' && l.lengthType === 'active')
+          .map((l, index) => ({
+              index: index + 1,
+              ...l
+          }));
 
     const poolLen = data.sessionMesgs[0].poolLength;
+    const allowedDistances = new Set([50, 100, 200, 400, 800, 1500, 3000, 5000, 10000]);
 
-    const best = {}; // best[stroke][distance] = {time, count, lengths[]}
-
-    const allowedDistances = new Set([50, 100, 200, 500, 1000, 1500, 3000, 5000, 10000]);
+    const best = {}; // best[stroke][distance] = { time, count, lengths[] }
 
     let curStroke = null;
     let curLengths = [];
 
     const flushStreak = () => {
-        if (!curStroke) return;
-        // evaluate every prefix of the just‑ended streak
-        let prefixTime = 0;
-        for (let i = 0; i < curLengths.length; i++) {
-            const len = curLengths[i];
-            prefixTime += len.totalElapsedTime;
-            const distance = (i + 1) * poolLen;
+        if (!curStroke || curLengths.length === 0) return;
 
-            // keep only the distances we care about
-            if (!allowedDistances.has(distance)) continue;
+        if (!best[curStroke]) best[curStroke] = {};
 
-            if (!best[curStroke]) best[curStroke] = {};
-            if (!best[curStroke][distance] ||
-                prefixTime < best[curStroke][distance].time) {
-                best[curStroke][distance] = {
-                    time:    prefixTime,
-                    count:   i + 1,
-                    lengths: curLengths.slice(0, i + 1)
-                };
+        // try all start points
+        for (let start = 0; start < curLengths.length; start++) {
+            let sum = 0;
+
+            // try all end points
+            for (let end = start; end < curLengths.length; end++) {
+                sum += curLengths[end].totalElapsedTime;
+
+                const count = end - start + 1;
+                const distance = count * poolLen;
+
+                if (!allowedDistances.has(distance)) continue;
+
+                const existing = best[curStroke][distance];
+
+                if (!existing || sum < existing.time) {
+                    best[curStroke][distance] = {
+                        time: sum,
+                        count,
+                        lengths: curLengths.slice(start, end + 1)
+                    };
+                }
             }
         }
     };
 
     active.forEach(l => {
         if (l.swimStroke !== curStroke) {
-            flushStreak();                     // finish previous streak
-            curStroke = l.swimStroke;          // start new streak
+            flushStreak();
+            curStroke = l.swimStroke;
             curLengths = [];
         }
         curLengths.push(l);
     });
 
-    // Flush the final streak
     flushStreak();
 
-    // If nothing was found (empty best table), show a message instead
     if (Object.keys(best).length === 0) {
         document.getElementById('bestTimesTable').innerHTML = `
         <div class="no-best-times-message" style="text-align:center; font-style:italic; color:#555; padding:1em;">
             <p>No valid intervals found for a pool length of ${poolLen} m.</p>
-            <p>The pool length must divide evenly into one of the predefined interval distances: 50, 100, 200, 500, 1000, 1500, 3000, 5000, or 10000 m.</p>
-        </div>`
+            <p>The pool length must divide evenly into one of: 50, 100, 200, 400, 800, 1500, 3000, 5000, or 10000 m.</p>
+        </div>`;
         return;
     }
 
     let rows = '';
+
     Object.keys(best).sort().forEach(stroke => {
         const entries = Object.entries(best[stroke])
-            .map(([dist, info]) => ({
-                distance: Number(dist),
-                stroke,
-                time:     info.time,
-                count:    info.count,
-                lengths:  info.lengths
-            }))
-            .sort((a, b) => a.distance - b.distance);
+              .map(([dist, info]) => ({
+                  distance: Number(dist),
+                  stroke,
+                  time:     info.time,
+                  count:    info.count,
+                  lengths:  info.lengths
+              }))
+              .sort((a, b) => a.distance - b.distance);
 
         entries.forEach(e => {
-            const pace = (e.time / e.distance) * 100; // min per 100 m
+            const pace = (e.time / e.distance) * 100;
             const spm  = e.lengths.reduce((s, l) => s + (l.avgSwimmingCadence || 0), 0) / e.count;
             const spl  = e.lengths.reduce((s, l) => s + (l.totalStrokes || 0), 0) / e.count;
 
@@ -388,7 +397,7 @@ export function renderBestTimes(data) {
                     <td>${formatTime(pace, 0)}</td>
                     <td>${spm.toFixed(2)}</td>
                     <td>${spl.toFixed(2)}</td>
-                    <td>${e.lengths[0].messageIndex+1}-${e.lengths[e.lengths.length-1].messageIndex+1}</td>
+                    <td>${e.lengths[0].index}-${e.lengths[e.lengths.length - 1].index}</td>
                 </tr>`;
         });
     });
