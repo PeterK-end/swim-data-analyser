@@ -124,7 +124,6 @@ async function updateLaps() {
 export async function loadMeta() {
     const data = await getItem('modifiedData');
 
-
     if (!data || !data.lengthMesgs || !data.sessionMesgs) {
         console.error("No 'modifiedData' found in IndexedDB or data is complete.");
         return;
@@ -234,7 +233,7 @@ export async function loadMeta() {
 export function renderEditPlot(data) {
     // Update Metadata
     loadMeta();
-    console.log(data);
+    // console.log(data);
 
     const fixedStrokeColors = {
         breaststroke: '#A8D8EA',
