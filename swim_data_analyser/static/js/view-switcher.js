@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const data = await getItem('modifiedData');
             AnalyseView.renderSummary();
-            AnalyseView.renderBestTimes(data);
+            AnalyseView.renderBestTimes();
             AnalyseView.renderHeartratePlot(data);
             AnalyseView.renderPacePlot(data);
             AnalyseView.renderStrokeRateStrokeCountPlot(data);
