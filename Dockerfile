@@ -1,29 +1,26 @@
-# Use an official Python runtime as a parent image
 FROM python:3.12-slim
 
-# Set the working directory in the container
 WORKDIR /app
 
-# Copy the current directory contents into the container at /app
-COPY . /app
+# Install system deps
+RUN apt-get update && apt-get install -y nodejs npm && apt-get clean
 
-# Install node.js for running webpack
-RUN apt-get update && apt-get install -y nodejs npm
-# Install Python dependencies
-# Assuming requirements.txt includes Django, gunicorn and any other Python packages
-COPY requirements.txt /app/
+# Install Python dependencies (copy early for caching)
+COPY requirements.txt ./
 RUN pip install -r requirements.txt
 
-# Install JavaScript dependencies and build assets
-COPY package.json /app/
+# Copy JS deps early for caching
+COPY package.json package-lock.json ./
 RUN npm install
-RUN npx webpack
 
-# Collect static files for Django
+# Now copy the rest of the project
+COPY . .
+
+# Build frontend (hashed assets)
+RUN npx webpack --mode production
+
+# Collect static files
 RUN python manage.py collectstatic --noinput
 
-# Expose port 8000 for the Gunicorn server
 EXPOSE 8000
-
-# Start Gunicorn server
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "swim_data_analyser.wsgi:application"]

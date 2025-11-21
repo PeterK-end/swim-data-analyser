@@ -1,3 +1,4 @@
+{% load manifest %}
 {% load static %}
 {% load pwa %}
 
@@ -262,7 +263,7 @@
           </div>
         </div>
 
-        <script src="/static/js/dist/main.js"></script>
+        <script src="{% webpack_bundle 'main.js' %}"></script>
 
       </div> <!-- End of main-content -->
   </body>
