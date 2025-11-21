@@ -27,6 +27,49 @@ function isPoolSwimming(parsedData) {
     }
 }
 
+document.addEventListener("DOMContentLoaded", () => {
+
+    const fileInput = document.getElementById("fileInput");
+    const fileName = document.getElementById("fileName");
+    const dropZone = document.getElementById("uploadDropZone");
+
+    if (!fileInput || !fileName || !dropZone) {
+        console.error("Upload elements not found in DOM");
+        return;
+    }
+
+    // Update filename when chosen via dialog
+    fileInput.addEventListener("change", () => {
+        fileName.textContent = fileInput.files.length
+            ? fileInput.files[0].name
+            : "No file chosen";
+    });
+
+    // Prevent default browser behavior
+    ["dragenter", "dragover", "dragleave", "drop"].forEach(event => {
+        dropZone.addEventListener(event, e => {
+            e.preventDefault();
+            e.stopPropagation();
+        });
+    });
+
+    // Add subtle highlight
+    ["dragenter", "dragover"].forEach(event => {
+        dropZone.addEventListener(event, () => dropZone.classList.add("dragover"));
+    });
+    ["dragleave", "drop"].forEach(event => {
+        dropZone.addEventListener(event, () => dropZone.classList.remove("dragover"));
+    });
+
+    // Handle files dropped
+    dropZone.addEventListener("drop", e => {
+        if (!e.dataTransfer.files.length) return;
+
+        fileInput.files = e.dataTransfer.files;
+        fileName.textContent = e.dataTransfer.files[0].name;
+    });
+});
+
 // Parsing with Garmin-SDK
 function parseFitFile(file, onSuccess) {
     const extension = file.name.split('.').pop().toLowerCase();

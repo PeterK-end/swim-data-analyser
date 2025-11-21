@@ -246,59 +246,100 @@ p, h2, h3, h4 {
     background-color: #f44336; /* Red for error */
 }
 
-/* Upload container styles */
-
+/* Clean, modern upload “card” style */
 .upload-container {
-    border: 2px solid var(--first-color); /* Border color */
-    padding: 10px;
+    border: none;
+    background: white;
+    padding: 20px;
     border-radius: 5px;
-    background-color: #f8f9fa; /* Light background for visibility */
-    max-width: 350px; /* Optional: limit the maximum width */
-    margin: 20px auto; /* Center horizontally */
-    position: relative; /* Required for centering vertically */
+    box-shadow: 0 3px 10px rgba(0,0,0,0.16);
+    width: 100%;
+    max-width: 350px;
+    margin: 30px auto;
+    text-align: center;
 }
 
-/* Ensure label is properly styled */
 .upload-container label {
     display: block;
     font-weight: bold;
+    color: var(--fourth-color);
+    margin-bottom: 10px;
 }
 
-/* Use flexbox for the form to keep elements in a row */
-.upload-container form {
-    display: flex; /* Enable flexbox */
-    align-items: center; /* Center items vertically */
-    flex-wrap: nowrap; /* Prevent wrapping */
-    overflow: hidden; /* Prevent overflow */
-    margin: 10px;
-    gap: 10px;
-}
-
-/* Style for file input */
+/* Hide ugly default file input */
 .upload-container input[type="file"] {
-    border: 2px solid var(--first-color); /* Border color */
-    border-radius: 5px;
-    background-color: #ffffff; /* White background for the file input */
-    font-size: 16px;
-    cursor: pointer;
-    min-width: 0; /* Important: allow shrinking */
-    flex: 1 1 auto; /* Allow to grow and shrink */
-    overflow: hidden;
+    display: none;
 }
 
-/* Style for the submit button */
-.upload-container button {
-    padding: 5px 10px; /* Add padding for the button */
-    border: 0.8px solid black; /* Remove border */
-    font-size: 16px;
-    border-radius: 5px; /* Match the border radius */
-    cursor: pointer; /* Change cursor on hover */
+/* Pretty “Choose File” button */
+.upload-container .file-label {
+    display: flex;
+    background: var(--third-color);
+    color: white;
+    padding: 5px 9px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 600;
+    transition: background 0.2s ease;
+    margin: 0;
+    flex-wrap: nowrap;
     flex-shrink: 0;
 }
 
-/* Optional: Button hover effect */
+.upload-container .file-label:hover {
+    background: var(--fourth-color);
+}
+
+/* Display filename */
+#fileName {
+    font-size: 14px;
+    color: #555;
+    display: inline-block;
+    overflow: hidden;
+    white-space: pre;
+    text-overflow: ellipsis;
+    flex: 1 1 auto;
+    max-width: 150px;
+    min-width: 0;
+    text-align: start;
+    padding: initial;
+}
+
+/* Load button */
+.upload-container button {
+    padding: 5px 9px;
+    font-size: 15px;
+    border-radius: 6px;
+    border: none;
+    background: var(--fourth-color);
+    color: white;
+    font-weight: 600;
+    transition: background 0.2s ease;
+    cursor: pointer;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
 .upload-container button:hover {
-    background-color: darken(var(--second-color), 10%); /* Darken on hover */
+    background: #5e3b7e;
+}
+
+/* Layout for file button + filename + load button */
+.upload-container form {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: nowrap;
+}
+
+/* Visual feedback when dragging a file over the upload area */
+.upload-container.dragover {
+    border: 2px dashed var(--third-color);
+    background: var(--second-color);
+    box-shadow: 0 0 0 4px rgba(165, 189, 253, 0.2); /* soft glow */
+    transition: all 0.15s ease;
 }
 
 footer {
