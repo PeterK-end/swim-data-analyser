@@ -1,10 +1,20 @@
 const path = require('path');
+const { WebpackManifestPlugin } = require('webpack-manifest-plugin');
 
 module.exports = {
-    entry: './swim_data_analyser/static/js/index.js', // Entry point for your JavaScript
-    output: {
-        filename: 'main.js', // Output bundled file name
-        path: path.resolve(__dirname, 'swim_data_analyser/static/js/dist'), // Output directory
+    entry: {
+        main: './swim_data_analyser/static/js/index.js',
     },
-    mode: 'development',
+    output: {
+        filename: '[name].[contenthash].js',
+        path: path.resolve(__dirname, 'swim_data_analyser/static/js/dist'),
+        clean: true,
+        publicPath: '/static/js/dist/',   // important for manifest + PWA
+    },
+    mode: 'production',
+    plugins: [
+        new WebpackManifestPlugin({
+            fileName: 'manifest.json',
+        })
+    ]
 };
