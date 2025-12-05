@@ -49,73 +49,48 @@ async function updateLaps() {
     const laps = data.lapMesgs;
     const poolLen = data.sessionMesgs[0]?.poolLength ?? 25;
 
-    // Identify original active laps
-    const activeLapSlots = laps
-          .map((lap, idx) => ({ lap, idx }))
-          .filter(x => x.lap.numActiveLengths > 0);
+    for (let i = 0; i < laps.length; i++) {
+        const lap = laps[i];
 
-    const newComputedLaps = [];
+        // Because we already reseted index with renumberMessageIndices()
+        const startIdx = lap.firstLengthIndex;
+        const endIdx = (i < laps.length - 1)
+            ? laps[i + 1].firstLengthIndex
+            : lengths.length;
 
-    let currentLap = { firstIdx: null, lengths: [] };
-
-    for (let i = 0; i < lengths.length; i++) {
-        const entry = lengths[i];
-        if (entry.event !== 'length') continue;
-
-        // Collect only active lengths
-        if (entry.lengthType === 'active') {
-            if (currentLap.firstIdx == null) currentLap.firstIdx = entry.messageIndex;
-            currentLap.lengths.push(entry);
+        if (startIdx == null || startIdx < 0 || startIdx >= endIdx) {
+            continue;
         }
 
-        const isLast = i === lengths.length - 1;
-        const isEndOfLap = entry.lengthType === 'idle' || isLast;
+        const slice = lengths.slice(startIdx, endIdx);
+        const active = slice.filter(l => l.event === 'length' && l.lengthType === 'active');
 
-        if (isEndOfLap && currentLap.lengths.length > 0) {
-            const lapLengths = currentLap.lengths;
+        const sum = (key) => active.reduce((s, x) => s + (x[key] || 0), 0);
 
-            const sum = (k) => lapLengths.reduce((s, x) => s + (x[k] || 0), 0);
+        const totalElapsedTime = sum('totalElapsedTime');
+        const totalTimerTime = sum('totalTimerTime');
+        const totalStrokes = sum('totalStrokes');
+        const totalCalories = sum('totalCalories');
+        const totalDistance = active.length * poolLen;
 
-            const totalElapsedTime = sum('totalElapsedTime');
-            const totalTimerTime   = sum('totalTimerTime');
-            const totalStrokes     = sum('totalStrokes');
-            const totalCalories    = sum('totalCalories');
-            const totalDistance    = lapLengths.length * poolLen;
-            const avgSpeed         = totalTimerTime > 0 ? totalDistance / totalTimerTime : 0;
-            const avgCadence       = totalTimerTime > 0 ? (totalStrokes / totalTimerTime) * 60 : 0;
+        const avgSpeed = totalTimerTime > 0 ? totalDistance / totalTimerTime : 0;
+        const avgCadence = totalTimerTime > 0
+            ? (totalStrokes / totalTimerTime) * 60
+            : 0;
 
-            newComputedLaps.push({
-                firstLengthIndex: currentLap.firstIdx,
-                numActiveLengths: lapLengths.length,
-                numLengths: lapLengths.length,
-                totalElapsedTime,
-                totalTimerTime,
-                totalStrokes,
-                totalCycles: totalStrokes,
-                totalCalories,
-                totalDistance,
-                avgCadence: Math.round(avgCadence),
-                avgSpeed,
-                enhancedAvgSpeed: avgSpeed
-            });
-
-            currentLap = { firstIdx: null, lengths: [] };
-        }
-    }
-
-    // apply computed laps back into the correct original lap entries
-    for (let i = 0; i < newComputedLaps.length; i++) {
-        const slot = activeLapSlots[i];
-        if (!slot) continue;
-
-        const oldLap = slot.lap;
-        const updated = newComputedLaps[i];
-
-        // Merge computed fields ONTO the original lap → preserving hidden FIT metadata
-        data.lapMesgs[slot.idx] = {
-            ...oldLap,
-            ...updated
-        };
+        Object.assign(lap, {
+            numLengths: slice.length,
+            numActiveLengths: active.length,
+            totalElapsedTime,
+            totalTimerTime,
+            totalStrokes,
+            totalCycles: totalStrokes,
+            totalCalories,
+            totalDistance,
+            avgSpeed,
+            enhancedAvgSpeed: avgSpeed,
+            avgCadence: Math.round(avgCadence)
+        });
     }
 
     await saveItem('modifiedData', data);
