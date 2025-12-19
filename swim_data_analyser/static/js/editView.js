@@ -84,6 +84,11 @@ async function updateLaps() {
               ? (totalStrokes / totalTimerTime) * 60
               : 0;
 
+        const strokesInInterval = active.map(length => length.swimStroke);
+        const uniqueStrokes = [...new Set(strokesInInterval)]; // Get unique strokes
+        const swimStroke = uniqueStrokes.length === 1 ? uniqueStrokes[0] : 'mixed';
+
+
         Object.assign(lap, {
             numLengths: slice.length,
             numActiveLengths: active.length,
@@ -95,7 +100,8 @@ async function updateLaps() {
             totalDistance,
             avgSpeed,
             enhancedAvgSpeed: avgSpeed,
-            avgCadence: Math.round(avgCadence)
+            avgCadence: Math.round(avgCadence),
+            swimStroke
         });
     }
 
