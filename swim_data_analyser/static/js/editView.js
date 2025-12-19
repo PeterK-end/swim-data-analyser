@@ -54,9 +54,15 @@ async function updateLaps() {
 
         // Because we already reseted index with renumberMessageIndices()
         const startIdx = lap.firstLengthIndex;
-        const endIdx = (i < laps.length - 1)
-            ? laps[i + 1].firstLengthIndex
-            : lengths.length;
+
+        // Find the next lap with numLengths > 0
+        let endIdx = lengths.length; // default if no next valid lap
+        for (let j = i + 1; j < laps.length; j++) {
+            if (laps[j].numLengths > 0) {
+                endIdx = laps[j].firstLengthIndex;
+                break;
+            }
+        }
 
         if (startIdx == null || startIdx < 0 || startIdx >= endIdx) {
             continue;
@@ -75,8 +81,8 @@ async function updateLaps() {
 
         const avgSpeed = totalTimerTime > 0 ? totalDistance / totalTimerTime : 0;
         const avgCadence = totalTimerTime > 0
-            ? (totalStrokes / totalTimerTime) * 60
-            : 0;
+              ? (totalStrokes / totalTimerTime) * 60
+              : 0;
 
         Object.assign(lap, {
             numLengths: slice.length,
