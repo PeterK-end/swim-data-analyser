@@ -211,7 +211,7 @@ export async function loadMeta() {
 `;
 }
 
-export function renderEditPlot() {
+export async function renderEditPlot() {
 
     const data = await getItem('modifiedData');
 
