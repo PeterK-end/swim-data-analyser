@@ -169,7 +169,7 @@ document.getElementById('uploadForm')?.addEventListener('submit', async (event) 
     parseFitFile(file, async (finalData) => {
         await saveItem('originalData', finalData);
         await saveItem('modifiedData', finalData);
-        renderEditPlot(finalData);
+        renderEditPlot();
     });
 });
 
@@ -183,7 +183,7 @@ async function loadDefaultData() {
         parseFitFile(file, async (finalData) => {
             await saveItem('originalData', finalData);
             await saveItem('modifiedData', finalData);
-            renderEditPlot(finalData);
+            renderEditPlot();
         });
     } catch (error) {
         console.error('Error loading default FIT file:', error);
@@ -199,7 +199,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         await loadDefaultData();
     } else {
         try {
-            renderEditPlot(modifiedData);
+            renderEditPlot();
         } catch (error) {
             console.error('Error rendering stored data:', error);
             await loadDefaultData();

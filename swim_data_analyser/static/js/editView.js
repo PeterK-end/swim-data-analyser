@@ -211,7 +211,10 @@ export async function loadMeta() {
 `;
 }
 
-export function renderEditPlot(data) {
+export function renderEditPlot() {
+
+    const data = await getItem('modifiedData');
+
     // Update Metadata
     loadMeta();
     // console.log(data);
@@ -315,6 +318,7 @@ export function renderEditPlot(data) {
     Plotly.newPlot('editDataPlot', plotData, layout, { displayModeBar: false });
 
     const plotElement = document.getElementById('editDataPlot');
+
     plotElement.on('plotly_click', function (event) {
         const displayedIndex = event.points[0].x - 1;
         const messageIndexValue = lengthData[displayedIndex].messageIndex;
@@ -325,7 +329,7 @@ export function renderEditPlot(data) {
             selectedLabels.push(messageIndexValue);
         }
 
-        renderEditPlot(data);
+        renderEditPlot();
     });
 }
 
@@ -400,7 +404,7 @@ document.getElementById('mergeBtn').addEventListener('click', async function() {
     selectedLabels = [];
 
     // Re-render the plot with updated data
-    renderEditPlot(modifiedData);
+    renderEditPlot();
 });
 
 document.getElementById('confirmSplits').addEventListener('click', async function() {
@@ -460,6 +464,7 @@ document.getElementById('confirmSplits').addEventListener('click', async functio
 
     // Update IndexedDB with modified data
     renumberMessageIndices(modifiedData);
+
     await saveItem('modifiedData', modifiedData);
     // Update Lap Records
     await updateLaps();
@@ -470,7 +475,7 @@ document.getElementById('confirmSplits').addEventListener('click', async functio
     document.getElementById('numberOfSplitsModal').style.display = 'none';
 
     // Re-render the plot with updated data
-    renderEditPlot(modifiedData);
+    renderEditPlot();
 });
 
 document.getElementById('deleteBtn').addEventListener('click', async function() {
@@ -498,7 +503,7 @@ document.getElementById('deleteBtn').addEventListener('click', async function() 
     selectedLabels = [];
 
     // Render the updated plot
-    renderEditPlot(modifiedData);
+    renderEditPlot();
 });
 
 // Confirm button inside the modal
@@ -535,7 +540,7 @@ document.getElementById('confirmStroke').addEventListener('click', async functio
     selectedLabels = [];
 
     // Re-render the plot with updated data
-    renderEditPlot(modifiedData);
+    renderEditPlot();
 });
 
 document.getElementById('confirmPoolSize').addEventListener('click', async function() {
@@ -568,7 +573,7 @@ document.getElementById('confirmPoolSize').addEventListener('click', async funct
     updateLaps();
 
     // Re-render the plot with the updated pool size and data
-    renderEditPlot(modifiedData);
+    renderEditPlot();
 });
 
 document.getElementById('undoBtn').addEventListener('click', async function() {
@@ -585,7 +590,7 @@ document.getElementById('undoBtn').addEventListener('click', async function() {
 
     // Check if data exists before rendering
     if (data && data.lengthMesgs) {
-        renderEditPlot(data); // Render the plot with the length data
+        renderEditPlot(); // Render the plot with the length data
     } else {
         console.error("No 'length' data found in the original data.");
     }
