@@ -1,4 +1,10 @@
-@import url(./ia-mono.css);
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 100%;
+  src: url("../fonts/inter/Inter-VariableFont_opsz,wght.ttf") format("truetype");
+}
 
 /* Global variables. */
 :root,
@@ -53,9 +59,9 @@
 
 /* Ensure the body has no margin and is centered horizontally */
 body {
-    font-family: "iA Writer Quattro", -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: "Inter", -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     font-size: 1rem;
-    font-weight: 400;
+    font-weight: 350;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -369,6 +375,7 @@ footer {
 
 select#strokeFilter{
     padding: 10px;
+    margin: 20px 20px 0px 20px;
     font-size: 16px;
 }
 
