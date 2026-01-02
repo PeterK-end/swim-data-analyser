@@ -8,15 +8,10 @@ const urlsToCache = [
     "/",
 
     // Static CSS (not fingerprinted)
-    "/static/css/ia-mono.css",
     "/static/css/styles.css",
 
     // Fonts
-    "/static/fonts/ia-duo/iAWriterDuoS-Regular.woff2",
-    "/static/fonts/ia-quattro/iAWriterQuattroS-Regular.woff2",
-    "/static/fonts/ia-quattro/iAWriterQuattroS-Italic.woff2",
-    "/static/fonts/ia-quattro/iAWriterQuattroS-Bold.woff2",
-    "/static/fonts/ia-quattro/iAWriterQuattroS-BoldItalic.woff2",
+    "/static/fonts/inter*",
 
     // Graphics & icons
     "/static/icons/analyse-icon.svg",
