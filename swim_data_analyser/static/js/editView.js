@@ -237,6 +237,8 @@ export async function renderEditPlot() {
     const laps = data.lapMesgs.filter(d => d.numActiveLengths > 0);
     const lengthData = lengths.filter(d => d.event === 'length' && d.lengthType === 'active');
 
+    updateSelectAllIcon(lengthData);
+
     const yValues = lengthData.map(d => d.totalElapsedTime || 0);
     const maxY = Math.max(...yValues) + 2; // Add 2s for lap indicator height
 
@@ -579,6 +581,53 @@ document.getElementById('confirmPoolSize').addEventListener('click', async funct
     updateLaps();
 
     // Re-render the plot with the updated pool size and data
+    renderEditPlot();
+});
+
+const BAR_CHART = `
+<path d="M4 11H2v3h2zm5-4H7v7h2zm5-5v12h-2V2zm-2-1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM6 7a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1zm-5 4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1z"/>
+`;
+
+const BAR_CHART_FILL = `
+<path d="
+  M1.55 11a1 1 0 0 1 1-1h0.9a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-0.9a1 1 0 0 1-1-1z
+  M6.55 7a1 1 0 0 1 1-1h0.9a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-0.9a1 1 0 0 1-1-1z
+  M11.55 2a1 1 0 0 1 1-1h0.9a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-0.9a1 1 0 0 1-1-1z
+"/>
+`;
+
+// gets called in renderEditPlot
+function updateSelectAllIcon(lengthData) {
+    const btn = document.getElementById('selectAllBtn');
+    const icon = document.getElementById('selectAllIcon');
+
+    const anySelected = selectedLabels.length > 0;
+
+    if (anySelected) {
+        icon.innerHTML = BAR_CHART;
+        btn.title = 'Unselect all Lengths';
+        btn.setAttribute('aria-label', 'Unselect all Lengths');
+    } else {
+        icon.innerHTML = BAR_CHART_FILL;
+        btn.title = 'Select all Lengths';
+        btn.setAttribute('aria-label', 'Select all Lengths');
+    }
+}
+
+document.getElementById('selectAllBtn').addEventListener('click', async () => {
+    const data = await getItem('modifiedData');
+    if (!data || !data.lengthMesgs) return;
+
+    const lengthData = data.lengthMesgs.filter(
+        d => d.event === 'length' && d.lengthType === 'active'
+    );
+
+    const allIds = lengthData.map(l => l.messageIndex);
+
+    const anySelected = selectedLabels.length > 0;
+
+    selectedLabels = anySelected ? [] : [...allIds];
+
     renderEditPlot();
 });
 
