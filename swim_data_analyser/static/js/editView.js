@@ -71,6 +71,11 @@ async function updateLaps() {
         const slice = lengths.slice(startIdx, endIdx);
         const active = slice.filter(l => l.event === 'length' && l.lengthType === 'active');
 
+        // Skip empty laps (keep them as they are)
+        if (active.length == 0) {
+            continue;
+        }
+
         const sum = (key) => active.reduce((s, x) => s + (x[key] || 0), 0);
 
         const totalElapsedTime = sum('totalElapsedTime');
