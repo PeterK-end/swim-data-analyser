@@ -124,31 +124,72 @@ export async function loadMeta() {
     const lengths = data.lengthMesgs;
     const sessionData = data.sessionMesgs[0];
 
-    // Filter active lengths
-    const activeLengths = lengths.filter(entry => entry.event === 'length' && entry.lengthType === 'active');
-    const activeTime = activeLengths.reduce((acc, length) => acc + length.totalElapsedTime, 0);
+    // Length Filtering
+    const activeLengths = lengths.filter(
+        l => l.event === 'length' && l.lengthType === 'active'
+    );
 
-    // Recalculate session metadata
-    sessionData.totalDistance = activeLengths.length * sessionData.poolLength;
-    const restTime   = lengths.filter(l => l.lengthType === 'idle')
+    const activeNonDrillLengths = activeLengths.filter(
+        l => l.swimStroke !== 'drill'
+    );
+
+    // Time Caclulations
+    const activeTime = activeLengths.reduce(
+        (acc, l) => acc + l.totalElapsedTime,
+        0
+    );
+
+    const restTime = lengths
+          .filter(l => l.lengthType === 'idle')
           .reduce((acc, l) => acc + l.totalElapsedTime, 0);
-    sessionData.totalTimerTime   = activeTime + restTime;
-    sessionData.totalMovingTime = activeTime; // is not used by Garmin Connect
-    sessionData.totalStrokes = lengths.reduce((acc, entry) => {
-        const strokes = entry.totalStrokes || 0; // Fallback to 0 if totalStrokes is undefined or null
-        return acc + strokes;
-    }, 0);
-    sessionData.numActiveLengths = activeLengths.length;
 
-    const speedMps = activeTime > 0 ? (sessionData.totalDistance / activeTime) : 0;
+    // Distance + session totals
+    sessionData.totalDistance = activeLengths.length * sessionData.poolLength;
+    sessionData.totalTimerTime = activeTime + restTime;
+    sessionData.totalMovingTime = activeTime;
+    sessionData.numActiveLengths = activeLengths.length;
+    sessionData.totalElapsedTime = sessionData.totalTimerTime;
+
+    // Performance metrics excluding drills
+
+    const nonDrillActiveTime = activeNonDrillLengths.reduce(
+        (acc, l) => acc + l.totalElapsedTime,
+        0
+    );
+
+    const nonDrillDistance =
+          activeNonDrillLengths.length * sessionData.poolLength;
+
+    const speedMps =
+          nonDrillActiveTime > 0
+          ? nonDrillDistance / nonDrillActiveTime
+          : 0;
+
     sessionData.avgSpeed = speedMps;
     sessionData.enhancedAvgSpeed = speedMps;
 
-    // Find fastest active length (highest avgSpeed)
-    const fastestLength = activeLengths.reduce((best, l) =>
-        (l.avgSpeed || 0) > (best.avgSpeed || 0) ? l : best, { avgSpeed: 0 });
+    sessionData.totalStrokes = activeNonDrillLengths.reduce(
+        (acc, l) => acc + (l.totalStrokes || 0),
+        0
+    );
+
+    sessionData.avgStrokeDistance =
+        sessionData.totalStrokes > 0
+        ? nonDrillDistance / sessionData.totalStrokes
+        : 0;
+
+    sessionData.avgStrokesPerLength =
+        activeNonDrillLengths.length > 0
+        ? sessionData.totalStrokes / activeNonDrillLengths.length
+        : 0;
+
+    const fastestLength = activeNonDrillLengths.reduce(
+        (best, l) =>
+        (l.avgSpeed || 0) > (best.avgSpeed || 0) ? l : best,
+        { avgSpeed: 0 }
+    );
+
     sessionData.enhancedMaxSpeed = fastestLength.avgSpeed || 0;
-    sessionData.avgStrokeDistance = sessionData.totalDistance/sessionData.totalStrokes;
 
     // Save the updated data back to db
     await saveItem('modifiedData', data);
@@ -165,61 +206,68 @@ export async function loadMeta() {
     const pace100mSec  = speedMps > 0 ? 100 / speedMps   : 0;
     const pace100ydSec = speedMps > 0 ? 91.44 / speedMps : 0;
     const isYards = sessionData.poolLengthUnit === 'statute';
-    const poolLabel = isYards ? 'yd' : 'm';
-
-    // Calculate average strokes per active length
-    const avgStrokesPerLength = sessionData.numActiveLengths > 0
-          ? Math.floor(metadata.totalStrokes / sessionData.numActiveLengths)
-          : 0;
+    const poolUnit = isYards ? 'yd' : 'm';
 
     // Update the content dynamically with recalculated metadata
     document.getElementById('metadata-container').innerHTML = `
     <div class="metadata-flex">
-    <div class="metadata-box">
-      <strong>Workout Date:</strong>
-      <span id="workoutDate">${day} ${daytime}</span>
+      <div class="metadata-box">
+        <strong>Workout Date:</strong>
+        <span>${day} ${daytime}</span>
+      </div>
+
+      <div class="metadata-box">
+        <strong>Pool Length:</strong>
+        <span>${metadata.poolLength}${poolUnit}</span>
+      </div>
+
+      <div class="metadata-box">
+        <strong>Total Time:</strong>
+        <span>${formatTime(metadata.totalElapsedTime)}</span>
+      </div>
+
+      <div class="metadata-box">
+        <strong>Total Lengths:</strong>
+        <span>${activeLengths.length}</span>
+      </div>
+
+      <div class="metadata-box">
+        <strong>Total Distance:</strong>
+        <span>${Math.round(metadata.totalDistance)}${poolUnit}</span>
+      </div>
+
+      <div class="metadata-box">
+        <strong>Avg. Pace:</strong>
+        <span>
+          ${
+            isYards
+              ? `${formatTime(pace100ydSec)}/100yd`
+              : `${formatTime(pace100mSec)}/100m`
+          }
+        </span>
+      </div>
+
+      <div class="metadata-box">
+        <strong>Avg. SPL:</strong>
+        <span>${metadata.avgStrokesPerLength.toFixed(1)}/length</span>
+      </div>
+
+      <div class="metadata-box">
+        <strong>Avg. Distance/Stroke:</strong>
+        <span>${metadata.avgStrokeDistance.toFixed(2)}${poolUnit}</span>
+      </div>
+
+      <div class="metadata-box">
+        <strong>Avg. Heartrate</strong>
+        <span>${metadata.avgHeartRate} bpm</span>
+      </div>
+
+      <div class="metadata-box">
+        <strong>Calories</strong>
+        <span>${metadata.totalCalories} kcal</span>
+      </div>
     </div>
-    <div class="metadata-box">
-      <strong>Pool Length:</strong>
-      <span id="poolLength">${metadata.poolLength}m</span>
-    </div>
-    <div class="metadata-box">
-      <strong>Total Time:</strong>
-      <span id="totalTime">${formatTime(metadata.totalElapsedTime)}</span>
-    </div>
-    <div class="metadata-box">
-      <strong>Total Lengths:</strong>
-      <span id="numLengths">${activeLengths.length}</span>
-    </div>
-    <div class="metadata-box">
-      <strong>Total Distance:</strong>
-      <span id="totalLength">${Math.round(metadata.totalDistance)}m</span>
-    </div>
-    <div class="metadata-box">
-      <strong>Avg. Pace:</strong>
-      <span id="avgPace">${
-  isYards ? `${formatTime(pace100ydSec)}/100yd`
-          : `${formatTime(pace100mSec)}/100m`
-}</span>
-    </div>
-    <div class="metadata-box">
-      <strong>Avg. SPL:</strong>
-      <span id="avgStrokes">${avgStrokesPerLength}/length</span>
-    </div>
-    <div class="metadata-box">
-      <strong>Avg. Distance/Stroke:</strong>
-      <span id="avgStrokeDistance">${metadata.avgStrokeDistance.toFixed(2)}m</span>
-    </div>
-    <div class="metadata-box">
-      <strong>Avg. Heartrate</strong>
-      <span id="avgStrokes">${metadata.avgHeartRate} bpm</span>
-    </div>
-    <div class="metadata-box">
-      <strong>Calories</strong>
-      <span id="avgStrokes">${metadata.totalCalories} kcal</span>
-    </div>
-  </div>
-`;
+  `;
 }
 
 export async function renderEditPlot() {
