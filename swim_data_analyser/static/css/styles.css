@@ -88,6 +88,13 @@ p, h2, h3, h4 {
     padding: 20px 20px 0px 20px;   /* Adds some space at the top */
 }
 
+ul {
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+
 /* Style for the view selector container */
 .view-selector {
   display: flex;
@@ -142,7 +149,9 @@ p, h2, h3, h4 {
     padding: 10px 20px 0px 20px;
 }
 
-#viewContent h2, h3, h4 {
+#viewContent h2,
+#viewContent h3,
+#viewContent h4 {
     max-width: 100%;
 }
 

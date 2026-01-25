@@ -782,8 +782,19 @@ function ensureProfileDefinitions(mesgDefinitions) {
 
 // Converts modifiedData into a flat message list for export
 function prepareExportData(modifiedData) {
+
+    const STRIP_MESSAGE_KEYS = new Set([
+        'mesg113Mesgs',  // Best Efforts likely incorrect -> recompute
+                         // could lead to inconsistencies
+    ]);
+
     const messageGroups = Object.entries(modifiedData)
-        .filter(([key, val]) => Array.isArray(val) && key.endsWith('Mesgs'));
+          .filter(([key, val]) =>
+              Array.isArray(val) &&
+              key.endsWith('Mesgs') &&
+              !STRIP_MESSAGE_KEYS.has(key)
+          );
+
     const allMessages = [];
 
     for (const [messageName, messages] of messageGroups) {
