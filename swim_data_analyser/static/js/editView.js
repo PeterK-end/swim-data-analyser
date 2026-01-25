@@ -805,6 +805,54 @@ function prepareExportData(modifiedData) {
     return allMessages;
 }
 
+// helper for Strava normalization
+function shouldNormalizeRecordDistances(recordMesgs) {
+    if (!recordMesgs?.length) return false;
+
+    // Hard requirement: at least one record has distance
+    return recordMesgs.some(r => r.distance != null);
+}
+
+// helper for Strava normalization
+function normalizeRecordDistances(modifiedData) {
+    const records = modifiedData.recordMesgs;
+    const session = modifiedData.sessionMesgs?.[0];
+
+    if (!records || !session?.totalDistance) return;
+
+    if (!shouldNormalizeRecordDistances(records)) {
+        return;
+    }
+
+    // Use time-weighted interpolation
+    const moving = records.filter(r =>
+        r.timestamp &&
+        (r.enhancedSpeed != null || r.cadence != null)
+    );
+
+    if (moving.length < 2) return;
+
+    const t0 = new Date(moving[0].timestamp).getTime();
+    const tN = new Date(moving.at(-1).timestamp).getTime();
+    const totalTime = tN - t0;
+
+    if (totalTime <= 0) return;
+
+    let lastDistance = 0;
+
+    records.forEach(r => {
+        if (r.timestamp && (r.enhancedSpeed != null || r.cadence != null)) {
+            const t = new Date(r.timestamp).getTime();
+            const frac = Math.min(Math.max((t - t0) / totalTime, 0), 1);
+            lastDistance = frac * session.totalDistance;
+        }
+        r.distance = Math.round(lastDistance * 100) / 100;
+    });
+
+    // Strave hard requirement
+    records.at(-1).distance = session.totalDistance;
+}
+
 // FIT export handler
 async function downloadFitFromJson() {
     try {
@@ -814,6 +862,11 @@ async function downloadFitFromJson() {
         if (!modifiedData) return alert("No modified data found in IndexedDB.");
 
         ensureProfileDefinitions(mesgDefinitions);
+        // In some cases where heartrate data is missing, instead
+        // distances are encoded in the record field. These need to be
+        // updated in order for Strava to show the correct overall
+        // distance
+        normalizeRecordDistances(modifiedData);
         const allMessages = prepareExportData(modifiedData);
 
         const encoder = new Encoder({ fieldDescriptions });
