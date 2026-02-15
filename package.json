@@ -10,7 +10,7 @@
   "description": "Tool to manipulate and analyse swim data as provided by Garmin devices.",
   "main": "index.js",
   "devDependencies": {
-    "webpack": "^5.94.0",
+    "webpack": "^5.105.2",
     "webpack-cli": "^5.1.4",
     "webpack-manifest-plugin": "^5.0.1"
   },
