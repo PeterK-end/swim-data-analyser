@@ -862,6 +862,38 @@ async function downloadFitFromJson() {
         if (!modifiedData) return alert("No modified data found in IndexedDB.");
 
         ensureProfileDefinitions(mesgDefinitions);
+
+        // remove MTB fields so they don't appear in Garminconnect
+        // TODO: Move Garmin and Strava export hacks in seperate module
+        const MTB_NAMES = new Set([
+            "totalGrit",
+            "totalFlow",
+            "jumpCount",
+            "avgGrit",
+            "avgFlow"
+        ]);
+
+        const TARGET_MESSAGES = [18, 19]; // SESSION + LAP
+
+        mesgDefinitions.forEach(def => {
+            if (TARGET_MESSAGES.includes(def.globalMessageNumber)) {
+                def.fieldDefinitions = def.fieldDefinitions.filter(fd => {
+                    const msgFields =
+                        Profile.messages[def.globalMessageNumber]?.fields;
+                    const field = msgFields?.[fd.fieldDefinitionNumber];
+                    return !MTB_NAMES.has(field?.name);
+                });
+            }
+        });
+
+        modifiedData.sessionMesgs?.forEach(session => {
+            MTB_NAMES.forEach(name => delete session[name]);
+        });
+
+        modifiedData.lapMesgs?.forEach(lap => {
+            MTB_NAMES.forEach(name => delete lap[name]);
+        });
+
         // In some cases where heartrate data is missing, instead
         // distances are encoded in the record field. These need to be
         // updated in order for Strava to show the correct overall
