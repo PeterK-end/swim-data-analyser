@@ -619,11 +619,19 @@ document.getElementById('confirmPoolSize').addEventListener('click', async funct
 
     // Adjust the relevant values in the lengths data
     modifiedData.lengthMesgs = modifiedData.lengthMesgs.map(entry => {
-        return {
-            ...entry,
-            avgSpeed: newPoolSize / entry.totalTimerTime,
-        };
+        if (entry.lengthType === 'active') {
+            return {
+                ...entry,
+                avgSpeed: newPoolSize / entry.totalTimerTime,
+            };
+        } else {
+            return {
+                ...entry,
+            };
+
+        }
     });
+
     // Update the pool size in the modifiedData object
     modifiedData.sessionMesgs[0].poolLength = newPoolSize;
 
