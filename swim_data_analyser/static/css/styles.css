@@ -13,6 +13,7 @@
     --second-color: #d9f2ff;
     --third-color: #a5bdfd;
     --fourth-color: #77529e;
+    --fith-color: #fde725;
 }
 
 /* Style for the top bar */
@@ -486,6 +487,10 @@ tr.breaststroke {
 
 tr.butterfly {
     background-color: #FFFFD2;
+}
+
+tr.drill{
+    background-color: var(--fith-color);
 }
 
 /* Responsive design for smaller screens */

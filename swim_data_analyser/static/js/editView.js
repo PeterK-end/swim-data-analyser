@@ -283,6 +283,7 @@ export async function renderEditPlot() {
         freestyle: '#AA96DA',
         backstroke: '#FCBAD3',
         butterfly: '#FFFFD2',
+        drill: '#fde725',
         default: '#fde725'
     };
 

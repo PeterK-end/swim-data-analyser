@@ -187,6 +187,7 @@ export function renderHeartratePlot(data) {
         freestyle: '#AA96DA',
         backstroke: '#FCBAD3',
         butterfly: '#FFFFD2',
+        drill: '#fde725',
         default: '#fde725'
     };
 
@@ -435,7 +436,7 @@ export function renderPacePlot(data) {
         freestyle: '#AA96DA',
         backstroke: '#FCBAD3',
         butterfly: '#FFFFD2',
-        // Add more strokes here with fixed values if necessary
+        drill: '#fde725',
         default: '#fde725'        // Yellow
     };
 
