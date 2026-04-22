@@ -1,6 +1,7 @@
 import Plotly from 'plotly.js-basic-dist-min'
 import { Encoder, Stream, Profile, Utils } from '@garmin/fitsdk';
 import { getItem, saveItem } from './storage.js';
+import * as Units from './units.js';
 
 let selectedLabels = [];
 
@@ -203,10 +204,12 @@ export async function loadMeta() {
     const daytime = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
     // Pace calculation
-    const pace100mSec  = speedMps > 0 ? 100 / speedMps   : 0;
-    const pace100ydSec = speedMps > 0 ? 91.44 / speedMps : 0;
-    const isYards = sessionData.poolLengthUnit === 'statute';
-    const poolUnit = isYards ? 'yd' : 'm';
+    const paceSeconds = Units.getPaceSeconds(speedMps, sessionData);
+    const poolUnit = Units.getUnitLabel(sessionData);
+
+    const displayPoolLength = Units.toDisplayDistance(metadata.poolLength, sessionData);
+    const displayTotalDistance = Units.toDisplayDistance(metadata.totalDistance, sessionData);
+    const displayAvgStrokeDistance = Units.toDisplayDistance(metadata.avgStrokeDistance, sessionData);
 
     // Update the content dynamically with recalculated metadata
     document.getElementById('metadata-container').innerHTML = `
@@ -218,7 +221,7 @@ export async function loadMeta() {
 
       <div class="metadata-box">
         <strong>Pool Length:</strong>
-        <span>${metadata.poolLength}${poolUnit}</span>
+        <span>${Math.round(displayPoolLength * 100) / 100}${poolUnit}</span>
       </div>
 
       <div class="metadata-box">
@@ -233,17 +236,13 @@ export async function loadMeta() {
 
       <div class="metadata-box">
         <strong>Total Distance:</strong>
-        <span>${Math.round(metadata.totalDistance)}${poolUnit}</span>
+        <span>${Math.round(displayTotalDistance)}${poolUnit}</span>
       </div>
 
       <div class="metadata-box">
         <strong>Avg. Pace:</strong>
         <span>
-          ${
-            isYards
-              ? `${formatTime(pace100ydSec)}/100yd`
-              : `${formatTime(pace100mSec)}/100m`
-          }
+          ${formatTime(paceSeconds)}/100${poolUnit}
         </span>
       </div>
 
@@ -254,7 +253,7 @@ export async function loadMeta() {
 
       <div class="metadata-box">
         <strong>Avg. Distance/Stroke:</strong>
-        <span>${metadata.avgStrokeDistance.toFixed(2)}${poolUnit}</span>
+        <span>${displayAvgStrokeDistance.toFixed(2)}${poolUnit}</span>
       </div>
 
       <div class="metadata-box">
@@ -609,11 +608,11 @@ document.getElementById('confirmPoolSize').addEventListener('click', async funct
 
     // Get the modified data from IndexedDB
     const modifiedData = await getItem('modifiedData');
+    const sessionData = modifiedData.sessionMesgs[0];
 
-
-    // Get the current pool size from the metadata
-    const newPoolSize = parseFloat(document.getElementById('poolSizeEntered').value);
-    const currentPoolSize = modifiedData.sessionMesgs[0].poolLength;
+    // Get the current pool size from the metadata (assume user entered value in display units)
+    let newPoolSizeDisplay = parseFloat(document.getElementById('poolSizeEntered').value);
+    const newPoolSize = Units.toInternalDistance(newPoolSizeDisplay, sessionData);
 
     // Hide the modal
     document.getElementById('poolSizeModal').style.display = 'none';

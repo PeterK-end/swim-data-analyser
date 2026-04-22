@@ -1,5 +1,6 @@
 import Plotly from 'plotly.js-basic-dist-min'
 import { getItem, saveItem } from './storage.js';
+import * as Units from './units.js';
 
 // Helper function for formatting seconds
 function formatTime(secs, prec = 2) {
@@ -67,6 +68,8 @@ export async function renderSummary() {
         strokeData.avg_spm = (strokeData.totalLengths > 0) ? (strokeData.avg_spm / strokeData.totalLengths) : 0;
     }
 
+    const poolUnit = Units.getUnitLabel(sessionData);
+
     // Initialize table with headers
     let tableHTML = `
     <table>
@@ -86,7 +89,7 @@ export async function renderSummary() {
 
     // Variables to accumulate subtotal values
     let totalLengths = 0;
-    let totalDistance = 0;
+    let totalDistanceMeters = 0;
     let totalTime = 0;
     let totalSPM = 0;
     let totalSPL = 0;
@@ -97,13 +100,15 @@ export async function renderSummary() {
         if (grouped_data.hasOwnProperty(stroke)) {
 
             const strokeData = grouped_data[stroke];
-            const poolLength =  sessionData.poolLength;
-            const distance = strokeData.totalLengths * poolLength ;
-            const pace = (strokeData.totalTime / distance) * 100;
+            const poolLengthInternal =  sessionData.poolLength;
+            const distanceInternal = strokeData.totalLengths * poolLengthInternal;
+
+            const displayDistance = Units.toDisplayDistance(distanceInternal, sessionData);
+            const paceSeconds = Units.getPaceSeconds(distanceInternal / strokeData.totalTime, sessionData);
 
             // Accumulate totals
             totalLengths += strokeData.totalLengths;
-            totalDistance += distance;
+            totalDistanceMeters += distanceInternal;
             totalTime += strokeData.totalTime;
             totalSPM += strokeData.avg_spm;
             totalSPL += strokeData.avg_spl;
@@ -114,9 +119,9 @@ export async function renderSummary() {
             <tr class="${stroke}">
             <td>${stroke.charAt(0).toUpperCase() + stroke.slice(1)}</td>
             <td>${strokeData.totalLengths}</td>
-            <td>${distance}m</td>
+            <td>${Math.round(displayDistance)}${poolUnit}</td>
             <td>${formatTime(strokeData.totalTime, 0)}</td>
-            <td>${formatTime(pace, 0)}</td>
+            <td>${formatTime(paceSeconds, 0)}</td>
             <td>${strokeData.avg_spm.toFixed(2)}</td>
             <td>${strokeData.avg_spl.toFixed(2)}</td>
             </tr>
@@ -129,7 +134,8 @@ export async function renderSummary() {
           .filter(d => d.lengthType === 'idle') // Filter the data for 'idle' lengths
           .reduce((acc, curr) => acc + curr.totalElapsedTime , 0); // Sum the values
 
-    const totalPace = (totalTime/totalDistance) * 100;
+    const displayTotalDistance = Units.toDisplayDistance(totalDistanceMeters, sessionData);
+    const totalPaceSeconds = Units.getPaceSeconds(totalTime > 0 ? totalDistanceMeters / totalTime : 0, sessionData);
 
     // Add subtotal row
     tableHTML += `
@@ -158,9 +164,9 @@ export async function renderSummary() {
     <tr class="interval">
         <td>Total</td>
         <td>${totalLengths}</td>
-        <td>${totalDistance}m</td>
+        <td>${Math.round(displayTotalDistance)}${poolUnit}</td>
         <td>${formatTime(totalTime + totalRest, 0)}</td>
-        <td>${formatTime(totalPace, 0)}</td>
+        <td>${formatTime(totalPaceSeconds, 0)}</td>
         <td>${(strokeCount > 0) ? (totalSPM / strokeCount).toFixed(2) : '0.00'}</td>
         <td>${(strokeCount > 0) ? (totalSPL / strokeCount).toFixed(2) : '0.00'}</td>
     </tr>
@@ -313,7 +319,10 @@ export async function renderBestTimes() {
               ...l
           }));
 
-    const poolLen = data.sessionMesgs[0].poolLength;
+    const sessionData = data.sessionMesgs[0];
+    const poolLenInternal = sessionData.poolLength;
+    const poolUnit = Units.getUnitLabel(sessionData);
+
     const allowedDistances = new Set([50, 100, 200, 400, 800, 1500, 3000, 5000, 10000]);
 
     const best = {}; // best[stroke][distance] = { time, count, lengths[] }
@@ -335,17 +344,19 @@ export async function renderBestTimes() {
                 sum += curLengths[end].totalElapsedTime;
 
                 const count = end - start + 1;
-                const distance = count * poolLen;
+                const distanceInternal = count * poolLenInternal;
+                const displayDistance = Math.round(Units.toDisplayDistance(distanceInternal, sessionData));
 
-                if (!allowedDistances.has(distance)) continue;
+                if (!allowedDistances.has(displayDistance)) continue;
 
-                const existing = best[curStroke][distance];
+                const existing = best[curStroke][displayDistance];
 
                 if (!existing || sum < existing.time) {
-                    best[curStroke][distance] = {
+                    best[curStroke][displayDistance] = {
                         time: sum,
                         count,
-                        lengths: curLengths.slice(start, end + 1)
+                        lengths: curLengths.slice(start, end + 1),
+                        distanceInternal
                     };
                 }
             }
@@ -364,10 +375,11 @@ export async function renderBestTimes() {
     flushStreak();
 
     if (Object.keys(best).length === 0) {
+        const displayPoolLen = Math.round(Units.toDisplayDistance(poolLenInternal, sessionData) * 100) / 100;
         document.getElementById('bestTimesTable').innerHTML = `
         <div class="no-best-times-message" style="text-align:center; font-style:italic; color:#555; padding:1em;">
-            <p>No valid intervals found for a pool length of ${poolLen} m.</p>
-            <p>The pool length must divide evenly into one of: 50, 100, 200, 400, 800, 1500, 3000, 5000, or 10000 m.</p>
+            <p>No valid intervals found for a pool length of ${displayPoolLen} ${poolUnit}.</p>
+            <p>The pool length must divide evenly into one of: 50, 100, 200, 400, 800, 1500, 3000, 5000, or 10000 ${poolUnit}.</p>
         </div>`;
         return;
     }
@@ -377,25 +389,26 @@ export async function renderBestTimes() {
     Object.keys(best).sort().forEach(stroke => {
         const entries = Object.entries(best[stroke])
               .map(([dist, info]) => ({
-                  distance: Number(dist),
+                  displayDistance: Number(dist),
                   stroke,
                   time:     info.time,
                   count:    info.count,
-                  lengths:  info.lengths
+                  lengths:  info.lengths,
+                  distanceInternal: info.distanceInternal
               }))
-              .sort((a, b) => a.distance - b.distance);
+              .sort((a, b) => a.displayDistance - b.displayDistance);
 
         entries.forEach(e => {
-            const pace = (e.time / e.distance) * 100;
+            const paceSeconds = Units.getPaceSeconds(e.distanceInternal / e.time, sessionData);
             const spm  = e.lengths.reduce((s, l) => s + (l.avgSwimmingCadence || 0), 0) / e.count;
             const spl  = e.lengths.reduce((s, l) => s + (l.totalStrokes || 0), 0) / e.count;
 
             rows += `
                 <tr class="${e.stroke}">
-                    <td>${e.distance}</td>
+                    <td>${e.displayDistance}${poolUnit}</td>
                     <td>${e.stroke.charAt(0).toUpperCase() + e.stroke.slice(1)}</td>
                     <td>${formatTime(e.time, 1)}</td>
-                    <td>${formatTime(pace, 0)}</td>
+                    <td>${formatTime(paceSeconds, 0)}</td>
                     <td>${spm.toFixed(2)}</td>
                     <td>${spl.toFixed(2)}</td>
                     <td>${e.lengths[0].index}-${e.lengths[e.lengths.length - 1].index}</td>
@@ -428,7 +441,9 @@ export function renderPacePlot(data) {
 
     // Filter data to include only entries where event is 'length' and lengthType is 'active'
     const lengthData = data.lengthMesgs.filter(d => d.event === 'length' && d.lengthType === 'active');
-    const poolLength = data.sessionMesgs[0].poolLength;
+    const sessionData = data.sessionMesgs[0];
+    const poolLengthInternal = sessionData.poolLength;
+    const poolUnit = Units.getUnitLabel(sessionData);
 
     // Define a fixed Viridis color map for swim strokes
     const fixedStrokeColors = {
@@ -443,11 +458,11 @@ export function renderPacePlot(data) {
     // Create paceData with stroke-based colors for the bars
     const paceData = {
         x: lengthData.map((d, index) => index + 1),  // X-axis as the length index
-        y: lengthData.map(d => (d.totalElapsedTime / poolLength)*100 || 0),  // Pace in minutes per 100m
+        y: lengthData.map(d => Units.getPaceSeconds(poolLengthInternal / d.totalElapsedTime, sessionData) || 0),  // Pace in seconds per 100 units
         name: '',
         type: 'bar',
         text: lengthData.map(d => `Stroke: ${d.swimStroke || 'Unknown'}<br>Pace:
-${formatTime((d.totalElapsedTime / poolLength)*100)}<br>SPM:
+${formatTime(Units.getPaceSeconds(poolLengthInternal / d.totalElapsedTime, sessionData))}/100${poolUnit}<br>SPM:
 ${d.avgSwimmingCadence}<br>SPL: ${d.totalStrokes}`),  // Hover text
         hoverinfo: 'text',
         textposition: 'none', // Prevent the text from being shown on the bars
@@ -537,7 +552,9 @@ export function renderStrokeRateStrokeCountPlot(data) {
                   ...d
               }));
         const filteredData = activeData.filter(d => d.swimStroke === stroke);
-        const poolLength = data.sessionMesgs[0].poolLength;
+        const sessionData = data.sessionMesgs[0];
+        const poolLengthInternal = sessionData.poolLength;
+        const poolUnit = Units.getUnitLabel(sessionData);
 
         // Reverse the color scale to align with faster times being darker colors and slower times being lighter
         const paceColorScale = [
@@ -548,8 +565,8 @@ export function renderStrokeRateStrokeCountPlot(data) {
             [1, '#B9E1EC']
         ];
 
-        // Calculate the pace values (min/100m) for the color bar
-        const paceValues = filteredData.map(d => (d.totalElapsedTime / poolLength)*100 || 0);
+        // Calculate the pace values for the color bar
+        const paceValues = filteredData.map(d => Units.getPaceSeconds(poolLengthInternal / d.totalElapsedTime, sessionData) || 0);
         const paceMin = Math.min(...paceValues);
         const paceMax = Math.max(...paceValues);
 
@@ -558,18 +575,17 @@ export function renderStrokeRateStrokeCountPlot(data) {
             x: filteredData.map(d => d.avgSwimmingCadence || 0),  // X-axis: Stroke Rate (SPM)
             y: filteredData.map(d => d.totalStrokes || 0),  // Y-axis: Stroke Count (SPL)
             mode: 'markers',
-            text: filteredData.map(d => `Length: ${d.index} <br>Pace: ${formatTime((d.totalElapsedTime /
-poolLength)*100)} min/100m<br>SPM: ${d.avgSwimmingCadence}<br>SPL:
+            text: filteredData.map(d => `Length: ${d.index} <br>Pace: ${formatTime(Units.getPaceSeconds(poolLengthInternal / d.totalElapsedTime, sessionData))}/100${poolUnit}<br>SPM: ${d.avgSwimmingCadence}<br>SPL:
 ${d.totalStrokes}`),  // Hover text
             hoverinfo: 'text',
             marker: {
                 size: 12,  // Size of the points
-                color: paceValues,  // Color: Pace (min/100m)
+                color: paceValues,  // Color: Pace
                 colorscale: paceColorScale,
                 cmin: paceMin,
                 cmax: paceMax,
                 colorbar: {
-                    title: 'Pace (min/100m)',
+                    title: `Pace (min/100${poolUnit})`,
                     titleside: 'right',
                     tickmode: 'array',
                     tickvals: [paceMin, paceMax],
@@ -610,7 +626,8 @@ export async function renderIntervalSummaryTable() {
     const activeLengths = lengthData.filter(d => d.event === 'length' && d.lengthType === 'active');
     const activeLapsData = data.lapMesgs.filter(d => d.numActiveLengths > 0);
     const sessionData = data.sessionMesgs[0];
-    const poolLength = sessionData.poolLength;
+    const poolLengthInternal = sessionData.poolLength;
+    const poolUnit = Units.getUnitLabel(sessionData);
 
     // Define the intervals
     const intervals = activeLapsData.map((lap, index) => {
@@ -655,19 +672,19 @@ export async function renderIntervalSummaryTable() {
 
         // Loop through each length within the interval
         intervalLengths.forEach(length => {
-            const distance = poolLength; // Assuming each length is one pool length
+            const displayDistance = Units.toDisplayDistance(poolLengthInternal, sessionData);
             const time = length.totalElapsedTime;
-            const pace = (time / distance) * 100;
+            const paceSeconds = Units.getPaceSeconds(poolLengthInternal / time, sessionData);
             const spm = length.avgSwimmingCadence || 0;
             const spl = (length.totalStrokes || 0);
 
             tableHTML += `
         <tr class="length ${length.swimStroke}">
             <td>${lengthCounter}</td>
-            <td>${distance}</td>
+            <td>${Math.round(displayDistance)}${poolUnit}</td>
             <td>${length.swimStroke.charAt(0).toUpperCase() + length.swimStroke.slice(1)}</td>
             <td>${formatTime(time, 1)}</td>
-            <td>${formatTime(pace, 0)}</td>
+            <td>${formatTime(paceSeconds, 0)}</td>
             <td>${spm}</td>
             <td>${spl}</td>
         </tr>
@@ -699,11 +716,12 @@ export async function renderIntervalSummaryTable() {
 
         // Calculate interval summary
         const totalLengths = intervalLengths.length;
-        const intervalDistance = totalLengths * poolLength;
+        const intervalDistanceInternal = totalLengths * poolLengthInternal;
+        const intervalDistanceDisplay = Units.toDisplayDistance(intervalDistanceInternal, sessionData);
         const intervalTime = intervalLengths.reduce((sum, length) => sum + length.totalElapsedTime, 0);
         const intervalSPM = intervalLengths.reduce((sum, length) => sum + (length.avgSwimmingCadence || 0), 0) / totalLengths;
         const intervalSPL = intervalLengths.reduce((sum, length) => sum + (length.totalStrokes || 0), 0) / totalLengths;
-        const intervalPace = (intervalTime / intervalDistance) * 100;
+        const intervalPaceSeconds = Units.getPaceSeconds(intervalDistanceInternal / intervalTime, sessionData);
 
         // Calculate interval stroke
         const strokesInInterval = intervalLengths.map(length => length.swimStroke);
@@ -714,10 +732,10 @@ export async function renderIntervalSummaryTable() {
         tableHTML += `
     <tr class="interval">
         <td>${ordinalSuffixOf(intervalIndex + 1)} Interval</td>
-        <td>${intervalDistance}</td>
+        <td>${Math.round(intervalDistanceDisplay)}${poolUnit}</td>
         <td>${intervalStroke}</td>
         <td>${formatTime(intervalTime, 1)}</td>
-        <td>${formatTime(intervalPace, 0)}</td>
+        <td>${formatTime(intervalPaceSeconds, 0)}</td>
         <td>${intervalSPM.toFixed(2)}</td>
         <td>${intervalSPL.toFixed(2)}</td>
     </tr>
