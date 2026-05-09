@@ -1,26 +1,27 @@
-FROM python:3.12-slim
+# Stage 1: Build
+FROM node:20-slim AS build
 
 WORKDIR /app
 
-# Install system deps
-RUN apt-get update && apt-get install -y nodejs npm && apt-get clean
-
-# Install Python dependencies (copy early for caching)
-COPY requirements.txt ./
-RUN pip install -r requirements.txt
-
-# Copy JS deps early for caching
 COPY package.json package-lock.json ./
 RUN npm install
 
-# Now copy the rest of the project
 COPY . .
 
-# Build frontend (hashed assets)
-RUN npx webpack --mode production
+# Pass git info if needed (Vite config already handles this via execSync, 
+# but we need git installed in the build stage for that to work)
+RUN apt-get update && apt-get install -y git && apt-get clean
+RUN npm run build
 
-# Collect static files
-RUN python manage.py collectstatic --noinput
+# Stage 2: Serve
+FROM nginx:alpine
 
-EXPOSE 8000
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "swim_data_analyser.wsgi:application"]
+# Copy built assets from build stage
+COPY --from=build /app/dist /usr/share/nginx/html
+
+# Custom nginx config to handle SPA routing if needed 
+# (though currently you have index.html and about.html as separate files)
+# COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

@@ -3,7 +3,7 @@
   font-style: normal;
   font-weight: 100 900;
   font-stretch: 100%;
-  src: url("../fonts/inter/Inter-VariableFont_opsz,wght.ttf") format("truetype");
+  src: url("/fonts/inter/Inter-VariableFont_opsz,wght.ttf") format("truetype");
 }
 
 /* Global variables. */
