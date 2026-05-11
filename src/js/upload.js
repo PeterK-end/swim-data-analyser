@@ -176,7 +176,7 @@ document.getElementById('uploadForm')?.addEventListener('submit', async (event) 
 // Load default data on startup
 async function loadDefaultData() {
     try {
-        const response = await fetch('static/data/example.fit');
+        const response = await fetch('/data/example.fit');
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const blob = await response.blob();
         const file = new File([blob], 'example.fit', { type: 'application/octet-stream' });

@@ -1,5 +1,0 @@
-Django
-django-pwa
-gunicorn
-fit-tool
-python-dateutil

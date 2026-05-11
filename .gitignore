@@ -11,6 +11,12 @@ __pycache__/
 build/
 develop-eggs/
 dist/
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.vite/
+.eslintcache
 downloads/
 eggs/
 .eggs/

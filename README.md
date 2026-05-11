@@ -2,62 +2,59 @@
 
 The swim-data-analyser is a tool to manipulate and analyze swim workouts from FIT files as provided by Garmin devices. It is heavily inspired by [Swimming Watch Tools](https://www.swimmingwatchtools.com/).
 
-The goal is to provide full client-side parsing and handling of the data, ensuring that no data is transmitted to the server. In the future, long term analysis of workouts is planned. For this use case, an appropriate backend with user handling will be developed. While a database is necessary for this purpose, basic parsing and analysis of single workouts will remain client-side for casual website users.
+The goal is to provide full client-side parsing and handling of the data, ensuring that no data is transmitted to the server. Your files are processed entirely in your browser.
 
-# developement
+# development
 
-The project uses Nix flakes to manage developement dependencies. You can follow the setup instructions provided in the section 'Setup' of this [tutorial](https://jupyenv.io/documentation/getting-started/).
+The project uses Nix flakes to manage development dependencies.
 
 dev environment:
 
-```
+```bash
 nix develop
 ```
 
 getting started:
-```
+```bash
 npm install
 ```
 
-spin up dev server:
+spin up dev server (with HMR):
 
-```
-npx webpack --watch
-python manage.py runserver
+```bash
+npm run dev
 ```
 
 # deployment
 
-1. Clone the repository:
+The project is a pure static site. It can be built and served via any web server.
 
+## Build
+
+```bash
+npm run build
 ```
-git clone https://github.com/PeterK-end/swim-data-analyser
-```
 
-2.
-- adjust `swim_data_analyser/settings.py`
-  - change `SECRET_KEY` and `ALLOWED_HOSTS`
-  - set `CSRF_TRUSTED_ORIGINS` to your domain
+The output will be in the `dist/` directory.
 
-2. Build the Docker Image
+## Docker
 
-```
+1. Build the Docker Image:
+
+```bash
 docker build -t swim-data-analyser:latest .
 ```
 
-4. Serve static content and Docker
+2. Run the container:
 
-```
-docker run -d --restart=unless-stopped -p 127.0.0.1:8000:8000 swim-data-analyser:latest
+```bash
+docker run -d --restart=unless-stopped -p 8080:80 swim-data-analyser:latest
 ```
 
-- make sure to serve static content via your webserver (e.g. `docker cp <container_id>:/app/static /srv/swim-data-analyser`) and proxy requests to 8000
+The app will be available at `http://localhost:8080`.
 
 # used libraries
 
-The project depends on some core libraries listed below:
-
-
-- parsing and encoding of `.fit` files: https://github.com/garmin/fit-javascript-sdk
-- plots: https://github.com/plotly/plotly.js/
-- server and (future) backend: https://www.djangoproject.com/
+- parsing and encoding of `.fit` files: [@garmin/fitsdk](https://github.com/garmin/fit-javascript-sdk)
+- plots: [plotly.js](https://github.com/plotly/plotly.js/)
+- build tool: [Vite](https://vitejs.dev/)
