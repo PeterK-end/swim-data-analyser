@@ -1,7 +1,8 @@
 import Plotly from 'plotly.js-basic-dist-min'
-import { Encoder, Stream, Profile, Utils } from '@garmin/fitsdk';
+import { Profile } from '@garmin/fitsdk';
 import { getItem, saveItem } from './storage.js';
 import * as Units from './units.js';
+import { ensureProfileDefinitions, prepareExportData, encodeFit, downloadBlob } from './fitExport.js';
 
 let selectedLabels = [];
 
@@ -275,7 +276,7 @@ export async function renderEditPlot() {
 
     // Update Metadata
     loadMeta();
-    // console.log(data);
+    console.log(data);
 
     const fixedStrokeColors = {
         breaststroke: '#A8D8EA',
@@ -749,70 +750,6 @@ document.getElementById('cancelDownload').addEventListener('click', function() {
     document.getElementById('downloadModal').style.display = 'none';
 });
 
-// Rebuilds message definitions in the Profile for unknown messages
-function ensureProfileDefinitions(mesgDefinitions) {
-    function onMesgDefinition(mesgDefinition) {
-        const mesgNum = mesgDefinition.globalMessageNumber;
-        let mesgProfile = Profile.messages[mesgNum];
-
-        if (!mesgProfile) {
-            mesgProfile = {
-                num: mesgNum,
-                name: `mesg${mesgNum}`,
-                messagesKey: `mesg${mesgNum}Mesgs`,
-                fields: {},
-            };
-            Profile.messages[mesgNum] = mesgProfile;
-        }
-
-        mesgDefinition.fieldDefinitions.forEach((fieldDefinition) => {
-            const fieldProfile = mesgProfile.fields[fieldDefinition.fieldDefinitionNumber];
-            if (!fieldProfile) {
-                mesgProfile.fields[fieldDefinition.fieldDefinitionNumber] = {
-                    num: fieldDefinition.fieldDefinitionNumber,
-                    name: `field${fieldDefinition.fieldDefinitionNumber}`,
-                    type: Utils.BaseTypeToFieldType[fieldDefinition.baseType],
-                    baseType: Utils.BaseTypeToFieldType[fieldDefinition.baseType],
-                    scale: 1,
-                    offset: 0,
-                    units: "",
-                    bits: [],
-                    components: [],
-                    isAccumulated: false,
-                    hasComponents: false,
-                    subFields: [],
-                };
-            }
-        });
-    }
-    mesgDefinitions.forEach(onMesgDefinition);
-}
-
-// Converts modifiedData into a flat message list for export
-function prepareExportData(modifiedData) {
-
-    const STRIP_MESSAGE_KEYS = new Set([
-        'mesg113Mesgs',  // Best Efforts likely incorrect -> recompute
-                         // could lead to inconsistencies
-    ]);
-
-    const messageGroups = Object.entries(modifiedData)
-          .filter(([key, val]) =>
-              Array.isArray(val) &&
-              key.endsWith('Mesgs') &&
-              !STRIP_MESSAGE_KEYS.has(key)
-          );
-
-    const allMessages = [];
-
-    for (const [messageName, messages] of messageGroups) {
-        const mesgNum = getMesgNumByMessagesKey(messageName);
-        if (mesgNum == null) continue;
-        for (const fields of messages) allMessages.push({ mesgNum, ...fields });
-    }
-    return allMessages;
-}
-
 // helper for Strava normalization
 function shouldNormalizeRecordDistances(recordMesgs) {
     if (!recordMesgs?.length) return false;
@@ -907,24 +844,13 @@ async function downloadFitFromJson() {
         // updated in order for Strava to show the correct overall
         // distance
         normalizeRecordDistances(modifiedData);
-        const allMessages = prepareExportData(modifiedData);
 
-        const encoder = new Encoder({ fieldDescriptions });
-        allMessages.forEach((msg) => encoder.writeMesg(msg));
-        const uint8Array = encoder.close();
+        const uint8Array = encodeFit(modifiedData, mesgDefinitions, fieldDescriptions);
 
         const original = (await getItem('originalFileName')) || "activity.fit";
         const baseName = original.replace(/\.[^.]+$/, "") + "_NEW.fit";
 
-        const blob = new Blob([uint8Array], { type: 'application/octet-stream' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = baseName;
-        document.body.appendChild(a);
-        a.click();
-        URL.revokeObjectURL(url);
-        document.body.removeChild(a);
+        downloadBlob(uint8Array, baseName, 'application/octet-stream');
     } catch (error) {
         console.error("Encoding FIT failed:", error);
         alert("Failed to encode FIT file.");
@@ -962,17 +888,6 @@ async function downloadJson() {
         console.error("Error generating JSON file:", error);
         alert("Failed to generate JSON file.");
     }
-}
-
-// Resolves message number from Profile key
-function getMesgNumByMessagesKey(messagesKey) {
-    const messages = Profile.messages;
-    if (typeof messages !== 'object') return null;
-    for (const key in messages) {
-        const definition = messages[key];
-        if (definition.messagesKey === messagesKey) return parseInt(key, 10);
-    }
-    return null;
 }
 
 // Handles download modal confirmation

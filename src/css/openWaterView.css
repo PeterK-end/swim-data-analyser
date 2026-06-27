@@ -1,0 +1,164 @@
+/* Open-water map editor styles */
+
+#owMap,
+#owAnalyseMap {
+    width: 100%;
+    height: 480px;
+    border-radius: 8px;
+    z-index: 0;
+}
+
+#owAnalyseMap {
+    height: 500px;
+    margin: 0.75rem 0;
+}
+
+#owAnalyseContent h2 {
+    margin-top: 0.25rem;
+}
+
+#owAnalyseContent h3 {
+    margin-top: 1.25rem;
+}
+
+.ow-analyse-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 1rem 0 0.5rem;
+}
+
+.ow-analyse-controls label {
+    font-weight: 600;
+}
+
+#owAnalyseMetric {
+    padding: 8px;
+    font-size: 16px;
+    border: 1px solid var(--third-color);
+    border-radius: 6px;
+    background: #fff;
+}
+
+#owAnalyseChart {
+    width: 100%;
+}
+
+.ow-legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem 0.75rem;
+    margin: 0.6rem auto;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.85rem;
+    background: var(--second-color);
+    border-radius: 6px;
+}
+
+.ow-legend-label {
+    font-weight: 600;
+}
+
+.ow-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.ow-legend-swatch {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+#owMetadata {
+    margin-bottom: 0.75rem;
+}
+
+#openWaterEditor .button-container {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    overflow-x: auto;
+    gap: 10px;
+    width: 100%;
+    margin-bottom: 0.75rem;
+}
+
+#openWaterEditor .icon-btn:hover {
+    background-color: var(--second-color);
+}
+
+#openWaterEditor .icon-btn:hover svg {
+    fill: var(--third-color);
+}
+
+.ow-handle {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 4px solid #1d4ed8;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45);
+    cursor: grab;
+}
+
+.ow-lap-flag {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--fourth-color);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
+}
+
+.ow-stroke-flag span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
+}
+
+
+.ow-handle:active {
+    cursor: grabbing;
+}
+
+.ow-hist {
+    display: block;
+    width: 100%;
+    height: 120px;
+    background: #f7f7f7;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: crosshair;
+}
+
+.ow-modal-hint {
+    font-size: 0.85rem;
+    margin: 0 0 0.5rem;
+}
+
+.ow-readout {
+    font-size: 0.85rem;
+    margin-top: 0.4rem;
+    color: var(--fourth-color);
+}

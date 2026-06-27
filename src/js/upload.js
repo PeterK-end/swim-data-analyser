@@ -1,6 +1,7 @@
 import JSZip from "jszip";
 import { Decoder, Encoder, Stream, Profile, Utils } from '@garmin/fitsdk';
 import { renderEditPlot } from './editView.js';
+import * as OpenWaterView from './openWaterView.js';
 import { getItem, saveItem } from './storage.js';
 
 // Helper for communicating to the user
@@ -16,14 +17,38 @@ function displayFlashMessage(message, category) {
     }, 3000);  // Message disappears after 3 seconds
 }
 
-// Function to check if the parsed data represents a pool swimming workout
-function isPoolSwimming(parsedData) {
-    if (parsedData.sportMesgs && parsedData.sportMesgs[0]) {
-        return parsedData.sportMesgs[0].sport === 'swimming' &&
-               parsedData.sportMesgs[0].subSport === 'lapSwimming';
+// Classifies the parsed activity so the UI can pick the right editor.
+// Returns 'pool', 'openWater' or 'other'.
+function classifyActivity(parsedData) {
+    const subSport = parsedData.sportMesgs?.[0]?.subSport
+                  ?? parsedData.sessionMesgs?.[0]?.subSport;
+    const sport = parsedData.sportMesgs?.[0]?.sport
+               ?? parsedData.sessionMesgs?.[0]?.sport;
+
+    if (subSport === 'openWater') return 'openWater';
+    if (subSport === 'lapSwimming') return 'pool';
+    // No sport/subSport info: keep previous lenient behavior and assume pool.
+    if (sport == null && subSport == null) return 'pool';
+    return 'other';
+}
+
+// Renders the editor matching the stored activity type.
+async function renderActivity() {
+    const activityType = await getItem('activityType');
+    if (activityType === 'openWater') {
+        await OpenWaterView.render();
     } else {
-        // can't check, will fail later (probably)
-        return true;
+        // Restore the pool editor UI in case an open-water swim was shown before.
+        const show = (id, display) => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = display;
+        };
+        show('openWaterEditor', 'none');
+        show('editPlot', 'block');
+        show('metadata-container', 'block');
+        show('poolEditHint', 'block');
+        show('analyseView', '');
+        renderEditPlot();
     }
 }
 
@@ -142,11 +167,13 @@ async function runFitDecoding(file, onSuccess) {
             });
         }
 
-        if (!isPoolSwimming(parsedData)) {
-            displayFlashMessage("This is not a pool swimming workout.", "error");
+        const activityType = classifyActivity(parsedData);
+        if (activityType === 'other') {
+            displayFlashMessage("This is not a supported swim (pool or open water).", "error");
             return;
         }
 
+        await saveItem('activityType', activityType);
         await saveItem('originalData', parsedData);
         await saveItem('modifiedData', parsedData);
         onSuccess(parsedData);
@@ -166,10 +193,8 @@ document.getElementById('uploadForm')?.addEventListener('submit', async (event) 
         return;
     }
 
-    parseFitFile(file, async (finalData) => {
-        await saveItem('originalData', finalData);
-        await saveItem('modifiedData', finalData);
-        renderEditPlot();
+    parseFitFile(file, async () => {
+        await renderActivity();
     });
 });
 
@@ -180,10 +205,8 @@ async function loadDefaultData() {
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const blob = await response.blob();
         const file = new File([blob], 'example.fit', { type: 'application/octet-stream' });
-        parseFitFile(file, async (finalData) => {
-            await saveItem('originalData', finalData);
-            await saveItem('modifiedData', finalData);
-            renderEditPlot();
+        parseFitFile(file, async () => {
+            await renderActivity();
         });
     } catch (error) {
         console.error('Error loading default FIT file:', error);
@@ -199,7 +222,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         await loadDefaultData();
     } else {
         try {
-            renderEditPlot();
+            await renderActivity();
         } catch (error) {
             console.error('Error rendering stored data:', error);
             await loadDefaultData();

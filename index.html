@@ -190,7 +190,84 @@
               </div>
 	      <div id="editDataPlot"></div>
             </div>
-            <p>Select the bars on which one of the editing actions should be performed. The dashed lines indicate the start of a lap (interval).</p>
+            <p id="poolEditHint">Select the bars on which one of the editing actions should be performed. The dashed lines indicate the start of a lap (interval).</p>
+
+            <!-- Open-water (GPS) editor, shown instead of the bar editor for open water swims -->
+            <div id="openWaterEditor" style="display:none;">
+              <div class="metadata-container" id="owMetadata"></div>
+              <div class="button-container">
+                <button id="owClampBtn" class="icon-btn" title="Clamp speed outliers (fix coloring)" aria-label="Clamp speed outliers">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M11.5 2a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3M9.05 3a2.5 2.5 0 0 1 4.9 0H16v1h-2.05a2.5 2.5 0 0 1-4.9 0H0V3zM4.5 7a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3M2.05 8a2.5 2.5 0 0 1 4.9 0H16v1H6.95a2.5 2.5 0 0 1-4.9 0H0V8zm9.45 4a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3m-2.45 1a2.5 2.5 0 0 1 4.9 0H16v1h-2.05a2.5 2.5 0 0 1-4.9 0H0v-1z"/>
+                  </svg>
+                </button>
+                <button id="owSetSpeedBtn" class="icon-btn" title="Set pace of the selected segment" aria-label="Set pace of selection">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M8 4a.5.5 0 0 1 .5.5V6a.5.5 0 0 1-1 0V4.5A.5.5 0 0 1 8 4M3.732 5.732a.5.5 0 0 1 .707 0l.915.914a.5.5 0 1 1-.708.708l-.914-.915a.5.5 0 0 1 0-.707M2 10a.5.5 0 0 1 .5-.5h1.586a.5.5 0 0 1 0 1H2.5A.5.5 0 0 1 2 10m9.5 0a.5.5 0 0 1 .5-.5h1.5a.5.5 0 0 1 0 1H12a.5.5 0 0 1-.5-.5m.754-4.246a.39.39 0 0 0-.527-.02L7.547 9.31a.91.91 0 1 0 1.302 1.258l3.434-4.297a.39.39 0 0 0-.029-.518z"/>
+                    <path fill-rule="evenodd" d="M0 10a8 8 0 1 1 15.547 2.661c-.442 1.253-1.845 1.602-2.932 1.25C11.309 13.488 9.475 13 8 13c-1.474 0-3.31.488-4.615.911-1.087.352-2.49.003-2.932-1.25A8 8 0 0 1 0 10m8-7a7 7 0 0 0-6.603 9.329c.203.575.923.876 1.68.63C4.397 12.533 6.358 12 8 12s3.604.533 4.923.96c.757.245 1.477-.056 1.68-.631A7 7 0 0 0 8 3"/>
+                  </svg>
+                </button>
+                <button id="owCutBtn" class="icon-btn" title="Cut the selected segment from the track" aria-label="Cut selection">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M3.5 3.5c-.614-.884-.074-1.962.858-2.5L8 7.226 11.642 1c.932.538 1.472 1.616.858 2.5L8.81 8.61l1.556 2.661a2.5 2.5 0 1 1-.794.637L8 9.73l-1.572 2.177a2.5 2.5 0 1 1-.794-.637L7.19 8.61zm2.5 10a1.5 1.5 0 1 0-3 0 1.5 1.5 0 0 0 3 0m7 0a1.5 1.5 0 1 0-3 0 1.5 1.5 0 0 0 3 0"/>
+                  </svg>
+                </button>
+                <button id="owUndoBtn" class="icon-btn" title="Undo all edits" aria-label="Undo all edits">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M8 3a5 5 0 1 1-4.546 2.914.5.5 0 0 0-.908-.417A6 6 0 1 0 8 2z"/>
+                    <path d="M8 4.466V.534a.25.25 0 0 0-.41-.192L5.23 2.308a.25.25 0 0 0 0 .384l2.36 1.966A.25.25 0 0 0 8 4.466"/>
+                  </svg>
+                </button>
+                <div class="spacer"></div>
+                <button id="owExportBtn" class="icon-btn" title="Export the edited track (GPX / FIT)" aria-label="Export the edited track">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5"/>
+                    <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708z"/>
+                  </svg>
+                </button>
+              </div>
+              <div id="owMap"></div>
+              <div id="owLegend" class="ow-legend"></div>
+              <p>Drag the two ringed handles on the map to select a stretch of the track, then use the buttons above to clamp speed, set the pace, or cut the selection. Hover the track to read the pace at any point.</p>
+
+              <!-- Open-water modals -->
+              <div id="owSpeedModal" class="modal" style="display:none;">
+                <div class="modal-content">
+                  <h4>Set pace for selection</h4>
+                  <label for="owSpeedInput">Pace (mm:ss per 100 m/yd):</label>
+                  <input type="text" id="owSpeedInput" placeholder="1:40" value="1:40">
+                </div>
+                <div class="modal-footer">
+                  <button id="owSpeedCancel" class="btn">Cancel</button>
+                  <button id="owSpeedConfirm" class="btn">Confirm</button>
+                </div>
+              </div>
+              <div id="owClampModal" class="modal" style="display:none;">
+                <div class="modal-content">
+                  <h4>Clamp speed outliers</h4>
+                  <p class="ow-modal-hint">Drag either cutoff line to set the low and high speed limits independently. Bars outside the kept band (slow drift on the left, GPS artifacts on the right) are clamped to the nearest edge.</p>
+                  <canvas id="owHistCanvas" width="360" height="120" class="ow-hist"></canvas>
+                  <div id="owClampReadout" class="ow-readout"></div>
+                </div>
+                <div class="modal-footer">
+                  <button id="owClampCancel" class="btn">Cancel</button>
+                  <button id="owClampConfirm" class="btn">Apply</button>
+                </div>
+              </div>
+              <div id="owExportModal" class="modal" style="display:none;">
+                <div class="modal-content">
+                  <h4>Select Export Format</h4>
+                  <select id="owExportSelect">
+                    <option value="gpx">gpx</option>
+                    <option value="fit">fit</option>
+                  </select>
+                </div>
+                <div class="modal-footer">
+                  <button id="owExportCancel" class="btn">Cancel</button>
+                  <button id="owExportConfirm" class="btn">Confirm</button>
+                </div>
+              </div>
+            </div>
 	  </div>
 
 	  <!-- Hidden by default (Analyse content) -->
@@ -274,6 +351,31 @@
               <div id="intervalSummaryTable"></div>
             </div>
 
+          </div>
+
+          <!-- Open-water analyse view (read-only map + synced metric profile) -->
+          <div id="owAnalyseContent" style="display: none;">
+            <h2>Open Water Analysis</h2>
+            <div id="owAnalyseMap"></div>
+            <div id="owAnalyseLegend" class="ow-legend"></div>
+            <div class="ow-analyse-controls">
+              <label for="owAnalyseMetric">Profile metric:</label>
+              <select id="owAnalyseMetric"></select>
+            </div>
+            <div id="owAnalyseChart"></div>
+            <p>Hover the chart to move the marker on the map — or hover the map to scrub the chart.</p>
+
+            <h3>Lap statistics</h3>
+            <div class="summary-container">
+              <div id="owLapTable"></div>
+            </div>
+
+            <div id="owStrokeSection" style="display:none;">
+              <h3>Stroke statistics</h3>
+              <div class="summary-container">
+                <div id="owStrokeTable"></div>
+              </div>
+            </div>
           </div>
         </div>
 
