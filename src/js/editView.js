@@ -5,6 +5,8 @@ import * as Units from './units.js';
 
 let selectedLabels = [];
 
+let showRests = false; // draw idle lengths as grey bars
+
 // Helper function for formatting seconds to minute:sec
 function formatTime(seconds){
     const totalMinutes = Math.floor(seconds / 60);
@@ -56,14 +58,9 @@ async function updateLaps() {
         // Because we already reseted index with renumberMessageIndices()
         const startIdx = lap.firstLengthIndex;
 
-        // Find the next lap with numLengths > 0
-        let endIdx = lengths.length; // default if no next valid lap
-        for (let j = i + 1; j < laps.length; j++) {
-            if (laps[j].numLengths > 0) {
-                endIdx = laps[j].firstLengthIndex;
-                break;
-            }
-        }
+        // Ends at the next lap, rest laps included, so their rest isn't counted twice
+        const endIdx = laps.slice(i + 1)
+              .find(l => l.firstLengthIndex != null)?.firstLengthIndex ?? lengths.length;
 
         if (startIdx == null || startIdx < 0 || startIdx >= endIdx) {
             continue;
@@ -72,8 +69,10 @@ async function updateLaps() {
         const slice = lengths.slice(startIdx, endIdx);
         const active = slice.filter(l => l.event === 'length' && l.lengthType === 'active');
 
-        // Skip empty laps (keep them as they are)
+        // Rest laps only carry their rest time
         if (active.length == 0) {
+            lap.totalElapsedTime = sumAttribute('totalElapsedTime', slice);
+            lap.totalTimerTime = sumAttribute('totalTimerTime', slice);
             continue;
         }
 
@@ -286,12 +285,23 @@ export async function renderEditPlot() {
         drill: '#fde725',
         default: '#fde725'
     };
+    const REST_COLOR = '#C9CCD1';
 
     const lengths = data.lengthMesgs;
     const laps = data.lapMesgs.filter(d => d.numActiveLengths > 0);
-    const lengthData = lengths.filter(d => d.event === 'length' && d.lengthType === 'active');
+    const lengthData = lengths.filter(d =>
+        d.event === 'length' &&
+        (d.lengthType === 'active' || (showRests && d.lengthType === 'idle'))
+    );
 
     updateSelectAllIcon(lengthData);
+    updateToggleRestsIcon();
+
+    // Rests sit between the lengths without consuming a length number.
+    let activeCount = 0;
+    const lengthNumbers = lengthData.map(d =>
+        d.lengthType === 'active' ? ++activeCount : null
+    );
 
     const yValues = lengthData.map(d => d.totalElapsedTime || 0);
     const maxY = Math.max(...yValues) + 2; // Add 2s for lap indicator height
@@ -301,7 +311,8 @@ export async function renderEditPlot() {
     const lapAnnotations = [];
 
     laps.forEach((lap, i) => {
-        const lapStartIndex = lengthData.findIndex(l => l.messageIndex === lap.firstLengthIndex);
+        // A lap may start on a hidden rest
+        const lapStartIndex = lengthData.findIndex(l => l.messageIndex >= lap.firstLengthIndex);
         if (lapStartIndex === -1) return;
 
         const x = lapStartIndex + 1;
@@ -332,18 +343,31 @@ export async function renderEditPlot() {
         });
     });
 
+    // Tick every other length, rests get none
+    const tickvals = [];
+    const ticktext = [];
+    lengthNumbers.forEach((number, index) => {
+        if (number != null && number % 2 === 1) {
+            tickvals.push(index + 1);
+            ticktext.push(`${number}`);
+        }
+    });
+
     const plotData = [{
         x: lengthData.map((_, index) => index + 1),
         y: yValues,
         type: 'bar',
-        text:  lengthData.map((l, index) => `Length: ${index+1}<br>Stroke: ${l.swimStroke || 'Unknown'}<br>Time: ${l.totalElapsedTime} s`),
+        text:  lengthData.map((l, index) => l.lengthType === 'idle'
+               ? `Rest<br>Time: ${l.totalElapsedTime} s`
+               : `Length: ${lengthNumbers[index]}<br>Stroke: ${l.swimStroke || 'Unknown'}<br>Time: ${l.totalElapsedTime} s`),
         hoverinfo: 'text',
         textposition: 'none',
         marker: {
             color: lengthData.map((d) => {
+                if (selectedLabels.includes(d.messageIndex)) return '#2A4D69';
+                if (d.lengthType === 'idle') return REST_COLOR;
                 const stroke = d.swimStroke || 'default';
-                const baseColor = fixedStrokeColors[stroke] || fixedStrokeColors['default'];
-                return selectedLabels.includes(d.messageIndex) ? '#2A4D69' : baseColor;
+                return fixedStrokeColors[stroke] || fixedStrokeColors['default'];
             }),
             opacity: lengthData.map((d) => selectedLabels.includes(d.messageIndex) ? 1 : 0.9),
             line: {
@@ -364,8 +388,9 @@ export async function renderEditPlot() {
             title: 'Length',
             titlefont: { size: 14 },
             tickfont: { size: 12 },
-            tick0: 1,
-            dtick: 2,
+            tickmode: 'array',
+            tickvals: tickvals,
+            ticktext: ticktext,
         },
         yaxis: {
             title: 'Duration (seconds)',
@@ -424,16 +449,25 @@ document.getElementById('mergeBtn').addEventListener('click', async function() {
         return;
     }
 
+    // Rests in the selection are absorbed into the length; only rests stay a rest
+    const activeToMerge = lengthsToMerge.filter(entry => entry.lengthType === 'active');
+
     // Create a new merged entry based on selected lengths
-    const newEntry = {
-        ...lengthsToMerge[0],  // Copy all properties from first entry
-        totalElapsedTime: sumAttribute('totalElapsedTime', lengthsToMerge),
-        totalTimerTime: sumAttribute('totalTimerTime', lengthsToMerge),
-        totalStrokes: sumAttribute('totalStrokes', lengthsToMerge),
-        avgSpeed: modifiedData.sessionMesgs[0].poolLength / sumAttribute('totalTimerTime', lengthsToMerge),
-        avgSwimmingCadence: Math.round(sumAttribute('totalStrokes', lengthsToMerge) / (sumAttribute('totalTimerTime', lengthsToMerge)/60), 0),
-        messageIndex: Math.min(...lengthsToMerge.map(entry => entry.messageIndex)),
-    };
+    const newEntry = activeToMerge.length === 0
+          ? {
+              ...lengthsToMerge[0],
+              totalElapsedTime: sumAttribute('totalElapsedTime', lengthsToMerge),
+              totalTimerTime: sumAttribute('totalTimerTime', lengthsToMerge),
+          }
+          : {
+              ...activeToMerge[0],  // Copy all properties from first length
+              totalElapsedTime: sumAttribute('totalElapsedTime', lengthsToMerge),
+              totalTimerTime: sumAttribute('totalTimerTime', lengthsToMerge),
+              totalStrokes: sumAttribute('totalStrokes', lengthsToMerge),
+              avgSpeed: modifiedData.sessionMesgs[0].poolLength / sumAttribute('totalTimerTime', lengthsToMerge),
+              avgSwimmingCadence: Math.round(sumAttribute('totalStrokes', lengthsToMerge) / (sumAttribute('totalTimerTime', lengthsToMerge)/60), 0),
+              messageIndex: Math.min(...lengthsToMerge.map(entry => entry.messageIndex)),
+          };
     const toRemove = selectedLabels.slice(1);
 
     // Filter out the merged lengths from the data based on messageIndex and keep the first entry
@@ -457,6 +491,7 @@ document.getElementById('mergeBtn').addEventListener('click', async function() {
     // Update the IndexedDB with the new merged data
     modifiedData.lengthMesgs = remainingLengths;
 
+    dropEmptyLaps(modifiedData);
     renumberMessageIndices(modifiedData);
 
     await saveItem('modifiedData', modifiedData);
@@ -500,7 +535,8 @@ document.getElementById('confirmSplits').addEventListener('click', async functio
 
     // Get the entry to be split
     const entryToSplit = modifiedData.lengthMesgs[lengthToSplitIndex];
-    const newStrokes = Math.floor(entryToSplit.totalStrokes / nSplit);
+    const isRest = entryToSplit.lengthType === 'idle';
+    const strokes = entryToSplit.totalStrokes || 0;
     const newTimerTime = entryToSplit.totalTimerTime / nSplit;
     const poolLength = modifiedData.sessionMesgs[0].poolLength;
 
@@ -510,13 +546,23 @@ document.getElementById('confirmSplits').addEventListener('click', async functio
     for (let i = 0; i < nSplit; i++) {
         const splitEntry = {
             ...entryToSplit,
-            avgSpeed: poolLength / newTimerTime,
-            avgSwimmingCadence: Math.round(newStrokes / (newTimerTime/60), 0),
             totalElapsedTime: entryToSplit.totalElapsedTime / nSplit,
             totalTimerTime: newTimerTime,
-            totalStrokes: newStrokes,
-            totalCalories: entryToSplit.totalCalories / nSplit,
         };
+
+        if (!isRest) {
+            // Hand out the remainder so no stroke gets lost
+            const newStrokes = Math.floor(strokes / nSplit) + (i < strokes % nSplit ? 1 : 0);
+            Object.assign(splitEntry, {
+                avgSpeed: poolLength / newTimerTime,
+                avgSwimmingCadence: Math.round(newStrokes / (newTimerTime/60), 0),
+                totalStrokes: newStrokes,
+            });
+        }
+
+        if (entryToSplit.totalCalories != null) {
+            splitEntry.totalCalories = entryToSplit.totalCalories / nSplit;
+        }
 
         splitEntries.push(splitEntry);
     }
@@ -540,6 +586,41 @@ document.getElementById('confirmSplits').addEventListener('click', async functio
     renderEditPlot();
 });
 
+// Drops laps left without lengths, e.g. the lap a deleted rest had to itself.
+// Call before renumberMessageIndices(), while indices are still the old ones.
+function dropEmptyLaps(modifiedData) {
+    const laps = modifiedData.lapMesgs;
+    const lengths = modifiedData.lengthMesgs;
+
+    if (!laps || laps.length === 0) return;
+
+    const keptLaps = laps.filter((lap, i) => {
+        if (lap.firstLengthIndex == null) return true;
+
+        const start = lap.firstLengthIndex;
+        const end = laps.slice(i + 1)
+              .map(next => next.firstLengthIndex)
+              .find(index => index != null && index > start) ?? Infinity;
+        const covered = lengths.filter(l => l.messageIndex >= start && l.messageIndex < end);
+
+        if (covered.length === 0) return false;
+
+        lap.firstLengthIndex = covered[0].messageIndex; // its first length may be gone
+        return true;
+    });
+
+    if (keptLaps.length === laps.length) return;
+
+    modifiedData.lapMesgs = keptLaps;
+    keptLaps.forEach((lap, i) => { lap.messageIndex = i; });
+
+    const session = modifiedData.sessionMesgs?.[0];
+    if (session) {
+        if (session.numLaps != null) session.numLaps = keptLaps.length;
+        if (session.firstLapIndex != null) session.firstLapIndex = 0;
+    }
+}
+
 document.getElementById('deleteBtn').addEventListener('click', async function() {
 
     // Ensure at least one label is selected for deletion
@@ -556,6 +637,7 @@ document.getElementById('deleteBtn').addEventListener('click', async function() 
     modifiedData.lengthMesgs = remainingLengths;
 
     // Update the modified data with the new length data
+    dropEmptyLaps(modifiedData);
     renumberMessageIndices(modifiedData);
     await saveItem('modifiedData', modifiedData);
     // Update Lap Records
@@ -585,12 +667,31 @@ document.getElementById('confirmStroke').addEventListener('click', async functio
         return;
     }
 
+    const poolLength = modifiedData.sessionMesgs[0].poolLength;
+
     // Update swim_stroke for lengths where messageIndex is in selectedLabels
     modifiedData.lengthMesgs = modifiedData.lengthMesgs.map(entry => {
-        if (selectedLabels.includes(entry.messageIndex)) {
-            return { ...entry, swimStroke: selectedStroke };  // Update stroke
+        if (!selectedLabels.includes(entry.messageIndex)) {
+            return entry;  // No changes if messageIndex not in selectedLabels
         }
-        return entry;  // No changes if messageIndex not in selectedLabels
+        if (selectedStroke === 'idle') {
+            // A length becomes a rest
+            if (entry.lengthType === 'idle') return entry;
+            const { swimStroke, ...rest } = entry;
+            return { ...rest, lengthType: 'idle', totalStrokes: 0, avgSwimmingCadence: 0, avgSpeed: 0 };
+        }
+        if (entry.lengthType === 'idle') {
+            // A rest becomes a length the watch missed
+            return {
+                ...entry,
+                lengthType: 'active',
+                swimStroke: selectedStroke,
+                totalStrokes: 0,
+                avgSpeed: entry.totalTimerTime > 0 ? poolLength / entry.totalTimerTime : 0,
+                avgSwimmingCadence: 0,
+            };
+        }
+        return { ...entry, swimStroke: selectedStroke };  // Update stroke
     });
 
     // Save the updated data back to IndexedDB
@@ -676,12 +777,51 @@ function updateSelectAllIcon(lengthData) {
     }
 }
 
+const RESTS_SHOWN = `
+<rect x="1" y="4" width="3" height="11" rx="0.7"/>
+<rect x="6.5" y="10" width="3" height="5" rx="0.7" opacity="0.45"/>
+<rect x="12" y="4" width="3" height="11" rx="0.7"/>
+`;
+
+const RESTS_HIDDEN = `
+<rect x="1" y="4" width="3" height="11" rx="0.7"/>
+<rect x="6.5" y="10" width="3" height="5" rx="0.7" fill="none" stroke="currentColor" stroke-width="0.8" stroke-dasharray="1.5 1.2"/>
+<rect x="12" y="4" width="3" height="11" rx="0.7"/>
+`;
+
+// gets called in renderEditPlot
+function updateToggleRestsIcon() {
+    const btn = document.getElementById('toggleRestsBtn');
+    const icon = document.getElementById('toggleRestsIcon');
+
+    icon.innerHTML = showRests ? RESTS_SHOWN : RESTS_HIDDEN;
+    const label = showRests ? 'Hide Rests' : 'Show Rests';
+    btn.title = label;
+    btn.setAttribute('aria-label', label);
+}
+
+document.getElementById('toggleRestsBtn').addEventListener('click', async () => {
+    showRests = !showRests;
+
+    if (!showRests) {
+        // Hidden bars can't be unselected
+        const data = await getItem('modifiedData');
+        const restIndices = (data?.lengthMesgs ?? [])
+              .filter(l => l.lengthType === 'idle')
+              .map(l => l.messageIndex);
+        selectedLabels = selectedLabels.filter(l => !restIndices.includes(l));
+    }
+
+    renderEditPlot();
+});
+
 document.getElementById('selectAllBtn').addEventListener('click', async () => {
     const data = await getItem('modifiedData');
     if (!data || !data.lengthMesgs) return;
 
-    const lengthData = data.lengthMesgs.filter(
-        d => d.event === 'length' && d.lengthType === 'active'
+    const lengthData = data.lengthMesgs.filter(d =>
+        d.event === 'length' &&
+        (d.lengthType === 'active' || (showRests && d.lengthType === 'idle'))
     );
 
     const allIds = lengthData.map(l => l.messageIndex);

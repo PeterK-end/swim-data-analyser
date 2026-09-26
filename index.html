@@ -111,6 +111,23 @@
                            "/>
                 </svg>
               </button>
+              <button
+                id="toggleRestsBtn"
+                class="icon-btn"
+                title="Hide Rests"
+                aria-label="Hide Rests"
+                >
+                <svg id="toggleRestsIcon"
+                     xmlns="http://www.w3.org/2000/svg"
+                     width="16"
+                     height="16"
+                     fill="currentColor"
+                     viewBox="0 0 16 16">
+                  <rect x="1" y="4" width="3" height="11" rx="0.7"/>
+                  <rect x="6.5" y="10" width="3" height="5" rx="0.7" opacity="0.45"/>
+                  <rect x="12" y="4" width="3" height="11" rx="0.7"/>
+                </svg>
+              </button>
               <button title="Undo All" id="undoBtn" aria-label="Undo all edit operations" class="icon-btn">
                 <!-- arrow-rotate-left icon by Free Icons (https://free-icons.github.io/free-icons/) -->
                 <svg xmlns="http://www.w3.org/2000/svg" height="1em" fill="currentColor" viewBox="0 0 512 512">
@@ -154,6 +171,7 @@
                       <option value="backstroke">Backstroke</option>
                       <option value="butterfly">Butterfly</option>
                       <option value="drill">Drill</option>
+                      <option value="idle">Rest</option>
                     </select>
                   </div>
                   <div class="modal-footer">
@@ -190,7 +208,7 @@
               </div>
 	      <div id="editDataPlot"></div>
             </div>
-            <p>Select the bars on which one of the editing actions should be performed. The dashed lines indicate the start of a lap (interval).</p>
+            <p>Select the bars on which one of the editing actions should be performed. The dashed lines indicate the start of a lap (interval). Rests are hidden by default and toggled with the toolbar button. Shown as grey bars, they can be merged into the lengths next to them.</p>
 	  </div>
 
 	  <!-- Hidden by default (Analyse content) -->
