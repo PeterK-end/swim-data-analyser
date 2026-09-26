@@ -114,10 +114,13 @@ export async function renderSummary() {
             totalSPL += strokeData.avg_spl;
             strokeCount++;
 
+            // Escape stroke (derived from FIT file data) before inserting into HTML
+            const safeStroke = String(stroke).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
             // Add row for this stroke
             tableHTML += `
-            <tr class="${stroke}">
-            <td>${stroke.charAt(0).toUpperCase() + stroke.slice(1)}</td>
+            <tr class="${safeStroke}">
+            <td>${safeStroke.charAt(0).toUpperCase() + safeStroke.slice(1)}</td>
             <td>${strokeData.totalLengths}</td>
             <td>${Math.round(displayDistance)}${poolUnit}</td>
             <td>${formatTime(strokeData.totalTime, 0)}</td>
