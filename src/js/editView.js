@@ -117,7 +117,7 @@ export async function loadMeta() {
     const data = await getItem('modifiedData');
 
     if (!data || !data.lengthMesgs || !data.sessionMesgs) {
-        console.error("No 'modifiedData' found in IndexedDB or data is complete.");
+        console.error("No 'modifiedData' found in IndexedDB or data is incomplete.");
         return;
     }
 

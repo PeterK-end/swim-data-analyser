@@ -267,10 +267,21 @@ async function loadDefaultData() {
 }
 
 // Initialize on DOM ready
+// Stored data can be unusable, e.g. left over from another app version
+function isUsableActivity(data) {
+    return Array.isArray(data?.lengthMesgs) &&
+           Array.isArray(data?.lapMesgs) &&
+           data?.sessionMesgs?.[0] != null;
+}
+
 document.addEventListener('DOMContentLoaded', async function () {
     const modifiedData = await getItem('modifiedData');
 
-    if (!modifiedData) {
+    if (!isUsableActivity(modifiedData)) {
+        if (modifiedData) {
+            console.warn('Stored activity is incomplete, loading the demo file instead.');
+            displayFlashMessage('Your last activity could not be restored. Please load your file again.', 'info');
+        }
         await loadDefaultData();
     } else {
         try {
