@@ -4,7 +4,8 @@ FROM node:24-slim AS build
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm install
+# ci installs exactly what package-lock.json pins
+RUN npm ci
 
 COPY . .
 

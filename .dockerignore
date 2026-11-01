@@ -1,0 +1,17 @@
+# Installed and built inside the image
+node_modules
+dist
+.vite
+
+# Local working files, never part of the app.
+# public/ is copied into the build output, so only the demo file may
+# come along from public/data.
+public/data/*
+!public/data/example.fit
+tmp
+_repro
+.direnv
+.envrc
+db.sqlite3
+
+# .git stays: vite.config.js reads the version from it
