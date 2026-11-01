@@ -264,57 +264,68 @@ ul {
 
 /* Upload container styles */
 
+/* The whole box opens the file picker and accepts dropped files */
 .upload-container {
-    border: 2px solid var(--first-color); /* Border color */
-    padding: 10px;
-    border-radius: 5px;
-    background-color: #f8f9fa; /* Light background for visibility */
-    max-width: 350px; /* Optional: limit the maximum width */
+    max-width: 350px;
     margin: 20px auto; /* Center horizontally */
-    position: relative; /* Required for centering vertically */
 }
 
-/* Ensure label is properly styled */
-.upload-container label {
-    display: block;
-    font-weight: bold;
-}
-
-/* Use flexbox for the form to keep elements in a row */
-.upload-container form {
-    display: flex; /* Enable flexbox */
-    align-items: center; /* Center items vertically */
-    flex-wrap: nowrap; /* Prevent wrapping */
-    overflow: hidden; /* Prevent overflow */
-    margin: 10px;
-    gap: 10px;
-}
-
-/* Style for file input */
-.upload-container input[type="file"] {
-    border: 2px solid var(--first-color); /* Border color */
+.upload-dropzone {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 22px 16px;
+    border: 2px solid var(--first-color);
     border-radius: 5px;
-    background-color: #ffffff; /* White background for the file input */
-    font-size: 16px;
+    background-color: #f8f9fa;
+    font-weight: bold;
     cursor: pointer;
-    min-width: 0; /* Important: allow shrinking */
-    flex: 1 1 auto; /* Allow to grow and shrink */
-    overflow: hidden;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
-/* Style for the submit button */
-.upload-container button {
-    padding: 5px 10px; /* Add padding for the button */
-    border: 0.8px solid black; /* Remove border */
-    font-size: 16px;
-    border-radius: 5px; /* Match the border radius */
-    cursor: pointer; /* Change cursor on hover */
+.upload-dropzone:hover,
+.upload-container.dragover .upload-dropzone {
+    border-color: var(--fourth-color);
+    background-color: var(--second-color);
+}
+
+/* Dashed only while a file is dragged over the box */
+.upload-container.dragover .upload-dropzone {
+    border-style: dashed;
+}
+
+/* Keyboard focus lands on the hidden input, show it on the box
+   (focus-visible: not after a mouse click) */
+.upload-container:has(input:focus-visible) .upload-dropzone {
+    outline: 2px solid var(--fourth-color);
+    outline-offset: 2px;
+}
+
+.upload-icon {
+    width: 22px;
+    height: 22px;
     flex-shrink: 0;
+    color: var(--fourth-color);
 }
 
-/* Optional: Button hover effect */
-.upload-container button:hover {
-    background-color: darken(var(--second-color), 10%); /* Darken on hover */
+#uploadText {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Hidden from view but still focusable and announced by screen readers */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
 }
 
 footer {

@@ -230,21 +230,53 @@ async function runFitDecoding(file, onSuccess) {
     reader.readAsArrayBuffer(file);
 }
 
-// Upload form handler
-document.getElementById('uploadForm')?.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const fileInput = document.getElementById('fileInput');
-    const file = fileInput?.files?.[0];
-
-    if (!file) {
-        displayFlashMessage('Please select a file to upload.', 'error');
-        return;
-    }
-
+// Loads a file chosen by the user, replacing the current activity
+function loadUserFile(file) {
     parseFitFile(file, async (finalData) => {
         await saveItem('originalData', finalData);
         await saveItem('modifiedData', finalData);
         renderEditPlot();
+        const uploadText = document.getElementById('uploadText');
+        if (uploadText) uploadText.textContent = `✓ ${file.name}`;
+    });
+}
+
+// A file is loaded as soon as it is chosen
+const fileInput = document.getElementById('fileInput');
+fileInput?.addEventListener('change', () => {
+    if (fileInput.files.length) loadUserFile(fileInput.files[0]);
+});
+// Reset before the picker opens, so choosing the same file again still
+// fires 'change'
+fileInput?.addEventListener('click', () => { fileInput.value = ''; });
+document.getElementById('uploadForm')?.addEventListener('submit', (e) => e.preventDefault());
+
+// Files can also be dragged onto the upload area
+const dropZone = document.querySelector('.upload-container');
+if (dropZone) {
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+    });
+    dropZone.addEventListener('dragleave', (e) => {
+        // Ignore leaving into child elements, which would flicker
+        if (!dropZone.contains(e.relatedTarget)) dropZone.classList.remove('dragover');
+    });
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        if (!e.dataTransfer?.files.length) return;
+        loadUserFile(e.dataTransfer.files[0]);
+    });
+}
+
+// A file dropped next to the upload area would otherwise be opened by
+// the browser, replacing the page
+['dragover', 'drop'].forEach(eventName => {
+    window.addEventListener(eventName, (e) => {
+        if (e.dataTransfer?.types.includes('Files')) e.preventDefault();
     });
 });
 
