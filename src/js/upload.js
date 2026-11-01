@@ -27,6 +27,77 @@ function isPoolSwimming(parsedData) {
     }
 }
 
+// Some devices (e.g. Suunto) write laps and lengths without the index
+// fields that link them (messageIndex, firstLengthIndex, numLengths,
+// numActiveLengths). Their lap start/elapsed times are also shifted
+// against the lengths, so lengths are assigned by count instead: each lap
+// takes the next totalDistance / poolLength active lengths plus the rests
+// that follow them (Suunto keeps rests inside the swim lap; Garmin-style
+// rest laps with distance 0 take them instead). Files that already carry
+// the fields are left untouched.
+//
+// The assignment is only written if it checks out: every length used,
+// every swim lap filled, and each lap's active swim time matching its
+// totalTimerTime. Otherwise laps stay unlinked (no intervals) rather than
+// showing wrong ones. Returns false in that case.
+const LAP_TIMER_TOLERANCE_S = 1;
+
+function fillMissingLapLengthIndices(parsedData) {
+    const lengths = parsedData.lengthMesgs;
+    const laps = parsedData.lapMesgs;
+    const poolLength = parsedData.sessionMesgs?.[0]?.poolLength;
+    if (!lengths?.length || !laps?.length) return true;
+
+    if (lengths.every(l => l.messageIndex == null)) {
+        lengths.forEach((l, i) => { l.messageIndex = i; });
+    }
+    if (laps.every(l => l.messageIndex == null)) {
+        laps.forEach((l, i) => { l.messageIndex = i; });
+    }
+
+    if (laps.some(l => l.firstLengthIndex != null)) return true;
+    if (!poolLength) return false;
+
+    const assignment = [];
+    let next = 0;
+    laps.forEach((lap, i) => {
+        const first = next;
+        const wanted = Math.round((lap.totalDistance ?? 0) / poolLength);
+        let active = 0;
+        while (next < lengths.length && active < wanted) {
+            if (lengths[next].lengthType === 'active') active++;
+            next++;
+        }
+        // Trailing rests stay in this lap unless a rest lap follows to own
+        // them; a rest lap followed by another rest lap keeps a single one
+        const nextIsRestLap = i < laps.length - 1 && !laps[i + 1].totalDistance;
+        let rests = !nextIsRestLap ? Infinity : (wanted === 0 ? 1 : 0);
+        while (rests-- > 0 && next < lengths.length && lengths[next].lengthType === 'idle') next++;
+
+        assignment.push({ lap, first, slice: lengths.slice(first, next), wanted });
+    });
+
+    const matches = next === lengths.length && assignment.every(({ lap, slice, wanted }) => {
+        const active = slice.filter(l => l.lengthType === 'active');
+        if (active.length !== wanted) return false;
+        if (wanted === 0 || lap.totalTimerTime == null) return true;
+        const swimTime = active.reduce((s, l) => s + (l.totalTimerTime ?? 0), 0);
+        return Math.abs(swimTime - lap.totalTimerTime) <= LAP_TIMER_TOLERANCE_S;
+    });
+
+    if (!matches) {
+        console.warn('Laps could not be matched to lengths; leaving them unlinked.');
+        return false;
+    }
+
+    for (const { lap, first, slice } of assignment) {
+        lap.firstLengthIndex = first;
+        lap.numLengths = slice.length;
+        lap.numActiveLengths = slice.filter(l => l.lengthType === 'active').length;
+    }
+    return true;
+}
+
 // Parsing with Garmin-SDK
 function parseFitFile(file, onSuccess) {
     const extension = file.name.split('.').pop().toLowerCase();
@@ -145,6 +216,10 @@ async function runFitDecoding(file, onSuccess) {
         if (!isPoolSwimming(parsedData)) {
             displayFlashMessage("This is not a pool swimming workout.", "error");
             return;
+        }
+
+        if (!fillMissingLapLengthIndices(parsedData)) {
+            displayFlashMessage("Laps could not be matched to lengths, intervals are unavailable for this file.", "error");
         }
 
         await saveItem('originalData', parsedData);
