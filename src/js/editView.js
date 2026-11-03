@@ -960,6 +960,50 @@ function canonicalizeFields(mesgNum, fields) {
     return ordered;
 }
 
+// FIT "invalid" (= unset) value per base type
+const INVALID_BY_BASE_TYPE = {
+    enum: 0xFF, sint8: 0x7F, uint8: 0xFF, sint16: 0x7FFF, uint16: 0xFFFF,
+    sint32: 0x7FFFFFFF, uint32: 0xFFFFFFFF, string: '', float32: 0xFFFFFFFF,
+    float64: 0xFFFFFFFFFFFFFFFF, uint8z: 0, uint16z: 0, uint32z: 0, byte: 0xFF,
+    sint64: 0x7FFFFFFFFFFFFFFFn, uint64: 0xFFFFFFFFFFFFFFFFn, uint64z: 0n,
+};
+
+// Replaces null entries inside array fields with the field's invalid value.
+//
+// The decoder returns unset slots of an array as null (e.g. Garmin's
+// partly filled device settings), but the encoder rejects null since SDK
+// 21.218 ("Could not convert null to enum"), so such files could not be
+// exported at all. Writing the invalid value is what the encoder did
+// itself before. Scale/offset are reversed here because the encoder
+// applies them to every numeric value it gets.
+function fillNullArrayEntries(mesgNum, fields) {
+    const fieldsProfile = Profile.messages[mesgNum]?.fields;
+    if (!fieldsProfile) return fields;
+
+    let filled = null;
+    for (const [name, value] of Object.entries(fields)) {
+        if (!Array.isArray(value) || !value.includes(null)) continue;
+
+        const profile = Object.values(fieldsProfile).find(f => f.name === name);
+        if (!profile || !(profile.baseType in INVALID_BY_BASE_TYPE)) continue;
+
+        // Same scale/offset choice as the SDK's MesgDefinition
+        const multiComponent = (profile.components?.length ?? 0) > 1;
+        const first = v => (Array.isArray(v) ? v[0] : v);
+        const scale = multiComponent ? 1 : first(profile.scale) ?? 1;
+        const offset = multiComponent ? 0 : first(profile.offset) ?? 0;
+
+        let invalid = INVALID_BY_BASE_TYPE[profile.baseType];
+        if (typeof invalid === 'number' && (scale !== 1 || offset !== 0)) {
+            invalid = invalid / scale - offset;
+        }
+
+        filled ??= { ...fields };
+        filled[name] = value.map(v => (v === null ? invalid : v));
+    }
+    return filled ?? fields;
+}
+
 // Converts modifiedData into a flat message list for export
 function prepareExportData(modifiedData) {
 
@@ -981,7 +1025,7 @@ function prepareExportData(modifiedData) {
         const mesgNum = getMesgNumByMessagesKey(messageName);
         if (mesgNum == null) continue;
         for (const fields of messages) {
-            allMessages.push({ mesgNum, ...canonicalizeFields(mesgNum, fields) });
+            allMessages.push({ mesgNum, ...canonicalizeFields(mesgNum, fillNullArrayEntries(mesgNum, fields)) });
         }
     }
     return allMessages;
