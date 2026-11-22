@@ -960,11 +960,14 @@ function canonicalizeFields(mesgNum, fields) {
     return ordered;
 }
 
-// FIT "invalid" (= unset) value per base type
+// FIT "invalid" (= unset) value per base type. Floats are missing on
+// purpose: their invalid value is the all-ones bit pattern (NaN), which
+// the encoder refuses, and the number 0xFFFFFFFF would be written as a
+// real value of 4294967296.
 const INVALID_BY_BASE_TYPE = {
     enum: 0xFF, sint8: 0x7F, uint8: 0xFF, sint16: 0x7FFF, uint16: 0xFFFF,
-    sint32: 0x7FFFFFFF, uint32: 0xFFFFFFFF, string: '', float32: 0xFFFFFFFF,
-    float64: 0xFFFFFFFFFFFFFFFF, uint8z: 0, uint16z: 0, uint32z: 0, byte: 0xFF,
+    sint32: 0x7FFFFFFF, uint32: 0xFFFFFFFF, string: '',
+    uint8z: 0, uint16z: 0, uint32z: 0, byte: 0xFF,
     sint64: 0x7FFFFFFFFFFFFFFFn, uint64: 0xFFFFFFFFFFFFFFFFn, uint64z: 0n,
 };
 
@@ -982,7 +985,9 @@ const isUnencodable = v =>
 // behaviour:
 // - scalars: dropped, which the encoder already treats as unset
 // - array entries: replaced by the field's invalid value; scale/offset
-//   are reversed here because the encoder applies them to every value
+//   are reversed here because the encoder applies them to every value.
+//   Arrays without a writable invalid value (floats, unknown fields)
+//   are dropped as a whole.
 // - developer fields: dropped
 function sanitizeFields(mesgNum, fields) {
     const fieldsProfile = Profile.messages[mesgNum]?.fields;
@@ -1069,7 +1074,11 @@ function prepareExportData(modifiedData) {
         const mesgNum = getMesgNumByMessagesKey(messageName);
         if (mesgNum == null) continue;
         for (const fields of messages) {
-            allMessages.push({ mesgNum, ...canonicalizeFields(mesgNum, sanitizeFields(mesgNum, fields)) });
+            const sanitized = sanitizeFields(mesgNum, fields);
+            // The encoder rejects a message without any regular field,
+            // which happens when all its values were unencodable
+            if (!Object.entries(sanitized).some(([k, v]) => k !== 'developerFields' && v != null)) continue;
+            allMessages.push({ mesgNum, ...canonicalizeFields(mesgNum, sanitized) });
         }
     }
     return allMessages;
