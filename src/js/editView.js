@@ -968,24 +968,50 @@ const INVALID_BY_BASE_TYPE = {
     sint64: 0x7FFFFFFFFFFFFFFFn, uint64: 0xFFFFFFFFFFFFFFFFn, uint64z: 0n,
 };
 
-// Replaces null entries inside array fields with the field's invalid value.
+// True for values the encoder cannot write: null/undefined, NaN, ±Infinity
+const isUnencodable = v =>
+    v == null || (typeof v === 'number' && !Number.isFinite(v));
+
+// Replaces values the encoder can't write with "unset".
 //
-// The decoder returns unset slots of an array as null (e.g. Garmin's
-// partly filled device settings), but the encoder rejects null since SDK
-// 21.218 ("Could not convert null to enum"), so such files could not be
-// exported at all. Writing the invalid value is what the encoder did
-// itself before. Scale/offset are reversed here because the encoder
-// applies them to every numeric value it gets.
-function fillNullArrayEntries(mesgNum, fields) {
+// Up to SDK 21.202 the encoder wrote the FIT invalid value for anything
+// that wasn't a finite number/string/date/boolean. Since 21.218 it throws
+// instead ("Could not convert ..."), so a single NaN produced by an edit,
+// or an unset array slot from the decoder (e.g. Garmin's partly filled
+// device settings), made the whole export fail. This restores the old
+// behaviour:
+// - scalars: dropped, which the encoder already treats as unset
+// - array entries: replaced by the field's invalid value; scale/offset
+//   are reversed here because the encoder applies them to every value
+// - developer fields: dropped
+function sanitizeFields(mesgNum, fields) {
     const fieldsProfile = Profile.messages[mesgNum]?.fields;
-    if (!fieldsProfile) return fields;
+    let sanitized = null;
+    const fixed = [];
 
-    let filled = null;
     for (const [name, value] of Object.entries(fields)) {
-        if (!Array.isArray(value) || !value.includes(null)) continue;
+        if (name === 'developerFields') continue;
 
-        const profile = Object.values(fieldsProfile).find(f => f.name === name);
-        if (!profile || !(profile.baseType in INVALID_BY_BASE_TYPE)) continue;
+        if (!Array.isArray(value)) {
+            if (value != null && isUnencodable(value)) {
+                sanitized ??= { ...fields };
+                delete sanitized[name];
+                fixed.push(`${name}=${value}`);
+            }
+            continue;
+        }
+
+        if (!value.some(isUnencodable)) continue;
+
+        const profile = fieldsProfile &&
+              Object.values(fieldsProfile).find(f => f.name === name);
+        sanitized ??= { ...fields };
+        fixed.push(`${name}[]`);
+
+        if (!profile || !(profile.baseType in INVALID_BY_BASE_TYPE)) {
+            delete sanitized[name];
+            continue;
+        }
 
         // Same scale/offset choice as the SDK's MesgDefinition
         const multiComponent = (profile.components?.length ?? 0) > 1;
@@ -998,10 +1024,28 @@ function fillNullArrayEntries(mesgNum, fields) {
             invalid = invalid / scale - offset;
         }
 
-        filled ??= { ...fields };
-        filled[name] = value.map(v => (v === null ? invalid : v));
+        sanitized[name] = value.map(v => (isUnencodable(v) ? invalid : v));
     }
-    return filled ?? fields;
+
+    const devFields = fields.developerFields;
+    if (devFields && typeof devFields === 'object') {
+        const badKeys = Object.keys(devFields).filter(key => {
+            const v = devFields[key];
+            return Array.isArray(v) ? v.some(isUnencodable) : isUnencodable(v);
+        });
+        if (badKeys.length) {
+            sanitized ??= { ...fields };
+            sanitized.developerFields = { ...devFields };
+            badKeys.forEach(key => delete sanitized.developerFields[key]);
+            fixed.push(`developerFields[${badKeys.join(',')}]`);
+        }
+    }
+
+    if (fixed.length) {
+        const mesgName = Profile.messages[mesgNum]?.name ?? mesgNum;
+        console.warn(`FIT export: unset unencodable values in ${mesgName}:`, fixed.join(', '));
+    }
+    return sanitized ?? fields;
 }
 
 // Converts modifiedData into a flat message list for export
@@ -1025,7 +1069,7 @@ function prepareExportData(modifiedData) {
         const mesgNum = getMesgNumByMessagesKey(messageName);
         if (mesgNum == null) continue;
         for (const fields of messages) {
-            allMessages.push({ mesgNum, ...canonicalizeFields(mesgNum, fillNullArrayEntries(mesgNum, fields)) });
+            allMessages.push({ mesgNum, ...canonicalizeFields(mesgNum, sanitizeFields(mesgNum, fields)) });
         }
     }
     return allMessages;
@@ -1145,7 +1189,7 @@ async function downloadFitFromJson() {
         document.body.removeChild(a);
     } catch (error) {
         console.error("Encoding FIT failed:", error);
-        alert("Failed to encode FIT file.");
+        alert(`Failed to encode FIT file.\n\n${error?.message ?? error}`);
     }
 }
 
